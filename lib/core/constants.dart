@@ -1,0 +1,1 @@
+class AppConstants { static const appName = 'MindTamer'; static const schemaVersion = 1; }

@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart'; class LiteLockScreen extends StatelessWidget { const LiteLockScreen({super.key}); @override Widget build(BuildContext context){ return const Scaffold(body: Center(child: Text('Optional PIN lock TBD'))); } }

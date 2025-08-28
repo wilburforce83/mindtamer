@@ -1,0 +1,1 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart'; import '../../data/repositories/export_repository.dart'; import '../providers.dart'; final exportProvider = Provider<ExportRepository>((ref)=>ref.read(exportRepoProvider));

@@ -1,0 +1,1 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart'; enum Entitlement{free,pro} final entitlementProvider=StateProvider<Entitlement>((ref)=>Entitlement.free);

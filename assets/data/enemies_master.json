@@ -1,0 +1,20 @@
+{
+  "enemies": [
+    {
+      "key": "doubt_imp",
+      "name": "Doubt Imp",
+      "affinity": [
+        "anxiety",
+        "loss"
+      ]
+    },
+    {
+      "key": "rumination_wisp",
+      "name": "Rumination Wisp",
+      "affinity": [
+        "sleep",
+        "work"
+      ]
+    }
+  ]
+}

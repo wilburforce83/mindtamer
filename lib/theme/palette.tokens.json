@@ -1,0 +1,71 @@
+{
+  "brand": {
+    "primary": "#1BA683",
+    "onPrimary": "#F0EDD8",
+    "secondary": "#A6216E",
+    "onSecondary": "#F0EDD8",
+    "tertiary": "#2469B3",
+    "onTertiary": "#F0EDD8",
+    "accentWarm": "#F7C93E",
+    "onAccentWarm": "#00021C",
+    "background": "#00021C",
+    "onBackground": "#F0EDD8",
+    "surface": "#1C284D",
+    "onSurface": "#F0EDD8",
+    "surfaceVariant": "#2D5280",
+    "outline": "#4D7A99",
+    "muted": "#7497A6",
+    "mutedAlt": "#A3CCD9"
+  },
+  "status": {
+    "success": "#67B31B",
+    "warning": "#F7C93E",
+    "error": "#F25565",
+    "info": "#0B8BE6"
+  },
+  "charts": {
+    "series": [
+      "#1BA683",
+      "#A6216E",
+      "#2469B3",
+      "#F7C93E",
+      "#67B31B",
+      "#F25565",
+      "#0BAFE6"
+    ]
+  },
+  "palette": [
+    "#000000",
+    "#00021C",
+    "#1C284D",
+    "#343473",
+    "#2D5280",
+    "#4D7A99",
+    "#7497A6",
+    "#A3CCD9",
+    "#F0EDD8",
+    "#732866",
+    "#A6216E",
+    "#D94C87",
+    "#D9214F",
+    "#F25565",
+    "#F27961",
+    "#993649",
+    "#B36159",
+    "#F09C60",
+    "#B38F24",
+    "#B3B324",
+    "#F7C93E",
+    "#17735F",
+    "#119955",
+    "#67B31B",
+    "#1BA683",
+    "#47CCA9",
+    "#96E3C9",
+    "#2469B3",
+    "#0B8BE6",
+    "#0BAFE6",
+    "#F28D85",
+    "#F0BB90"
+  ]
+}
