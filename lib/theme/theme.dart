@@ -121,6 +121,24 @@ ThemeData mindTamerTheme() {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    dialogTheme: const DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    popupMenuTheme: const PopupMenuThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    navigationBarTheme: const NavigationBarThemeData(
+      indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    chipTheme: base.chipTheme.copyWith(
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
     textTheme: textTheme,
     cardTheme: const CardThemeData(
       color: AppColors.surface,

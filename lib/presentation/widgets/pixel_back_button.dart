@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/pixel_assets.dart';
 import '../../theme/colors.dart';
 
 class PixelBackButton extends StatelessWidget {
@@ -14,12 +13,7 @@ class PixelBackButton extends StatelessWidget {
     if (!canPop) return const SizedBox.shrink();
     final c = color ?? Theme.of(context).appBarTheme.foregroundColor ?? AppColors.onBackground;
 
-    Widget icon;
-    if (PixelAssets.has(PixelAssets.backIcon24)) {
-      icon = ImageIcon(const AssetImage(PixelAssets.backIcon24), size: size, color: c);
-    } else {
-      icon = _PixelBackIcon(size: size, color: c);
-    }
+    final Widget icon = _PixelBackIcon(size: size, color: c);
 
     return IconButton(
       tooltip: 'Back',
@@ -55,20 +49,25 @@ class _BackPixelPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    // Draw on an 8x8 grid, scaled to the requested size.
-    final unit = (size.shortestSide / 8).floorToDouble().clamp(1.0, size.shortestSide);
-    final offsetX = (size.width - unit * 8) / 2;
-    final offsetY = (size.height - unit * 8) / 2;
+    // Draw on a 12x12 grid for a chunkier arrow
+    final unit = (size.shortestSide / 12).floorToDouble().clamp(1.0, size.shortestSide);
+    final offsetX = (size.width - unit * 12) / 2;
+    final offsetY = (size.height - unit * 12) / 2;
 
     void px(int x, int y) {
       canvas.drawRect(Rect.fromLTWH(offsetX + x * unit, offsetY + y * unit, unit, unit), paint);
     }
 
-    // Left-pointing arrow made of pixels
-    // Diagonal
-    px(5, 1); px(4, 2); px(3, 3); px(2, 4); px(3, 5); px(4, 6); px(5, 7);
-    // Tail
-    px(6, 3); px(6, 4); px(6, 5);
+    // Arrowhead (left-pointing) - thicker 2px diagonal around center
+    // Upper diagonal
+    px(8, 3); px(7, 4); px(6, 5); px(5, 6); px(6, 7); px(7, 8); px(8, 9);
+    // Thicken
+    px(8, 4); px(7, 5); px(6, 6); px(7, 7); px(8, 8);
+
+    // Shaft (horizontal bar on the right)
+    for (final y in [5, 6, 7]) {
+      px(9, y); px(10, y);
+    }
   }
 
   @override

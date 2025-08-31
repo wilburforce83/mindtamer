@@ -3,6 +3,7 @@ import '../widgets/game_scaffold.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/hive/boxes.dart';
 import '../../data/models/settings.dart';
+import 'package:mindtamer/features/settings/journal/journal_settings_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -48,6 +49,8 @@ class SettingsScreen extends ConsumerWidget {
               await box.put(settings.id, settings);
             },
           ),
+          const Divider(),
+          const JournalSettingsSection(),
         ],
       ),
     );
