@@ -10,6 +10,7 @@ import 'data/models/achievement.dart';
 import 'data/models/player_profile.dart';
 import 'data/models/settings.dart';
 import 'data/hive/boxes.dart';
+import 'core/pixel_assets.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ Future<void> main() async {
   Hive.registerAdapter(SentimentAdapter());
 
   await openAllBoxes();
+  await PixelAssets.init();
 
   runApp(const ProviderScope(child: MindTamerApp()));
 }

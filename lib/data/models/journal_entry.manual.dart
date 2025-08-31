@@ -1,5 +1,4 @@
-import 'package:hive/hive.dart';
-import 'journal_entry.dart';
+part of 'journal_entry.dart';
 
 class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
   @override final int typeId = 2;

@@ -1,5 +1,4 @@
-import 'package:hive/hive.dart';
-import 'player_profile.dart';
+part of 'player_profile.dart';
 class PlayerProfileAdapter extends TypeAdapter<PlayerProfile>{
   @override final int typeId=7;
   @override PlayerProfile read(BinaryReader r){

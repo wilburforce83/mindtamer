@@ -1,5 +1,4 @@
-import 'package:hive/hive.dart';
-import 'achievement.dart';
+part of 'achievement.dart';
 class AchievementAdapter extends TypeAdapter<Achievement>{
   @override final int typeId=6;
   @override Achievement read(BinaryReader r){

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'router.dart';
-import 'theme/pixel_theme.dart';
+import 'theme/theme.dart';
 
 class MindTamerApp extends StatelessWidget {
   const MindTamerApp({super.key});
@@ -10,7 +10,7 @@ class MindTamerApp extends StatelessWidget {
     final router = buildRouter();
     return MaterialApp.router(
       title: 'MindTamer',
-      theme: PixelTheme.darkTheme,
+      theme: mindTamerTheme(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

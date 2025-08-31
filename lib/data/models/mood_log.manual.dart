@@ -1,5 +1,4 @@
-import 'package:hive/hive.dart';
-import 'mood_log.dart';
+part of 'mood_log.dart';
 
 class MoodLogAdapter extends TypeAdapter<MoodLog> {
   @override final int typeId = 3;

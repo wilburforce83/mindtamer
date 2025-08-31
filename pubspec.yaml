@@ -23,6 +23,8 @@ dependencies:
   intl: ^0.19.0
   flutter_local_notifications: ^17.2.1+2
   permission_handler: ^11.3.1
+  google_fonts: ^6.2.1
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -34,7 +36,16 @@ flutter:
   assets:
     - assets/images/
     - assets/data/
+    # Explicitly include tab icons to ensure bundling
+    - assets/images/icons/tab_home_32.png
+    - assets/images/icons/tab_mood_32.png
+    - assets/images/icons/tab_journal_32.png
+    - assets/images/icons/tab_meds_32.png
+    - assets/images/icons/tab_settings_32.png
   fonts:
     - family: PixelFont
       fonts:
         - asset: assets/fonts/PlaceholderPixelFont.ttf
+    - family: PressStart2P
+      fonts:
+        - asset: assets/fonts/PressStart2P-Regular.ttf

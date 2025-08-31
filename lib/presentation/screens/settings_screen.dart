@@ -1,1 +1,55 @@
-import 'package:flutter/material.dart'; class SettingsScreen extends StatelessWidget { const SettingsScreen({super.key}); @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('Settings')), body: ListView(padding: const EdgeInsets.all(12), children: const [ Text('• Local-only data (no servers)'), SizedBox(height:8), Text('• Export your data any time (CSV + ZIP)'), SizedBox(height:8), Text('• Safety: Not a medical device; supportive companion only.'), ])); } }
+import 'package:flutter/material.dart';
+import '../widgets/game_scaffold.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/hive/boxes.dart';
+import '../../data/models/settings.dart';
+
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final box = settingsBox();
+    final settings = box.values.isNotEmpty ? box.values.first : Settings(id: 'default');
+    final onTimeCtrl = TextEditingController(text: settings.pillOnTimeToleranceMinutes.toString());
+    final refillCtrl = TextEditingController(text: settings.refillThresholdDays.toString());
+    return GameScaffold(
+      title: 'Settings',
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          const Text('• Local-only data (no servers)'),
+          const SizedBox(height: 8),
+          const Text('• Export your data any time (CSV + ZIP)'),
+          const SizedBox(height: 8),
+          const Text('• Safety: Not a medical device; supportive companion only.'),
+          const Divider(),
+          const Text('Medication Settings'),
+          const SizedBox(height: 8),
+          TextField(
+            controller: onTimeCtrl,
+            decoration: const InputDecoration(
+              labelText: 'On-time tolerance (minutes)',
+            ),
+            keyboardType: TextInputType.number,
+            onSubmitted: (_) async {
+              settings.pillOnTimeToleranceMinutes = int.tryParse(onTimeCtrl.text) ?? settings.pillOnTimeToleranceMinutes;
+              await box.put(settings.id, settings);
+            },
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: refillCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Refill threshold (days left)',
+            ),
+            keyboardType: TextInputType.number,
+            onSubmitted: (_) async {
+              settings.refillThresholdDays = int.tryParse(refillCtrl.text) ?? settings.refillThresholdDays;
+              await box.put(settings.id, settings);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
