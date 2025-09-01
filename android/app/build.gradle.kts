@@ -49,3 +49,26 @@ dependencies {
     // Core library desugaring support for Java 8+ APIs on older Android
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
+
+// Ensure Flutter CLI can find APKs where it expects (projectRoot/build/app/outputs/flutter-apk)
+val projectRootDir = rootProject.rootDir.parentFile
+val flutterOutDir = file(File(projectRootDir, "build/app/outputs/flutter-apk"))
+
+tasks.register<Copy>("copyDebugApkToProjectRoot") {
+    val src = layout.buildDirectory.file("outputs/flutter-apk/app-debug.apk")
+    from(src)
+    into(flutterOutDir)
+    doFirst { flutterOutDir.mkdirs() }
+}
+
+tasks.register<Copy>("copyReleaseApkToProjectRoot") {
+    val src = layout.buildDirectory.file("outputs/flutter-apk/app-release.apk")
+    from(src)
+    into(flutterOutDir)
+    doFirst { flutterOutDir.mkdirs() }
+}
+
+afterEvaluate {
+    tasks.findByName("assembleDebug")?.finalizedBy("copyDebugApkToProjectRoot")
+    tasks.findByName("assembleRelease")?.finalizedBy("copyReleaseApkToProjectRoot")
+}

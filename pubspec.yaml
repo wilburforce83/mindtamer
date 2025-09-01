@@ -28,7 +28,7 @@ dependencies:
   provider: ^6.0.0
   isar: ^3.1.0
   isar_flutter_libs: ^3.1.0
-  fl_chart: ^0.68.0
+  fl_chart: ^0.69.0
   crypto: ^3.0.3
 
 dev_dependencies:

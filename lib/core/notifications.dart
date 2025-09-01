@@ -67,19 +67,36 @@ class NotificationService {
         scheduled = scheduled.add(const Duration(days: 1));
       }
       final meds = entry.value.join(', ');
-      await _plugin.zonedSchedule(
-        id,
-        'Pills due',
-        meds.isEmpty ? 'Medication reminder' : meds,
-        scheduled,
-        const NotificationDetails(
-          android: AndroidNotificationDetails('meds_channel', 'Medication Reminders', importance: Importance.max, priority: Priority.high),
-          iOS: DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
+      try {
+        await _plugin.zonedSchedule(
+          id,
+          'Pills due',
+          meds.isEmpty ? 'Medication reminder' : meds,
+          scheduled,
+          const NotificationDetails(
+            android: AndroidNotificationDetails('meds_channel', 'Medication Reminders', importance: Importance.max, priority: Priority.high),
+            iOS: DarwinNotificationDetails(),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      } on Exception {
+        // Fall back to inexact scheduling if exact alarms are not permitted
+        await _plugin.zonedSchedule(
+          id,
+          'Pills due',
+          meds.isEmpty ? 'Medication reminder' : meds,
+          scheduled,
+          const NotificationDetails(
+            android: AndroidNotificationDetails('meds_channel', 'Medication Reminders', importance: Importance.max, priority: Priority.high),
+            iOS: DarwinNotificationDetails(),
+          ),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
     }
   }
 

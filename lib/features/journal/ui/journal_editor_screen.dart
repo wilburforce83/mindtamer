@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../hooks/journal_events.dart';
 import '../hooks/monster_seed.dart';
-import 'package:mindtamer/features/settings/journal/journal_settings_state.dart';
 import '../model/journal_entry.dart';
 import '../state/journal_editor_controller.dart';
 import 'widgets/sentiment_selector.dart';
@@ -75,16 +74,12 @@ class JournalEditorScreen extends StatelessWidget {
   }
 
   MonsterSeed? _maybeBuildSeed(JournalEntry saved, JournalEditorController c) {
-    final settings = JournalSettings.instance;
-    if (!settings.generateSeedOnSave) return null;
-
+    // Always generate seed and include title influence for RNG
     final sanitizedTitle = c.title.trim().replaceAll(RegExp(r'\s+'), ' ');
     final clampedTitle = sanitizedTitle.substring(0, sanitizedTitle.length.clamp(0, 80));
     final sortedTags = [...c.tags]..sort();
 
-    final seedInput = settings.titleAffectsRng
-        ? "${saved.localDate}|${c.sentiment.name}|${sortedTags.join(',')}|$clampedTitle"
-        : "${saved.localDate}|${c.sentiment.name}|${sortedTags.join(',')}";
+    final seedInput = "${saved.localDate}|${c.sentiment.name}|${sortedTags.join(',')}|$clampedTitle";
     final hash = crypto.sha256.convert(utf8.encode(seedInput)).bytes;
     // lower 8 bytes -> uint64
     int toUint64(List<int> b) {

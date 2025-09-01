@@ -19,13 +19,15 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         children: [
           const Text('• Local-only data (no servers)'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           const Text('• Export your data any time (CSV + ZIP)'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           const Text('• Safety: Not a medical device; supportive companion only.'),
+          const SizedBox(height: 16),
           const Divider(),
+          const SizedBox(height: 16),
           const Text('Medication Settings'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           TextField(
             controller: onTimeCtrl,
             decoration: const InputDecoration(
@@ -37,7 +39,7 @@ class SettingsScreen extends ConsumerWidget {
               await box.put(settings.id, settings);
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           TextField(
             controller: refillCtrl,
             decoration: const InputDecoration(
@@ -49,7 +51,9 @@ class SettingsScreen extends ConsumerWidget {
               await box.put(settings.id, settings);
             },
           ),
+          const SizedBox(height: 16),
           const Divider(),
+          const SizedBox(height: 12),
           const JournalSettingsSection(),
         ],
       ),

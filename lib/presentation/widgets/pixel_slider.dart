@@ -5,7 +5,9 @@ import '../../theme/colors.dart';
 class PixelSlider extends StatelessWidget {
   final int value;
   final ValueChanged<int> onChanged;
-  const PixelSlider({super.key, required this.value, required this.onChanged});
+  // When false, hides the numeric readout below the slider (useful in tight rows).
+  final bool showValue;
+  const PixelSlider({super.key, required this.value, required this.onChanged, this.showValue = true});
 
   @override
   Widget build(BuildContext context) {
@@ -37,20 +39,24 @@ class PixelSlider extends StatelessWidget {
           alignment: Alignment.centerLeft,
           filterQuality: FilterQuality.none,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
         );
+
+    final layers = <Widget>[];
+    // Only add asset layers if they are actually bundled to avoid noisy logs.
+    if (PixelAssets.has(PixelAssets.sliderTrackTile8)) {
+      layers.add(Positioned.fill(child: bgImage(PixelAssets.sliderTrackTile8)));
+    }
+    if (PixelAssets.has(PixelAssets.sliderKnob16)) {
+      layers.add(Positioned.fill(child: bgImage(PixelAssets.sliderKnob16)));
+    }
+    layers.add(slider);
+    final core = Stack(children: layers);
+
+    if (!showValue) return core;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stack(children: [
-          // Try track tile first, fall back to knob tile silently
-          Positioned.fill(child: bgImage(PixelAssets.sliderTrackTile8)),
-          Positioned.fill(child: bgImage(PixelAssets.sliderKnob16)),
-          slider,
-        ]),
-        Text('$value'),
-      ],
+      children: [core, Text('$value')],
     );
   }
 }

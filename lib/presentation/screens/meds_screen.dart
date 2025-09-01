@@ -50,9 +50,13 @@ class MedsScreen extends ConsumerWidget {
             width: double.infinity,
             child: PixelButton(
               onPressed: () async {
-                final p = await ref.read(medPlansProvider.notifier).addPlan('New Med','', ['08:00']);
                 if (!context.mounted) return;
-                await _editMed(context, ref, p);
+                final temp = MedPlan(id: 'temp', name: 'New Med', dose: '', scheduleTimes: ['08:00'], active: true)
+                  ..unitsPerDose = 1
+                  ..startingStock = 0
+                  ..remainingStock = 0
+                  ..iconPath = null;
+                await _editMed(context, ref, temp, isNew: true);
               },
               label: 'Add Med',
             ),
@@ -102,7 +106,7 @@ class _PillPainter extends CustomPainter {
   bool shouldRepaint(covariant _PillPainter oldDelegate)=> oldDelegate.color!=color;
 }
 
-Future<void> _editMed(BuildContext context, WidgetRef ref, medPlan) async {
+Future<void> _editMed(BuildContext context, WidgetRef ref, MedPlan medPlan, {bool isNew = false}) async {
   final notifier = ref.read(medPlansProvider.notifier);
   final nameCtrl = TextEditingController(text: medPlan.name);
   final doseCtrl = TextEditingController(text: medPlan.dose);
@@ -146,20 +150,37 @@ Future<void> _editMed(BuildContext context, WidgetRef ref, medPlan) async {
       )),
       actions: [
         TextButton(onPressed: ()=>Navigator.pop(context), child: const Text('Cancel')),
+        if (!isNew)
+          TextButton(onPressed: () async {
+            await ref.read(medPlansProvider.notifier).delete(medPlan.id);
+            if (context.mounted) Navigator.pop(context);
+          }, child: const Text('Delete')),
         TextButton(onPressed: () async {
-          await ref.read(medPlansProvider.notifier).delete(medPlan.id);
-          if (context.mounted) Navigator.pop(context);
-        }, child: const Text('Delete')),
-        TextButton(onPressed: () async {
-          final updated = medPlan
-            ..name = nameCtrl.text.trim()
-            ..dose = doseCtrl.text.trim()
-            ..scheduleTimes = timesCtrl.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList()
-            ..unitsPerDose = int.tryParse(updCtrl.text) ?? medPlan.unitsPerDose
-            ..startingStock = int.tryParse(startCtrl.text) ?? medPlan.startingStock
-            ..remainingStock = int.tryParse(remainCtrl.text) ?? medPlan.remainingStock
-            ..iconPath = selectedIcon;
-          await notifier.editPlan(updated);
+          final name = nameCtrl.text.trim();
+          final dose = doseCtrl.text.trim();
+          final times = timesCtrl.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList();
+          final units = int.tryParse(updCtrl.text) ?? medPlan.unitsPerDose;
+          final start = int.tryParse(startCtrl.text) ?? medPlan.startingStock;
+          final remain = int.tryParse(remainCtrl.text) ?? medPlan.remainingStock;
+          if (isNew) {
+            final created = await notifier.addPlan(name.isEmpty? 'New Med': name, dose, times.isEmpty? ['08:00']: times);
+            created
+              ..unitsPerDose = units
+              ..startingStock = start
+              ..remainingStock = remain
+              ..iconPath = selectedIcon;
+            await notifier.editPlan(created);
+          } else {
+            final updated = medPlan
+              ..name = name
+              ..dose = dose
+              ..scheduleTimes = times
+              ..unitsPerDose = units
+              ..startingStock = start
+              ..remainingStock = remain
+              ..iconPath = selectedIcon;
+            await notifier.editPlan(updated);
+          }
           if (context.mounted) Navigator.pop(context);
         }, child: const Text('Save')),
       ],

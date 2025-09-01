@@ -1,7 +1,7 @@
 // FILE: lib/features/journal/data/journal_tag_rules.dart
 class JournalTagRules {
   static const int maxTagsPerEntry = 8;
-  static const int maxCustomTagsGlobal = 10;
+  static const int maxCustomTagsGlobal = 25;
 
   static const List<String> curated = [
     'sleep', 'work', 'family', 'anxiety', 'anger', 'social', 'diet', 'exercise', 'meds', 'therapy',
@@ -26,4 +26,3 @@ class JournalTagRules {
 
   static bool isCurated(String tag) => curated.contains(tag);
 }
-

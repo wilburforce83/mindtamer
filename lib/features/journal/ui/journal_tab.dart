@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../data/journal_repository.dart';
 import '../data/journal_tag_rules.dart';
 import '../model/journal_entry.dart';
-import '../model/sentiment.dart' as jm;
 import '../state/journal_controller.dart';
 import 'journal_detail_screen.dart';
 import 'widgets/pixel_icons.dart';
@@ -159,8 +158,9 @@ class _InsightsState extends State<_Insights> {
   Future<void> _loadTags() async {
     final custom = await widget.repo.listCustomTags();
     // Access the parent state to update suggestions list source
+    if (!mounted) return;
     final st = context.findAncestorStateOfType<_JournalTabBodyState>();
-    if (st != null && mounted) {
+    if (st != null) {
       st._customTags = custom;
     }
   }

@@ -50,7 +50,11 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   MedPlansNotifier(this._repo, this._ref) : super(_repo.plans());
   Future<MedPlan> addPlan(String name, String dose, List<String> times) async {
     final p = await _repo.addPlan(name, dose, times);
-    await _reschedule();
+    try {
+      await _reschedule();
+    } catch (_) {
+      // Ignore scheduling failures (e.g., exact alarm not permitted)
+    }
     await _checkRefillAlerts();
     state = _repo.plans();
     _ref.read(medLogsTickProvider.notifier).state++;
@@ -58,14 +62,14 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   }
   Future<void> editPlan(MedPlan plan) async {
     await _repo.updatePlan(plan);
-    await _reschedule();
+    try { await _reschedule(); } catch (_) {}
     await _checkRefillAlerts();
     state = _repo.plans();
     _ref.read(medLogsTickProvider.notifier).state++;
   }
   Future<void> delete(String planId) async {
     await _repo.deletePlan(planId);
-    await _reschedule();
+    try { await _reschedule(); } catch (_) {}
     state = _repo.plans();
     _ref.read(medLogsTickProvider.notifier).state++;
   }

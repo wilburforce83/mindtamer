@@ -5,13 +5,8 @@ import 'package:provider/provider.dart';
 import '../../journal/data/journal_repository.dart';
 import '../../journal/data/journal_tag_rules.dart';
 import '../../journal/export/journal_export_service.dart';
-import 'journal_settings_state.dart';
 
 class _JournalSettingsModel extends ChangeNotifier {
-  bool get generateSeed => JournalSettings.instance.generateSeedOnSave;
-  set generateSeed(bool v) { JournalSettings.instance.setGenerate(v); notifyListeners(); }
-  bool get titleAffectsRng => JournalSettings.instance.titleAffectsRng;
-  set titleAffectsRng(bool v) { JournalSettings.instance.setTitleAffects(v); notifyListeners(); }
   final repo = JournalRepository();
   List<String> custom = [];
 
@@ -34,21 +29,11 @@ class JournalSettingsSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             const Text('Journal Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            SwitchListTile(
-              title: const Text('Generate Monster Seed on save'),
-              value: m.generateSeed,
-              onChanged: (v) { m.generateSeed = v; },
-            ),
-            SwitchListTile(
-              title: const Text('Title affects RNG'),
-              value: m.titleAffectsRng,
-              onChanged: (v) { m.titleAffectsRng = v; },
-            ),
-            ListTile(
-              title: Text('Custom tags: ${m.custom.length} used / $remaining remaining'),
-            ),
+            const SizedBox(height: 12),
+            Text('Custom tags: ${m.custom.length} used / $remaining remaining'),
+            const SizedBox(height: 12),
             Wrap(spacing: 6, children: [
               for (final t in m.custom)
                 Chip(label: Text(t), onDeleted: () async { await m.repo.removeCustomTag(t); await m.refresh(); }),
@@ -67,7 +52,7 @@ class JournalSettingsSection extends StatelessWidget {
                   }
                 }),
             ]),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
               child: OutlinedButton.icon(
@@ -79,6 +64,7 @@ class JournalSettingsSection extends StatelessWidget {
                 },
               ),
             ),
+            const SizedBox(height: 12),
           ],
         );
       }),
