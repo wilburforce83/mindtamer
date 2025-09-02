@@ -1,0 +1,160 @@
+{
+  "version": "1.4.0",
+  "files": [
+    {
+      "name": "basewords-a.json",
+      "size": 6559,
+      "sha256": "f1975049bc084537235616a7e5a92d3b445d803c3ab0ecaa55c4b90b0e0d0c69"
+    },
+    {
+      "name": "basewords-b.json",
+      "size": 5193,
+      "sha256": "fc6ea99056ff72d02fc4786f64cab22d2d9cbc781e65ea3527be682375fc87ed"
+    },
+    {
+      "name": "basewords-c.json",
+      "size": 8225,
+      "sha256": "622c3a004f5e08e7e0a01839b9810599e080367965761bf83c941097d56da060"
+    },
+    {
+      "name": "basewords-d.json",
+      "size": 5206,
+      "sha256": "363d36baa1a8e831cacce774f3db5ddeb9e78e3a7459d0cd198f3c414d657404"
+    },
+    {
+      "name": "basewords-e.json",
+      "size": 3526,
+      "sha256": "8123256b94e45b2640d1a088c9fc32fec3b7b2bdcd655d8cf4e6498ec03ae83b"
+    },
+    {
+      "name": "basewords-f.json",
+      "size": 5927,
+      "sha256": "b8891c4e3fcdd15c757c0ee79b23f4fbb25a54edc14881d527d8961e16df909e"
+    },
+    {
+      "name": "basewords-g.json",
+      "size": 3915,
+      "sha256": "c73e3aba541e795e4fae219e4276068ec50e6f21cdcd7cd9a08981d40ca4c60a"
+    },
+    {
+      "name": "basewords-h.json",
+      "size": 5290,
+      "sha256": "816d34fb241fa8999455c36ba751462975d75075a6ffcfe2b8c87c26a3b75af1"
+    },
+    {
+      "name": "basewords-i.json",
+      "size": 1937,
+      "sha256": "38920af0e81a1c81f0426101a8ad27ce0057b72753204fe33405ea8d9c274aba"
+    },
+    {
+      "name": "basewords-j.json",
+      "size": 1549,
+      "sha256": "9769ad0e18adcef2e4ea82ba5a2373577af054fc9312ea5962700bf16199362b"
+    },
+    {
+      "name": "basewords-k.json",
+      "size": 452,
+      "sha256": "1ea3fe21dd15e05857ecb6f0fd37a37fd4d39f7d8bb53639c661aa97fa62dcf3"
+    },
+    {
+      "name": "basewords-l.json",
+      "size": 2210,
+      "sha256": "0ce353f56cbd9afb926dd0766e5d072957dd1468c37d72333106246ec04ba66e"
+    },
+    {
+      "name": "basewords-m.json",
+      "size": 3942,
+      "sha256": "1b8647f3cfc981817e757ea2ead83b85d913e0db4c078704defeda4797f8ef2e"
+    },
+    {
+      "name": "basewords-n.json",
+      "size": 2391,
+      "sha256": "82f1ea2d8b419510877c4e27f2848556c271eef2d595dd6da48fc7d0523f87fc"
+    },
+    {
+      "name": "basewords-o.json",
+      "size": 1707,
+      "sha256": "e62547cada6c33d7ba7b89b58e2d5c0b528b0d1106a54af9efbca76a982de9ed"
+    },
+    {
+      "name": "basewords-p.json",
+      "size": 7871,
+      "sha256": "b161b2416302a0d873ffe52fb9f2569a3532df7ff44d4efe68d8c79b2eaa6741"
+    },
+    {
+      "name": "basewords-q.json",
+      "size": 205,
+      "sha256": "4b6aac3e99b196170118d0801b00b341aa13a3d105ec0a0e03f2146e6fde2707"
+    },
+    {
+      "name": "basewords-r.json",
+      "size": 7448,
+      "sha256": "e2d23b1866c31fb994c21ea614dcb5c31d4034fe8160fe85df85530a475d3be4"
+    },
+    {
+      "name": "basewords-s.json",
+      "size": 14173,
+      "sha256": "5c8e61035b105933bc2531b993cb414058a1b5cdc40fbfa4a1d22d5836611e83"
+    },
+    {
+      "name": "basewords-t.json",
+      "size": 7068,
+      "sha256": "09994c6df12fe2fef078cbe374a3197acdd6241aa7acdd36cf8054935f3709a0"
+    },
+    {
+      "name": "basewords-u.json",
+      "size": 874,
+      "sha256": "b84c1eab8371c577830901aaeeb7f063b9d9f83c63deb502a43347e65705f9e4"
+    },
+    {
+      "name": "basewords-v.json",
+      "size": 1121,
+      "sha256": "647ab867539f52e635237613fd155d460f64f2fc136828aa42645f5c76d320f6"
+    },
+    {
+      "name": "basewords-w.json",
+      "size": 3764,
+      "sha256": "8f05cf927f383b8200f3e7e6eeee1e38cc3fd12f58f38aebfad771c6ed3f032a"
+    },
+    {
+      "name": "basewords-x.json",
+      "size": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "basewords-y.json",
+      "size": 461,
+      "sha256": "2f58fa46874c4c881e3460c8333bfcb1973465ac433389284c7694ceaedce4b9"
+    },
+    {
+      "name": "basewords-z.json",
+      "size": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "secondary-seeds.json",
+      "size": 377,
+      "sha256": "32b70fb8ded1813eaf66d16b99c4fbdda811437b3bc63a7f2483db2bf36ed292"
+    },
+    {
+      "name": "elements.json",
+      "size": 754,
+      "sha256": "4ad72177683bfbb38933a67e4d807c91428307e785bdf75a206efd4691cfa6be"
+    },
+    {
+      "name": "types.json",
+      "size": 1007,
+      "sha256": "369e4b8f6079f841a1845aa746de7e0a2de08a7cf0ad7912464b362ddda25987"
+    },
+    {
+      "name": "color-palettes.json",
+      "size": 297,
+      "sha256": "7fd9ede653ea2e8d06a4ffa723b95173c77a43f88dec7ba0e1affaf463dc5374"
+    },
+    {
+      "name": "attacks.json",
+      "size": 1158,
+      "sha256": "f3301a640d2c95c80d3d9742d512e313b989d0eff9891caf079362a9e255ddc1"
+    }
+  ]
+}

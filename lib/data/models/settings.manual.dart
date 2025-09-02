@@ -11,16 +11,22 @@ class SettingsAdapter extends TypeAdapter<Settings>{
       theme: f[4] as String,
       pillOnTimeToleranceMinutes: (f[5] as int?) ?? 60,
       refillThresholdDays: (f[6] as int?) ?? 5,
+      debugMode: (f[7] as bool?) ?? false,
+      autoGrantEchoOnWinDebug: (f[8] as bool?) ?? false,
+      returnTicketOnLossDebug: (f[9] as bool?) ?? false,
     );
   }
   @override void write(BinaryWriter w, Settings o){
-    w..writeByte(7)
+    w..writeByte(10)
      ..writeByte(0)..write(o.id)
      ..writeByte(1)..write(o.pinHash)
      ..writeByte(2)..write(o.exportDir)
      ..writeByte(3)..write(o.allowOsBackup)
      ..writeByte(4)..write(o.theme)
      ..writeByte(5)..write(o.pillOnTimeToleranceMinutes)
-     ..writeByte(6)..write(o.refillThresholdDays);
+     ..writeByte(6)..write(o.refillThresholdDays)
+     ..writeByte(7)..write(o.debugMode)
+     ..writeByte(8)..write(o.autoGrantEchoOnWinDebug)
+     ..writeByte(9)..write(o.returnTicketOnLossDebug);
   }
 }

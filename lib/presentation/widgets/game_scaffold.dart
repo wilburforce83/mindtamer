@@ -65,7 +65,7 @@ class _TabItem {
 }
 
 const List<_TabItem> _tabs = <_TabItem>[
-  _TabItem('Home', '/', PixelAssets.tabHome),
+  _TabItem('Character', '/character', PixelAssets.tabHome),
   _TabItem('Mood', '/mood', PixelAssets.tabMood),
   _TabItem('Journal', '/journal', PixelAssets.tabJournal),
   _TabItem('Meds', '/meds', PixelAssets.tabMeds),
@@ -91,11 +91,9 @@ Widget _png(String assetPath) {
 int _indexForLocation(String location) {
   for (var i = 0; i < _tabs.length; i++) {
     final r = _tabs[i].route;
-    if (r == '/') {
-      if (location == '/' || location.startsWith('/?')) return i;
-    } else if (location.startsWith(r)) {
+    if (location == r || location.startsWith('$r/')) {
       return i;
     }
   }
-  return 0; // default to Home
+  return 0; // default to Character
 }

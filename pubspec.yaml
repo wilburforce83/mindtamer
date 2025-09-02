@@ -43,6 +43,7 @@ flutter:
   assets:
     - assets/images/
     - assets/data/
+    - assets/lexicon/v1/
     # Explicitly include tab icons to ensure bundling
     - assets/images/icons/tab_home_32.png
     - assets/images/icons/tab_mood_32.png

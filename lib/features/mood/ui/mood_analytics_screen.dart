@@ -23,9 +23,13 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
     for (final e in entries) {
       final h = e.timestamp.hour;
       int slot;
-      if (h >= 5 && h <= 11) slot = 0; // morning
-      else if (h >= 12 && h <= 17) slot = 1; // day
-      else slot = 2; // night
+      if (h >= 5 && h <= 11) {
+        slot = 0; // morning
+      } else if (h >= 12 && h <= 17) {
+        slot = 1; // day
+      } else {
+        slot = 2; // night
+      }
       final v = (e.values[metric] ?? 0).clamp(0, 100);
       sums[slot] += v;
       counts[slot]++;
@@ -127,22 +131,11 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
     return out;
   }
 
-  Widget _avgRow(BuildContext context, String label, double value) {
-    final style = Theme.of(context).textTheme.bodySmall;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: style)),
-          Text(value.isNaN ? '-' : value.toStringAsFixed(0), style: style),
-        ],
-      ),
-    );
-  }
+  // Removed unused _avgRow
 
   @override
   Widget build(BuildContext context) {
-    final labels = const {
+    const labels = {
       'energy': 'Energy',
       'stress': 'Stress',
       'focus': 'Focus',
@@ -205,7 +198,7 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
                         .toList(),
                     isCurved: true,
                     dotData: const FlDotData(show: false),
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.35),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
                     barWidth: 2,
                   ),
                 ],

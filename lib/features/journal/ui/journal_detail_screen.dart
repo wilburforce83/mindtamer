@@ -6,6 +6,11 @@ import '../data/journal_repository.dart';
 import '../model/journal_entry.dart';
 import 'journal_editor_screen.dart';
 import 'widgets/pixel_icons.dart';
+import '../../../data/hive/boxes.dart';
+import '../../../game/services/seed_pipeline.dart';
+import '../../../game/models/journal_seed_meta.dart';
+import '../../../game/models/encounter_ticket.dart';
+import '../../../game/models/battle.dart';
 
 class JournalDetailScreen extends StatefulWidget {
   final int entryId;
@@ -18,6 +23,9 @@ class JournalDetailScreen extends StatefulWidget {
 class _JournalDetailScreenState extends State<JournalDetailScreen> {
   final repo = JournalRepository();
   JournalEntry? entry;
+  JournalSeedMeta? meta;
+  EncounterTicket? ticket;
+  Battle? lastBattle;
 
   @override
   void initState() {
@@ -27,7 +35,23 @@ class _JournalDetailScreenState extends State<JournalDetailScreen> {
 
   Future<void> _load() async {
     final e = await repo.getById(widget.entryId);
-    if (mounted) setState(() => entry = e);
+    JournalSeedMeta? jm;
+    EncounterTicket? t;
+    Battle? b;
+    if (e != null) {
+      jm = journalSeedMetaBox().get(e.id);
+      if (jm?.seedRouting == 'monster') {
+        try {
+          t = encounterTicketBox().values.firstWhere(
+            (x) => x.entryId == e.id && x.state == 'open');
+        } catch (_) {
+          t = null;
+        }
+        final battles = battleBox().values.where((bb) => bb.ticketId == (t?.ticketId ?? 'none')).toList();
+        if (battles.isNotEmpty) { battles.sort((a,b)=> b.startedAt.compareTo(a.startedAt)); b = battles.first; }
+      }
+    }
+    if (mounted) setState(() { entry = e; meta = jm; ticket = t; lastBattle = b; });
   }
 
   @override
@@ -100,8 +124,82 @@ class _JournalDetailScreenState extends State<JournalDetailScreen> {
                         ),
                     ],
                   ),
+                const SizedBox(height: 16),
+                if (meta != null) ...[
+                  Text('Routing: ${meta!.seedRouting}', style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 8),
+                  if (meta!.seedRouting == 'monster') _monsterActions(),
+                  if (meta!.seedRouting == 'sprite') const Text('Sprite added to inventory.'),
+                ],
               ],
             ),
+    );
+  }
+
+  Widget _monsterActions() {
+    final t = ticket;
+    final b = lastBattle;
+    if (t != null && t.state == 'open') {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.sports_martial_arts, size: 16),
+          label: const Text('Start Encounter'),
+          onPressed: () async {
+            try {
+              final battleId = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(t.ticketId);
+              if (!mounted) return;
+              await _showBattleStub(battleId);
+              await _load();
+            } catch (e) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cannot start: $e')));
+            }
+          },
+        ),
+      );
+    }
+    if (b != null && b.result != null) {
+      final echoDropped = resonantEchoBox().values.any((e) => e.battleId == b.battleId);
+      return Text('Last battle: ${b.result} • ${b.turnCount} turns${echoDropped ? ' • Echo dropped!' : ''}');
+    }
+    return const SizedBox.shrink();
+  }
+
+  Future<void> _showBattleStub(String battleId) async {
+    int turns = 3;
+    String result = 'win';
+    bool flawless = true;
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Battle (Stub)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<String>(
+                value: result,
+                items: const [
+                  DropdownMenuItem(value: 'win', child: Text('Win')),
+                  DropdownMenuItem(value: 'loss', child: Text('Loss')),
+                  DropdownMenuItem(value: 'escape', child: Text('Escape')),
+                ],
+                onChanged: (v) { if (v != null) { setState(() => result = v); } },
+              ),
+              Row(children: [ const Text('Turns:'), const SizedBox(width: 8), Expanded(child: Slider(value: turns.toDouble(), min: 1, max: 20, divisions: 19, label: '$turns', onChanged: (v){ setState(()=>turns = v.round()); })) ]),
+              Row(children: [ const Text('Flawless:'), Switch(value: flawless, onChanged: (v){ setState(()=>flawless = v); }) ]),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () async {
+              await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).resolve(battleId: battleId, result: result, turnCount: turns, flawless: flawless);
+              if (context.mounted) Navigator.pop(ctx);
+            }, child: const Text('Resolve')),
+          ],
+        ),
+      ),
     );
   }
 }

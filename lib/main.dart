@@ -12,6 +12,14 @@ import 'data/models/player_profile.dart';
 import 'data/models/settings.dart';
 import 'data/hive/boxes.dart';
 import 'core/pixel_assets.dart';
+import 'game/models/journal_seed_meta.dart';
+import 'game/models/seed_species.dart';
+import 'game/models/encounter_ticket.dart';
+import 'game/models/battle.dart';
+import 'game/models/monster_codex.dart';
+import 'game/models/resonant_echo.dart';
+import 'game/models/seed_instance.dart';
+import 'game/models/summons_inventory.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +34,15 @@ Future<void> main() async {
   Hive.registerAdapter(PlayerProfileAdapter());
   Hive.registerAdapter(SettingsAdapter());
   Hive.registerAdapter(SentimentAdapter());
+  // Gameplay adapters
+  Hive.registerAdapter(JournalSeedMetaAdapter());
+  Hive.registerAdapter(SeedSpeciesAdapter());
+  Hive.registerAdapter(EncounterTicketAdapter());
+  Hive.registerAdapter(BattleAdapter());
+  Hive.registerAdapter(MonsterCodexAdapter());
+  Hive.registerAdapter(ResonantEchoAdapter());
+  Hive.registerAdapter(SeedInstanceAdapter());
+  Hive.registerAdapter(SummonsInventoryItemAdapter());
 
   await openAllBoxes();
   await PixelAssets.init();

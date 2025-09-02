@@ -1,0 +1,1 @@
+{"sentimentHue":{"positive":[50,70],"neutral":[200,220],"mixed":[280,310],"negative":[200,260]},"elementHueOverrides":{"fire":[0,20],"water":[190,210],"nature":[110,140],"metal":[210,230],"shadow":[250,280],"light":[40,60],"air":[170,200]},"saturationRange":[0.55,0.9],"lightnessRange":[0.45,0.7]}
