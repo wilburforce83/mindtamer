@@ -1,51 +1,75 @@
 import 'package:flutter/material.dart';
 import '../../data/repos/equipment_repo.dart';
+import '../../core/pixel_assets.dart';
 
 class GearSlot extends StatelessWidget {
   final String slotId; // head, weapon, etc.
   final EquippedItem? item;
   final VoidCallback onTap;
-  const GearSlot({super.key, required this.slotId, required this.item, required this.onTap});
+  final double size; // visual box size (e.g., 64)
+  const GearSlot({super.key, required this.slotId, required this.item, required this.onTap, this.size = 64});
 
-  String _toTitle(String s) {
-    switch (s) {
-      case 'ringLeft':
-        return 'Ring (L)';
-      case 'ringRight':
-        return 'Ring (R)';
+  Color _rarityColor(BuildContext context, String? rarity) {
+    switch (rarity) {
+      case 'uncommon':
+        return Colors.blueAccent;
+      case 'rare':
+        return Colors.purpleAccent;
+      case 'epic':
+        return Colors.orangeAccent;
       default:
-        return s[0].toUpperCase() + s.substring(1);
+        return Theme.of(context).colorScheme.outlineVariant;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final label = _toTitle(slotId);
     final hasItem = item != null;
+    final borderColor = _rarityColor(context, item?.rarity);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.zero,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        width: size,
+        height: size,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+          border: Border.all(color: borderColor, width: 1.2),
+          borderRadius: BorderRadius.zero,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Placeholder(fallbackHeight: 32, fallbackWidth: 32),
-            const SizedBox(height: 6),
-            Text(label, style: Theme.of(context).textTheme.labelSmall),
-            if (hasItem) ...[
-              const SizedBox(height: 4),
-              Text(item!.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ],
-        ),
+        child: hasItem
+            ? Icon(Icons.check, size: size * 0.5) // placeholder for future 64x64 item art
+            : _emptyVisual(slotId, size, context),
       ),
     );
   }
-}
 
+  Widget _emptyVisual(String slotId, double size, BuildContext context) {
+    final asset = PixelAssets.emptyAssetForSlot(slotId);
+    if (asset != null) {
+      _debugLogOnce('GearSlot:$slotId uses empty asset: $asset (inManifest=${PixelAssets.has(asset)})');
+      final slots = PixelAssets.listSlotPlaceholders();
+      _debugLogOnce('Slots in manifest: ${slots.join(', ')}');
+      return Image.asset(
+        asset,
+        width: size * 0.8,
+        height: size * 0.8,
+        filterQuality: FilterQuality.none,
+        errorBuilder: (_, error, stack) {
+          _debugLogOnce('Failed to load $asset: $error');
+          return Icon(Icons.stop_rounded, size: size * 0.4, color: Theme.of(context).colorScheme.outline);
+        },
+      );
+    }
+    return Icon(Icons.stop_rounded, size: size * 0.4, color: Theme.of(context).colorScheme.outline);
+  }
+
+  static final Set<String> _logged = <String>{};
+  void _debugLogOnce(String msg) {
+    if (_logged.add(msg)) {
+      // ignore: avoid_print
+      print(msg);
+    }
+  }
+}

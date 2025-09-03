@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'app.dart';
 import 'features/mood/data/mood_repository.dart';
+import 'features/mood/models/mood_entry.dart';
 import 'data/models/journal_entry.dart';
 import 'data/models/mood_log.dart';
 import 'data/models/med_plan.dart';
@@ -27,6 +28,8 @@ Future<void> main() async {
 
   // Register Hive adapters
   Hive.registerAdapter(JournalEntryAdapter());
+  if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(MoodMetricAdapter());
+  if (!Hive.isAdapterRegistered(12)) Hive.registerAdapter(MoodEntryAdapter());
   Hive.registerAdapter(MoodLogAdapter());
   Hive.registerAdapter(MedPlanAdapter());
   Hive.registerAdapter(MedLogAdapter());

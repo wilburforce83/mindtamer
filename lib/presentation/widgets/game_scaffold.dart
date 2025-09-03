@@ -43,6 +43,8 @@ class GameScaffold extends StatelessWidget {
                 final dest = _tabs[i].route;
                 if (dest != location) context.go(dest);
               },
+              showSelectedLabels: false,
+              showUnselectedLabels: false,
               items: [
                 for (final t in _tabs)
                   BottomNavigationBarItem(
@@ -74,15 +76,15 @@ const List<_TabItem> _tabs = <_TabItem>[
 
 Widget _png(String assetPath) {
   return SizedBox(
-    width: 28,
-    height: 28,
+    width: 56,
+    height: 56,
     child: Image.asset(
       assetPath,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.none,
       errorBuilder: (context, error, stack) {
         // Keep layout stable if asset missing; avoids throwing.
-        return const SizedBox(width: 28, height: 28);
+        return const SizedBox(width: 56, height: 56);
       },
     ),
   );

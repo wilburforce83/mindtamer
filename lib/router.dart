@@ -7,6 +7,7 @@ import 'presentation/screens/echoes_screen.dart';
 import 'presentation/screens/fusion_screen.dart';
 import 'presentation/screens/monster_codex_screen.dart';
 import 'presentation/screens/items_screen.dart';
+import 'presentation/screens/summons_screen.dart';
 import 'presentation/screens/journal_screen.dart';
 import 'presentation/screens/mood_screen.dart';
 import 'presentation/screens/meds_screen.dart';
@@ -69,6 +70,7 @@ GoRouter buildRouter() {
         }
         return ItemsScreen(slot: slot);
       }),
+      GoRoute(path: '/summons', builder: (context, state) => const SummonsScreen()),
     ],
   );
 }

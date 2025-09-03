@@ -7,6 +7,7 @@ import '../../data/models/med_log.dart';
 import '../widgets/game_scaffold.dart';
 import '../widgets/pixel_button.dart';
 import '../../core/pixel_assets.dart';
+import '../widgets/busy_overlay.dart';
 import '../../theme/colors.dart';
 import 'package:intl/intl.dart';
 final medEditModeProvider = StateProvider<bool>((ref)=> false);
@@ -116,11 +117,13 @@ Future<void> _editMed(BuildContext context, WidgetRef ref, MedPlan medPlan, {boo
   final updCtrl = TextEditingController(text: medPlan.unitsPerDose.toString());
   String? selectedIcon = medPlan.iconPath;
   final iconPaths = PixelAssets.listPillIcons();
-  await showDialog(context: context, builder: (context){
-    return AlertDialog(
-      contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-      title: const Text('Edit Medication'),
-      content: SingleChildScrollView(child: Column(
+  bool busy = false;
+  await showDialog(context: context, barrierDismissible: false, builder: (context){
+    return StatefulBuilder(builder: (context, setStateSB) {
+      final dialog = AlertDialog(
+        contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+        title: const Text('Edit Medication'),
+        content: SingleChildScrollView(child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
@@ -147,44 +150,48 @@ Future<void> _editMed(BuildContext context, WidgetRef ref, MedPlan medPlan, {boo
               padding: const EdgeInsets.all(4), child: ImageIcon(AssetImage(p), size: 24)))
           ])
         ],
-      )),
-      actions: [
-        TextButton(onPressed: ()=>Navigator.pop(context), child: const Text('Cancel')),
-        if (!isNew)
-          TextButton(onPressed: () async {
-            await ref.read(medPlansProvider.notifier).delete(medPlan.id);
+        )),
+        actions: [
+          TextButton(onPressed: busy ? null : ()=>Navigator.pop(context), child: const Text('Cancel')),
+          if (!isNew)
+            TextButton(onPressed: busy ? null : () async {
+              setStateSB(()=>busy=true);
+              await ref.read(medPlansProvider.notifier).delete(medPlan.id);
+              if (context.mounted) Navigator.pop(context);
+            }, child: const Text('Delete')),
+          TextButton(onPressed: busy ? null : () async {
+            setStateSB(()=>busy=true);
+            final name = nameCtrl.text.trim();
+            final dose = doseCtrl.text.trim();
+            final times = timesCtrl.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList();
+            final units = int.tryParse(updCtrl.text) ?? medPlan.unitsPerDose;
+            final start = int.tryParse(startCtrl.text) ?? medPlan.startingStock;
+            final remain = int.tryParse(remainCtrl.text) ?? medPlan.remainingStock;
+            if (isNew) {
+              final created = await notifier.addPlan(name.isEmpty? 'New Med': name, dose, times.isEmpty? ['08:00']: times, schedule: false);
+              created
+                ..unitsPerDose = units
+                ..startingStock = start
+                ..remainingStock = remain
+                ..iconPath = selectedIcon;
+              await notifier.editPlan(created); // this schedules + alerts after full data is set
+            } else {
+              final updated = medPlan
+                ..name = name
+                ..dose = dose
+                ..scheduleTimes = times
+                ..unitsPerDose = units
+                ..startingStock = start
+                ..remainingStock = remain
+                ..iconPath = selectedIcon;
+              await notifier.editPlan(updated);
+            }
             if (context.mounted) Navigator.pop(context);
-          }, child: const Text('Delete')),
-        TextButton(onPressed: () async {
-          final name = nameCtrl.text.trim();
-          final dose = doseCtrl.text.trim();
-          final times = timesCtrl.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList();
-          final units = int.tryParse(updCtrl.text) ?? medPlan.unitsPerDose;
-          final start = int.tryParse(startCtrl.text) ?? medPlan.startingStock;
-          final remain = int.tryParse(remainCtrl.text) ?? medPlan.remainingStock;
-          if (isNew) {
-            final created = await notifier.addPlan(name.isEmpty? 'New Med': name, dose, times.isEmpty? ['08:00']: times);
-            created
-              ..unitsPerDose = units
-              ..startingStock = start
-              ..remainingStock = remain
-              ..iconPath = selectedIcon;
-            await notifier.editPlan(created);
-          } else {
-            final updated = medPlan
-              ..name = name
-              ..dose = dose
-              ..scheduleTimes = times
-              ..unitsPerDose = units
-              ..startingStock = start
-              ..remainingStock = remain
-              ..iconPath = selectedIcon;
-            await notifier.editPlan(updated);
-          }
-          if (context.mounted) Navigator.pop(context);
-        }, child: const Text('Save')),
-      ],
-    );
+          }, child: const Text('Save')),
+        ],
+      );
+      return Stack(children:[dialog, if (busy) const BusyOverlay(label: 'Saving...')]);
+    });
   });
 }
 

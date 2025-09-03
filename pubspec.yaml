@@ -50,6 +50,10 @@ flutter:
     - assets/images/icons/tab_journal_32.png
     - assets/images/icons/tab_meds_32.png
     - assets/images/icons/tab_settings_32.png
+    # Explicit slot placeholders to ensure bundling
+    - assets/images/ui/slots/ring_empty_32.png
+    - assets/images/ui/slots/hand_empty_32.png
+    - assets/images/ui/slots/chest_empty_32.png
   fonts:
     - family: PixelFont
       fonts:

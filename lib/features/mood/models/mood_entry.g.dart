@@ -53,9 +53,39 @@ class MoodEntryAdapter extends TypeAdapter<MoodEntry> {
       final value = reader.read();
       fields[key] = value;
     }
+    // Backward-compatible decoding: timestamp may have been stored as String or int.
+    final rawTs = fields[0];
+    DateTime ts;
+    if (rawTs is DateTime) {
+      ts = rawTs;
+    } else if (rawTs is String) {
+      ts = DateTime.tryParse(rawTs) ?? DateTime.now();
+    } else if (rawTs is int) {
+      // Interpret as millisecondsSinceEpoch
+      ts = DateTime.fromMillisecondsSinceEpoch(rawTs, isUtc: false);
+    } else {
+      ts = DateTime.now();
+    }
+
+    final rawMap = fields[1];
+    final Map<String, int> values = {};
+    if (rawMap is Map) {
+      rawMap.forEach((k, v) {
+        final key = k.toString();
+        int val;
+        if (v is int) {
+          val = v;
+        } else if (v is double) {
+          val = v.round();
+        } else {
+          val = int.tryParse(v.toString()) ?? 0;
+        }
+        values[key] = val;
+      });
+    }
     return MoodEntry(
-      timestamp: fields[0] as DateTime,
-      values: (fields[1] as Map).cast<String, int>(),
+      timestamp: ts,
+      values: values,
     );
   }
 

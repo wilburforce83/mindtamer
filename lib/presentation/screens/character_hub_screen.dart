@@ -29,11 +29,6 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<CharacterHubVM>().state;
-    final gearOrder = [
-      'head','shoulders','neck','weapon',
-      'hands','bracers','ringLeft','chest','ringRight',
-      'legs','feet',
-    ];
 
     return GameScaffold(
       title: 'Character',
@@ -42,40 +37,96 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Container(
-                      height: 180,
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                        borderRadius: BorderRadius.circular(16),
+            LayoutBuilder(
+              builder: (ctx, c) {
+                final w = c.maxWidth;
+                // Target about 60% of viewport height, capped by an aspect-based height
+                double h = w * 1.2; // slightly shorter than before to reduce vertical footprint
+                final maxH = MediaQuery.of(context).size.height * 0.60;
+                if (h > maxH) h = maxH;
+                final boxSize = w < 420 ? 56.0 : 64.0;
+                final sideInset = w * 0.08;
+                return SizedBox(
+                  height: h,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Character center box
+                      Container(
+                        width: w * 0.42,
+                        height: h * 0.38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                          borderRadius: BorderRadius.zero,
+                        ),
+                        child: Text('Character', style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
                       ),
-                      child: Text('Character', style: Theme.of(context).textTheme.titleMedium),
-                    ),
-                    const SizedBox(height: 12),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1.0),
-                      itemCount: gearOrder.length,
-                      itemBuilder: (_, i) {
-                        final slot = gearOrder[i];
-                        return GearSlot(
-                          slotId: slot,
-                          item: state.gear[slot],
-                          onTap: () => context.push('/items', extra: {'slot': slot}),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+
+                      // Left column (top→bottom): head, chest, hands, legs, feet
+                      Positioned(
+                        top: 6,
+                        left: sideInset,
+                        child: GearSlot(slotId: 'head', item: state.gear['head'], onTap: () => context.push('/items', extra: {'slot': 'head'}), size: boxSize),
+                      ),
+                      Positioned(
+                        top: h * 0.36,
+                        left: sideInset,
+                        child: GearSlot(slotId: 'chest', item: state.gear['chest'], onTap: () => context.push('/items', extra: {'slot': 'chest'}), size: boxSize),
+                      ),
+                      Positioned(
+                        top: h * 0.52,
+                        left: sideInset,
+                        child: GearSlot(slotId: 'hands', item: state.gear['hands'], onTap: () => context.push('/items', extra: {'slot': 'hands'}), size: boxSize),
+                      ),
+                      Positioned(
+                        top: h * 0.70,
+                        left: sideInset,
+                        child: GearSlot(slotId: 'legs', item: state.gear['legs'], onTap: () => context.push('/items', extra: {'slot': 'legs'}), size: boxSize),
+                      ),
+                      Positioned(
+                        bottom: 6,
+                        left: sideInset,
+                        child: GearSlot(slotId: 'feet', item: state.gear['feet'], onTap: () => context.push('/items', extra: {'slot': 'feet'}), size: boxSize),
+                      ),
+
+                      // Right column (top→bottom): neck, rings, weapon
+                      Positioned(
+                        top: 6,
+                        right: sideInset,
+                        child: GearSlot(slotId: 'neck', item: state.gear['neck'], onTap: () => context.push('/items', extra: {'slot': 'neck'}), size: boxSize),
+                      ),
+                      Positioned(
+                        top: h * 0.32,
+                        right: sideInset,
+                        child: GearSlot(slotId: 'ringLeft', item: state.gear['ringLeft'], onTap: () => context.push('/items', extra: {'slot': 'ringLeft'}), size: boxSize),
+                      ),
+                      Positioned(
+                        top: h * 0.48,
+                        right: sideInset,
+                        child: GearSlot(slotId: 'ringRight', item: state.gear['ringRight'], onTap: () => context.push('/items', extra: {'slot': 'ringRight'}), size: boxSize),
+                      ),
+                      Positioned(
+                        bottom: 6,
+                        right: sideInset,
+                        child: GearSlot(slotId: 'weapon', item: state.gear['weapon'], onTap: () => context.push('/items', extra: {'slot': 'weapon'}), size: boxSize),
+                      ),
+
+                      // Sprite slots: two boxes below the character box (centered)
+                      Positioned(
+                        top: h * 0.74,
+                        left: (w / 2) - boxSize - 8,
+                        child: GearSlot(slotId: 'sprite1', item: null, onTap: () => context.push('/summons'), size: boxSize),
+                      ),
+                      Positioned(
+                        top: h * 0.74,
+                        left: (w / 2) + 8,
+                        child: GearSlot(slotId: 'sprite2', item: null, onTap: () => context.push('/summons'), size: boxSize),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 16),

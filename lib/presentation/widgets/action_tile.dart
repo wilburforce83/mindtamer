@@ -10,12 +10,12 @@ class ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.zero,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.zero,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -29,4 +29,3 @@ class ActionTile extends StatelessWidget {
     );
   }
 }
-

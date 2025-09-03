@@ -97,7 +97,7 @@ class SeedGenerator {
     );
 
     // Step 5: Kind selection
-    final kind = _pickKind(baseWord, req.sentiment, rng, bundle);
+    final kind = _pickKind(baseWord, req.sentiment, normTags, rng, bundle);
 
     // Step 6: Type selection
     final type = _pickType(kind, element, req.sentiment, rng, bundle);
@@ -218,12 +218,47 @@ class SeedGenerator {
     return fallbackElem; // safety
   }
 
-  static String _pickKind(String baseWord, String sentiment, _XorShift32 rng, LexiconBundle bundle) {
+  static String _pickKind(String baseWord, String sentiment, List<String> tags, _XorShift32 rng, LexiconBundle bundle) {
     final baseEntry = bundle.basewords[baseWord] as Map<String, dynamic>?;
-    double pSprite = (baseEntry?['weights']?['sprite'] ?? 0.5).toDouble();
-    if (sentiment == 'positive') pSprite += 0.1;
-    if (sentiment == 'negative') pSprite -= 0.1;
-    pSprite = pSprite.clamp(0.15, 0.85);
+    final baseSprite = (baseEntry?['weights']?['sprite'] ?? 0.5).toDouble();
+    final rarity = (baseEntry?['rarity']?.toString() ?? 'common');
+    final themes = (baseEntry?['themes'] as List?)?.map((e)=>e.toString()).toList() ?? const <String>[];
+
+    double pSprite;
+    switch (sentiment) {
+      case 'positive':
+        // 80–90% sprite, small monster chance
+        pSprite = 0.80 + rng.nextDouble() * 0.10;
+        // Nudge slightly toward base word preference
+        pSprite += (baseSprite - 0.5) * 0.1;
+        break;
+      case 'neutral':
+        // ~50/50, weighted by rarity and a little by base weight
+        pSprite = 0.50 + (baseSprite - 0.5) * 0.3;
+        final rarityAdj = switch (rarity) {
+          'common' => 0.05,
+          'uncommon' => 0.0,
+          'rare' => -0.05,
+          'epic' => -0.10,
+          _ => 0.0,
+        };
+        pSprite += rarityAdj;
+        break;
+      case 'mixed':
+        // ~30% sprite, ~70% monster
+        pSprite = 0.30 + (baseSprite - 0.5) * 0.05; // tiny nudge only
+        break;
+      case 'negative':
+        // 90–100% monster. Allow up to 10% sprites if tags/themes suggest healing.
+        final healingTags = {'wellbeing','sleep','habits','social','heal','healing','rest','recovery','resilience'};
+        final hasHealingTag = tags.any((t) => healingTags.contains(t));
+        final hasHealingTheme = themes.any((t) => healingTags.contains(t));
+        pSprite = hasHealingTag || hasHealingTheme ? 0.10 : 0.02;
+        break;
+      default:
+        pSprite = 0.50;
+    }
+    pSprite = pSprite.clamp(0.0, 1.0);
     final r = rng.nextDouble();
     return r < pSprite ? 'sprite' : 'monster';
   }
@@ -258,16 +293,33 @@ class SeedGenerator {
     final rel = cap(related);
     final sec = cap(secondary);
     if (kind == 'sprite') {
+      String name;
       if (rng.nextBool()) {
-        return '$sec $rel';
+        name = '$sec $rel';
       } else {
-        return '$rel $type';
+        name = '$rel $type';
       }
+      return _dedupeAdjacentWords(name);
     } else {
       final suffix = _inferSuffix(type);
       final merged = _mergeWithOverlap(rel, suffix);
       return merged;
     }
+  }
+
+  static String _dedupeAdjacentWords(String s) {
+    final parts = s.split(RegExp(r"\s+")).where((e) => e.isNotEmpty).toList();
+    if (parts.isEmpty) return s.trim();
+    final out = <String>[];
+    String? last;
+    for (final p in parts) {
+      final pl = p.toLowerCase();
+      if (last == null || pl != last) {
+        out.add(p);
+        last = pl;
+      }
+    }
+    return out.join(' ');
   }
 
   static String _inferSuffix(String type) {
@@ -365,16 +417,15 @@ class SeedGenerator {
   static List<Map<String, dynamic>> _pickAttacks(String element, _XorShift32 rng, LexiconBundle bundle) {
     final list = bundle.attacks[element] ?? const <Map<String, dynamic>>[];
     if (list.isEmpty) return const [];
-    final count = 1 + rng.nextInt(3); // 1..3
+    final rawCount = 1 + rng.nextInt(3); // 1..3
+    final count = rawCount.clamp(1, list.length); // avoid duplicates when options are limited
     final usedIdx = <int>{};
     final out = <Map<String, dynamic>>[];
     for (int i = 0; i < count; i++) {
-      int idx;
-      int guard = 0;
-      do {
+      int idx = rng.nextInt(list.length);
+      while (usedIdx.contains(idx)) {
         idx = rng.nextInt(list.length);
-        guard++;
-      } while (usedIdx.contains(idx) && guard < 10);
+      }
       usedIdx.add(idx);
       final base = Map<String, dynamic>.from(list[idx]);
       base['power'] = 8 + rng.nextInt(10); // 8..17

@@ -19,6 +19,10 @@ class PixelAssets {
   static const sliderTrackTile8 = 'assets/images/ui/slider_track_tile_8x8.png';
   static const pillCell32 = 'assets/images/ui/pill_cell_32.png';
   static const pillIconsDir = 'assets/images/icons/pills/';
+  // Equipment empties
+  static const ringEmpty32 = 'assets/images/ui/slots/ring_empty_32.png';
+  static const handEmpty32 = 'assets/images/ui/slots/hand_empty_32.png';
+  static const chestEmpty32 = 'assets/images/ui/slots/chest_empty_32.png';
 
   static Future<void> init() async {
     if (_assets != null) return;
@@ -36,6 +40,26 @@ class PixelAssets {
   static List<String> listPillIcons() {
     final a = _assets ?? const <String>{};
     return a.where((k) => k.startsWith(pillIconsDir)).toList()..sort();
+  }
+
+  static String? emptyAssetForSlot(String slotId) {
+    switch (slotId) {
+      case 'ringLeft':
+      case 'ringRight':
+        return ringEmpty32;
+      case 'hands':
+        return handEmpty32;
+      case 'chest':
+        return chestEmpty32;
+    }
+    return null;
+  }
+
+  static List<String> listSlotPlaceholders() {
+    final a = _assets ?? const <String>{};
+    final list = a.where((k) => k.startsWith('assets/images/ui/slots/')).toList()
+      ..sort();
+    return list;
   }
 
   /// Returns an icon that uses an asset if present; otherwise falls back to a Material icon.

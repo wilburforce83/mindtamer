@@ -29,7 +29,7 @@ abstract class EquipmentRepo {
 class EquipmentRepoImpl implements EquipmentRepo {
   static const _boxKey = 'slots';
   static const _allSlots = [
-    'head','shoulders','bracers','chest','legs','feet','neck','hands','ringLeft','ringRight','weapon'
+    'head','chest','hands','legs','feet','neck','ringLeft','ringRight','weapon'
   ];
 
   @override

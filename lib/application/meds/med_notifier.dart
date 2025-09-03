@@ -48,14 +48,12 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   final IMedicationRepository _repo;
   final Ref _ref;
   MedPlansNotifier(this._repo, this._ref) : super(_repo.plans());
-  Future<MedPlan> addPlan(String name, String dose, List<String> times) async {
+  Future<MedPlan> addPlan(String name, String dose, List<String> times, {bool schedule = true}) async {
     final p = await _repo.addPlan(name, dose, times);
-    try {
-      await _reschedule();
-    } catch (_) {
-      // Ignore scheduling failures (e.g., exact alarm not permitted)
+    if (schedule) {
+      try { await _reschedule(); } catch (_) {}
+      await _checkRefillAlerts();
     }
-    await _checkRefillAlerts();
     state = _repo.plans();
     _ref.read(medLogsTickProvider.notifier).state++;
     return p;
@@ -101,18 +99,26 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   }
 
   Future<void> _checkRefillAlerts() async {
-    final plans = _repo.plans();
-    final settings = settingsBox().values.isNotEmpty ? settingsBox().values.first : Settings(id: 'default');
-    for (final p in plans) {
-      final dosesPerDay = p.scheduleTimes.length;
-      final upd = (p.unitsPerDose == 0 ? 1 : p.unitsPerDose);
-      final unitsPerDay = (dosesPerDay * upd);
-      if (unitsPerDay == 0) continue;
-      final daysLeft = (p.remainingStock / unitsPerDay).floor();
-      if (daysLeft <= settings.refillThresholdDays) {
-        final id = 30000 + p.id.hashCode & 0x7FFFFFFF;
-        await NotificationService.showNow(id, 'Refill soon', '${p.name} ~$daysLeft days left');
+    try {
+      final plans = _repo.plans();
+      final settings = settingsBox().values.isNotEmpty ? settingsBox().values.first : Settings(id: 'default');
+      for (final p in plans) {
+        final dosesPerDay = p.scheduleTimes.length;
+        final upd = (p.unitsPerDose == 0 ? 1 : p.unitsPerDose);
+        final unitsPerDay = (dosesPerDay * upd);
+        if (unitsPerDay == 0) continue;
+        final daysLeft = (p.remainingStock / unitsPerDay).floor();
+        if (daysLeft <= settings.refillThresholdDays) {
+          final id = 30000 + (p.id.hashCode & 0x7FFFFFFF);
+          try {
+            await NotificationService.showNow(id, 'Refill soon', '${p.name} ~$daysLeft days left');
+          } catch (_) {
+            // Ignore transient notification failures
+          }
+        }
       }
+    } catch (_) {
+      // Swallow errors to avoid blocking UI flows like dialog closing
     }
   }
 }
