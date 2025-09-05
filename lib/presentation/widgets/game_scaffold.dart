@@ -10,6 +10,7 @@ class GameScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final EdgeInsetsGeometry? padding;
   final bool showBottomNav;
+  final bool centerTitle;
 
   const GameScaffold({
     super.key,
@@ -19,6 +20,7 @@ class GameScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.padding,
     this.showBottomNav = true,
+    this.centerTitle = false,
   });
 
   @override
@@ -30,6 +32,7 @@ class GameScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        centerTitle: centerTitle,
         automaticallyImplyLeading: false,
         leading: Navigator.of(context).canPop() ? const PixelBackButton() : null,
         actions: actions,

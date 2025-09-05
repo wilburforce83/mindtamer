@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/hive/boxes.dart';
+import '../../models/sprite_model.dart';
+import '../../models/sprite_attack.dart';
+import '../../services/sprite_palette.dart';
 
 class SummonsScreen extends StatelessWidget {
   const SummonsScreen({super.key});
@@ -23,8 +26,20 @@ class SummonsScreen extends StatelessWidget {
                   subtitle: Text('$element • $rarity'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // TODO: Equip into selected sprite slot
-                    Navigator.pop(context);
+                    // Equip into selected sprite slot by returning a SpriteModel
+                    final ramp = SpritePalette.pickRampForSeed(s.seedHash);
+                    String atkName = 'Sprite Attack';
+                    int power = 30;
+                    int duration = 2;
+                    if (s.attacks.isNotEmpty) {
+                      final a = s.attacks.first;
+                      atkName = (a['name'] ?? atkName).toString();
+                      power = (a['power'] ?? power) as int;
+                      duration = (a['cooldown'] ?? duration) as int; // reuse cooldown as duration
+                    }
+                    final atk = SpriteAttack(name: atkName, description: 'Fires a focused burst for $power power over $duration turns.', power: power, durationTurns: duration);
+                    final model = SpriteModel(id: s.instanceId, seedName: name, tier: 0, rarity: 0, hue: (s.seedHash.hashCode & 0x7fffffff) % 360, argbRamp: ramp, attack: atk, createdAt: s.createdAt);
+                    Navigator.pop(context, model);
                   },
                 );
               },
@@ -32,4 +47,3 @@ class SummonsScreen extends StatelessWidget {
     );
   }
 }
-

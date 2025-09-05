@@ -76,7 +76,6 @@ class _MoodScreenState extends State<MoodScreen> {
   }
 
   Map<String, double> _today() => MoodRepository.dailyAverage(DateTime.now());
-  Map<String, double> _avg7() => MoodRepository.trailingAvg(7);
   Map<String, double> _avg30() => MoodRepository.trailingAvg(30);
   int _todayCount() {
     final now = DateTime.now();
@@ -91,7 +90,6 @@ class _MoodScreenState extends State<MoodScreen> {
   Widget build(BuildContext context) {
     final df = DateFormat('HH:mm');
     final today = _today();
-    final a7 = _avg7();
     final a30 = _avg30();
     final count = _todayCount();
     final last = _lastTime();
@@ -114,7 +112,6 @@ class _MoodScreenState extends State<MoodScreen> {
               Text(label, style: labelSmall),
               const SizedBox(height: 4),
               Text('Today: ${fmt(valOf(today))}', style: labelSmall),
-              Text('7d: ${fmt(valOf(a7))}', style: labelSmall),
               Text('30d: ${fmt(valOf(a30))}', style: labelSmall),
             ],
           ),

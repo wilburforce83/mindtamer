@@ -32,6 +32,7 @@ class BoxNames {
   static const resonantEchoes = 'resonant_echoes';
   static const seedInstances = 'seed_instances';
   static const summonsInventory = 'summons_inventory';
+  static const playerMeta = 'player_meta'; // dynamic key-value for setup/name/etc.
 }
 
 Future<void> openAllBoxes() async {
@@ -51,6 +52,7 @@ Future<void> openAllBoxes() async {
   await Hive.openBox<ResonantEcho>(BoxNames.resonantEchoes);
   await Hive.openBox<SeedInstance>(BoxNames.seedInstances);
   await Hive.openBox<SummonsInventoryItem>(BoxNames.summonsInventory);
+  await Hive.openBox(BoxNames.playerMeta);
 }
 
 Box<JournalEntry> journalBox() => Hive.box<JournalEntry>(BoxNames.journal);
@@ -69,3 +71,4 @@ Box<MonsterCodex> monsterCodexBox() => Hive.box<MonsterCodex>(BoxNames.monsterCo
 Box<ResonantEcho> resonantEchoBox() => Hive.box<ResonantEcho>(BoxNames.resonantEchoes);
 Box<SeedInstance> seedInstanceBox() => Hive.box<SeedInstance>(BoxNames.seedInstances);
 Box<SummonsInventoryItem> summonsInventoryBox() => Hive.box<SummonsInventoryItem>(BoxNames.summonsInventory);
+Box playerMetaBox() => Hive.box(BoxNames.playerMeta);

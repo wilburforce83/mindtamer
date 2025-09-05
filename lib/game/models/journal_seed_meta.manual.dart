@@ -15,18 +15,21 @@ class JournalSeedMetaAdapter extends TypeAdapter<JournalSeedMeta> {
       seedVersion: f[2] as String,
       seedSnapshot: Map<String, dynamic>.from(f[3] as Map),
       seedRouting: f[4] as String,
+      title: f[5] as String?,
+      primaryTag: f[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter w, JournalSeedMeta o) {
     w
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)..write(o.entryId)
       ..writeByte(1)..write(o.seedHash)
       ..writeByte(2)..write(o.seedVersion)
       ..writeByte(3)..write(o.seedSnapshot)
-      ..writeByte(4)..write(o.seedRouting);
+      ..writeByte(4)..write(o.seedRouting)
+      ..writeByte(5)..write(o.title)
+      ..writeByte(6)..write(o.primaryTag);
   }
 }
-

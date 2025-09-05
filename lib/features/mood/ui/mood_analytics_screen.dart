@@ -41,7 +41,17 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
     final color = Theme.of(context).colorScheme.primary;
     final bars = <BarChartGroupData>[];
     for (int i = 0; i < 3; i++) {
-      bars.add(BarChartGroupData(x: i, barRods: [BarChartRodData(toY: avgs[i], width: 18, color: color)]));
+      bars.add(BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: avgs[i],
+            width: 18,
+            color: color,
+            borderRadius: BorderRadius.zero, // squared ends
+          ),
+        ],
+      ));
     }
     Widget bottomTitle(double value, TitleMeta meta) {
       final labels = ['morn', 'day', 'night'];
