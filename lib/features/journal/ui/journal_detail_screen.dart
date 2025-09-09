@@ -8,6 +8,8 @@ import 'journal_editor_screen.dart';
 import 'widgets/pixel_icons.dart';
 import '../../../data/hive/boxes.dart';
 import '../../../game/services/seed_pipeline.dart';
+import '../../../game/services/monster_image_service.dart';
+import '../../../seed/seed_generator.dart';
 import '../../../game/models/journal_seed_meta.dart';
 import '../../../game/models/encounter_ticket.dart';
 import '../../../game/models/battle.dart';
@@ -140,23 +142,47 @@ class _JournalDetailScreenState extends State<JournalDetailScreen> {
     final t = ticket;
     final b = lastBattle;
     if (t != null && t.state == 'open') {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: ElevatedButton.icon(
-          icon: const Icon(Icons.sports_martial_arts, size: 16),
-          label: const Text('Start Encounter'),
-          onPressed: () async {
-            try {
-              final battleId = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(t.ticketId);
-              if (!mounted) return;
-              await _showBattleStub(battleId);
-              await _load();
-            } catch (e) {
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cannot start: $e')));
-            }
-          },
-        ),
+      final seed = SeedResultSerialize.fromMap(Map<String, dynamic>.from(t.seedSnapshot));
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<String?>(
+            future: MonsterImageService().resolveImagePath(
+              displayName: seed.displayName,
+              element: seed.element,
+              type: seed.type,
+            ),
+            builder: (context, snap) {
+              final path = snap.data;
+              return Row(children: [
+                if (path != null) Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Image.asset(path, width: 64, height: 64, filterQuality: FilterQuality.none),
+                ),
+                Expanded(child: Text(seed.displayName, style: Theme.of(context).textTheme.titleMedium)),
+              ]);
+            },
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.sports_martial_arts, size: 16),
+              label: const Text('Start Encounter'),
+              onPressed: () async {
+                try {
+                  final battleId = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(t.ticketId);
+                  if (!mounted) return;
+                  await _showBattleStub(battleId);
+                  await _load();
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cannot start: $e')));
+                }
+              },
+            ),
+          ),
+        ],
       );
     }
     if (b != null && b.result != null) {

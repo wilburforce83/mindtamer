@@ -38,7 +38,18 @@ class SummonsScreen extends StatelessWidget {
                       duration = (a['cooldown'] ?? duration) as int; // reuse cooldown as duration
                     }
                     final atk = SpriteAttack(name: atkName, description: 'Fires a focused burst for $power power over $duration turns.', power: power, durationTurns: duration);
-                    final model = SpriteModel(id: s.instanceId, seedName: name, tier: 0, rarity: 0, hue: (s.seedHash.hashCode & 0x7fffffff) % 360, argbRamp: ramp, attack: atk, createdAt: s.createdAt);
+                    final model = SpriteModel(
+                      id: s.instanceId,
+                      seedName: name,
+                      tier: 0,
+                      rarity: 0,
+                      hue: (s.seedHash.hashCode & 0x7fffffff) % 360,
+                      argbRamp: ramp,
+                      attack: atk,
+                      createdAt: s.createdAt,
+                      element: (s.seedSnapshot['element'] ?? '').toString(),
+                      colorHex: (s.seedSnapshot['colorHex'] ?? '').toString(),
+                    );
                     Navigator.pop(context, model);
                   },
                 );

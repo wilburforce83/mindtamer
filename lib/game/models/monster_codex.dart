@@ -8,11 +8,12 @@ class MonsterCodex {
   @HiveField(1) DateTime discoveredAt;
   @HiveField(2) int defeatedCount;
   @HiveField(3) String? notes;
+  @HiveField(4) String? displayName; // optional human-friendly name used for image mapping
   MonsterCodex({
     required this.speciesId,
     required this.discoveredAt,
     this.defeatedCount = 0,
     this.notes,
+    this.displayName,
   });
 }
-

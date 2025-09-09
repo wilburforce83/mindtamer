@@ -14,17 +14,18 @@ class MonsterCodexAdapter extends TypeAdapter<MonsterCodex> {
       discoveredAt: f[1] as DateTime,
       defeatedCount: (f[2] as int?) ?? 0,
       notes: f[3] as String?,
+      displayName: f[4] as String?,
     );
   }
 
   @override
   void write(BinaryWriter w, MonsterCodex o) {
     w
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)..write(o.speciesId)
       ..writeByte(1)..write(o.discoveredAt)
       ..writeByte(2)..write(o.defeatedCount)
-      ..writeByte(3)..write(o.notes);
+      ..writeByte(3)..write(o.notes)
+      ..writeByte(4)..write(o.displayName);
   }
 }
-

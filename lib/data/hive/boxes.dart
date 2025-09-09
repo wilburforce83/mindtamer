@@ -33,6 +33,7 @@ class BoxNames {
   static const seedInstances = 'seed_instances';
   static const summonsInventory = 'summons_inventory';
   static const playerMeta = 'player_meta'; // dynamic key-value for setup/name/etc.
+  static const monsterImageMap = 'monster_image_map'; // name -> asset path
 }
 
 Future<void> openAllBoxes() async {
@@ -53,6 +54,7 @@ Future<void> openAllBoxes() async {
   await Hive.openBox<SeedInstance>(BoxNames.seedInstances);
   await Hive.openBox<SummonsInventoryItem>(BoxNames.summonsInventory);
   await Hive.openBox(BoxNames.playerMeta);
+  await Hive.openBox(BoxNames.monsterImageMap); // simple name->path map
 }
 
 Box<JournalEntry> journalBox() => Hive.box<JournalEntry>(BoxNames.journal);
@@ -72,3 +74,4 @@ Box<ResonantEcho> resonantEchoBox() => Hive.box<ResonantEcho>(BoxNames.resonantE
 Box<SeedInstance> seedInstanceBox() => Hive.box<SeedInstance>(BoxNames.seedInstances);
 Box<SummonsInventoryItem> summonsInventoryBox() => Hive.box<SummonsInventoryItem>(BoxNames.summonsInventory);
 Box playerMetaBox() => Hive.box(BoxNames.playerMeta);
+Box monsterImageMapBox() => Hive.box(BoxNames.monsterImageMap);

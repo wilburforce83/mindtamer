@@ -10,8 +10,10 @@ class FusionService {
     final ramp = SpritePalette.rampFromHue(hue);
     final power = ((a.attack.power + b.attack.power) / 2).round() + 10;
     final dur = (a.attack.durationTurns + b.attack.durationTurns) ~/ 2 + 1;
+    final baseName = a.attack.name;
+    final fusedName = baseName.trim().endsWith('+') ? baseName : '$baseName+';
     final attack = SpriteAttack(
-      name: '${a.attack.name}+',
+      name: fusedName,
       description: 'Ascended form of ${a.seedName}',
       power: power,
       durationTurns: dur.clamp(1, 4),

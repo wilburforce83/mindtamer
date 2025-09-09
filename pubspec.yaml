@@ -42,6 +42,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/monsters/
     - assets/data/
     - assets/lexicon/v1/
     # Explicitly include tab icons to ensure bundling

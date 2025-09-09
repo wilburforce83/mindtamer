@@ -199,7 +199,15 @@ class SeedGenerator {
         matchedElems.add(rule.element);
       }
     }
-    final fallbackElem = bundle.fallbackElementBySentiment[sentiment] ?? 'shadow';
+    // Fallback choices by sentiment (wider sets), leaning but not locking.
+    final choicesBySent = <String, List<String>>{
+      'positive': const ['air','water','light','nature'],
+      'negative': const ['fire','metal','shadow'],
+      'mixed': const ['air','water','light','nature','fire','metal','shadow'],
+      'neutral': const ['air','water','light','nature','fire','metal','shadow'],
+    };
+    final fallbacks = choicesBySent[sentiment] ?? const ['shadow'];
+    final fallbackElem = fallbacks[rng.nextInt(fallbacks.length)];
 
     final groups = <_ElementGroup>[];
     if (baseElems.isNotEmpty) groups.add(_ElementGroup(weight: 0.6, items: baseElems.toList()));

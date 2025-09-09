@@ -17,6 +17,7 @@ import '../../data/repos/sprite_slots_repo.dart';
 import '../../data/hive/boxes.dart';
 import '../../services/sprite_palette.dart';
 import '../../game/models/seed_instance.dart';
+import 'dart:async';
 import '../../theme/colors.dart';
 
 class CharacterHubScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   bool _selecting = false;
   SeedInstance? _inst1;
   SeedInstance? _inst2;
+  StreamSubscription? _equipSub;
 
   @override
   void initState() {
@@ -41,6 +43,11 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     spriteSlots = context.read<SpriteSlotsRepo>();
     vm.load();
     _loadEquippedSprites();
+    // Refresh when equipment/sprite slots change
+    _equipSub = equipmentBox().watch().listen((event) {
+      if (!mounted) return;
+      _loadEquippedSprites();
+    });
   }
 
   Future<void> _loadEquippedSprites() async {
@@ -334,39 +341,11 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
 
             const SizedBox(height: 16),
 
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              children: [
-                ActionTile(
-                    label: 'Echoes',
-                    icon: Icons.graphic_eq,
-                    onTap: () => context.push('/echoes')),
-                ActionTile(
-                    label: 'Fusion',
-                    icon: Icons.all_inclusive,
-                    onTap: () => context.push('/fusion')),
-                ActionTile(
-                    label: 'Codex',
-                    icon: Icons.auto_stories,
-                    onTap: () => context.push('/codex')),
-                ActionTile(
-                    label: 'Items',
-                    icon: Icons.backpack,
-                    onTap: () => context.push('/items')),
-                ActionTile(
-                    label: 'Achievements',
-                    icon: Icons.emoji_events,
-                    onTap: () => context.push('/achievements')),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
+            // Battle button above tiles
             FilledButton(
+              style: FilledButton.styleFrom(
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              ),
               onPressed: state.openTickets > 0
                   ? () async {
                       final encounters = context.read<EncountersRepo>();
@@ -399,12 +378,21 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                   ? 'Battle Now'
                   : 'No Battles Available'),
             ),
+            const SizedBox(height: 16),
 
-            const SizedBox(height: 8),
-            Text(
-              'Win battles to unlock Codex entries and roll for Resonant Echoes.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              children: [
+                ActionTile(label: 'Echoes', icon: Icons.graphic_eq, onTap: () => context.push('/echoes')),
+                ActionTile(label: 'Fusion', icon: Icons.all_inclusive, onTap: () => context.push('/fusion')),
+                ActionTile(label: 'Codex', icon: Icons.auto_stories, onTap: () => context.push('/codex')),
+                ActionTile(label: 'Items', icon: Icons.backpack, onTap: () => context.push('/items')),
+                ActionTile(label: 'Achievements', icon: Icons.emoji_events, onTap: () => context.push('/achievements')),
+              ],
             ),
           ],
         ),
@@ -481,6 +469,12 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _equipSub?.cancel();
+    super.dispose();
   }
 }
 

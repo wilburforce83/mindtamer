@@ -9,6 +9,9 @@ class SpriteModel {
   final List<int> argbRamp; // 5 shades
   final SpriteAttack attack;
   final DateTime createdAt;
+  final String? element; // e.g., fire, water, shadow, etc.
+  final String? colorHex; // palette hex used during seed
+  final bool fused; // whether created by fusion
 
   const SpriteModel({
     required this.id,
@@ -19,6 +22,9 @@ class SpriteModel {
     required this.argbRamp,
     required this.attack,
     required this.createdAt,
+    this.element,
+    this.colorHex,
+    this.fused = false,
   });
 
   SpriteModel copyWith({
@@ -27,6 +33,9 @@ class SpriteModel {
     int? hue,
     List<int>? argbRamp,
     SpriteAttack? attack,
+    String? element,
+    String? colorHex,
+    bool? fused,
   }) => SpriteModel(
         id: id,
         seedName: seedName,
@@ -36,6 +45,8 @@ class SpriteModel {
         argbRamp: argbRamp ?? this.argbRamp,
         attack: attack ?? this.attack,
         createdAt: createdAt,
+        element: element ?? this.element,
+        colorHex: colorHex ?? this.colorHex,
+        fused: fused ?? this.fused,
       );
 }
-

@@ -16,9 +16,8 @@ class SpriteGrid extends StatelessWidget {
       itemCount: sprites.length,
       itemBuilder: (_, i) => Padding(
         padding: const EdgeInsets.all(6),
-        child: SpriteCell(sprite: sprites[i], onTap: ()=>onSelect(sprites[i])),
+        child: SpriteCell(key: ValueKey(sprites[i].id), sprite: sprites[i], onTap: ()=>onSelect(sprites[i])),
       ),
     );
   }
 }
-

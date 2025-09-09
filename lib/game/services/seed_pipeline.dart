@@ -4,12 +4,14 @@ import 'package:uuid/uuid.dart';
 import '../../data/hive/boxes.dart';
 import '../../data/models/settings.dart';
 import '../../seed/seed_generator.dart';
+import '../../seed/lexicon_loader.dart';
 import '../models/journal_seed_meta.dart';
 import '../models/seed_species.dart';
 import '../models/encounter_ticket.dart';
 import '../models/battle.dart';
 import '../models/monster_codex.dart';
 import '../models/resonant_echo.dart';
+import 'monster_image_service.dart';
 import '../models/seed_instance.dart';
 import '../models/summons_inventory.dart';
 
@@ -24,7 +26,7 @@ abstract class SeedRouter {
 }
 
 abstract class EncounterService {
-  Future<String> createTicket({required int entryId, required SeedResult seed});
+  Future<String> createTicket({required int entryId, required SeedResult seed, String? sourceTitle, DateTime? sourceDate});
   Future<void> consumeTicket(String ticketId);
 }
 
@@ -38,7 +40,12 @@ abstract class BattleService {
   });
 }
 
-abstract class CodexService { Future<void> onVictory(String speciesId); }
+abstract class CodexService {
+  Future<void> onVictory({
+    required String speciesId,
+    String? displayName,
+  });
+}
 
 abstract class EchoService {
   Future<String?> maybeDropEcho({
@@ -76,37 +83,60 @@ class SeedRouterImpl implements SeedRouter {
     // idempotent per entryId
     if (jBox.containsKey(entryId)) return;
 
-    final speciesId = speciesIdFrom(seed);
-    await _upsertSpecies(seed, tags);
+    final bundle = await LexiconLoader.load();
 
-    if (seed.kind == 'sprite') {
-      await summonService.createSummonInstance(
-        speciesId: speciesId,
-        seedSnapshot: seed.toMap(),
-        seedHash: seed.hash,
-        stats: seed.stats,
-        attacks: seed.attacks,
+    // Always create a monster encounter (derive monster variant using journal context)
+    final monsterSeed = _asMonsterFromContext(
+      seed,
+      bundle,
+      entryId: entryId,
+      title: title,
+      body: body,
+      tags: tags,
+    );
+    await _upsertSpecies(monsterSeed, tags);
+
+    // Attach source metadata to the snapshot
+    final monsterSnap = monsterSeed.toMap();
+    monsterSnap['sourceTitle'] = title;
+    monsterSnap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
+
+    // Monster → ticket (always)
+    await encounterService.createTicket(entryId: entryId, seed: monsterSeed, sourceTitle: title, sourceDate: DateTime.now().toUtc());
+    // Pre-resolve mapping for image continuity
+    try {
+      await MonsterImageService().resolveImagePath(
+        displayName: monsterSeed.displayName,
+        element: monsterSeed.element,
+        type: monsterSeed.type,
       );
-      // could link instance to journal if desired later
-      await jBox.put(entryId, JournalSeedMeta(
-        entryId: entryId,
-        seedHash: seed.hash,
-        seedVersion: seed.version,
-        seedSnapshot: seed.toMap(),
-        seedRouting: 'sprite',
-      ));
-      return;
-    }
-
-    // Monster → ticket
-    await encounterService.createTicket(entryId: entryId, seed: seed);
+    } catch (_) {}
     await jBox.put(entryId, JournalSeedMeta(
       entryId: entryId,
-      seedHash: seed.hash,
-      seedVersion: seed.version,
-      seedSnapshot: seed.toMap(),
+      seedHash: monsterSeed.hash,
+      seedVersion: monsterSeed.version,
+      seedSnapshot: monsterSnap,
       seedRouting: 'monster',
+      title: title,
     ));
+
+    // Low-chance sprite drop alongside the monster encounter
+    const dropRate = 0.15; // 15% baseline
+    final rng = _rngFrom('sprite_drop', entryId, seed.hash);
+    if (rng.nextDouble() <= dropRate) {
+      final spriteSeed = seed.kind == 'sprite' ? seed : _asSprite(seed, bundle);
+      await _upsertSpecies(spriteSeed, tags);
+      final snap = spriteSeed.toMap();
+      snap['sourceTitle'] = title;
+      snap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
+      await summonService.createSummonInstance(
+        speciesId: speciesIdFrom(spriteSeed),
+        seedSnapshot: snap,
+        seedHash: spriteSeed.hash,
+        stats: spriteSeed.stats,
+        attacks: spriteSeed.attacks,
+      );
+    }
   }
 
   Future<void> _upsertSpecies(SeedResult seed, List<String> tags) async {
@@ -158,18 +188,21 @@ class SeedRouterImpl implements SeedRouter {
 class EncounterServiceImpl implements EncounterService {
   final _uuid = const Uuid();
   @override
-  Future<String> createTicket({required int entryId, required SeedResult seed}) async {
+  Future<String> createTicket({required int entryId, required SeedResult seed, String? sourceTitle, DateTime? sourceDate}) async {
     final tBox = encounterTicketBox();
     EncounterTicket? existing;
     for (final t in tBox.values) { if (t.entryId == entryId && t.state == 'open') { existing = t; break; } }
     if (existing != null) return existing.ticketId;
     final id = _uuid.v4();
+    final snap = seed.toMap();
+    if (sourceTitle != null && sourceTitle.isNotEmpty) snap['sourceTitle'] = sourceTitle;
+    if (sourceDate != null) snap['sourceDate'] = sourceDate.toIso8601String();
     final ticket = EncounterTicket(
       ticketId: id,
       entryId: entryId,
       speciesId: speciesIdFrom(seed),
       seedHash: seed.hash,
-      seedSnapshot: seed.toMap(),
+      seedSnapshot: snap,
       state: 'open',
       createdAt: DateTime.now().toUtc(),
     );
@@ -259,8 +292,15 @@ class BattleServiceImpl implements BattleService {
     }
 
     // On win: codex + echo
-    await codex.onVictory(updated.speciesId);
     final ticket = tBox.get(updated.ticketId);
+    String? displayName;
+    if (ticket != null) {
+      try {
+        final seed = SeedResultSerialize.fromMap(Map<String, dynamic>.from(ticket.seedSnapshot));
+        displayName = seed.displayName;
+      } catch (_) {}
+    }
+    await codex.onVictory(speciesId: updated.speciesId, displayName: displayName);
     if (ticket != null) {
       final seed = SeedResultSerialize.fromMap(Map<String, dynamic>.from(ticket.seedSnapshot));
       await echo.maybeDropEcho(
@@ -275,7 +315,7 @@ class BattleServiceImpl implements BattleService {
 
 class CodexServiceImpl implements CodexService {
   @override
-  Future<void> onVictory(String speciesId) async {
+  Future<void> onVictory({required String speciesId, String? displayName}) async {
     final box = monsterCodexBox();
     final existing = box.get(speciesId);
     if (existing == null) {
@@ -283,6 +323,7 @@ class CodexServiceImpl implements CodexService {
         speciesId: speciesId,
         discoveredAt: DateTime.now().toUtc(),
         defeatedCount: 1,
+        displayName: displayName,
       ));
     } else {
       await box.put(speciesId, MonsterCodex(
@@ -290,6 +331,7 @@ class CodexServiceImpl implements CodexService {
         discoveredAt: existing.discoveredAt,
         defeatedCount: existing.defeatedCount + 1,
         notes: existing.notes,
+        displayName: existing.displayName ?? displayName,
       ));
     }
   }
@@ -364,4 +406,204 @@ class SummonServiceImpl implements SummonService {
 Settings _settings() {
   final b = settingsBox();
   return b.values.isNotEmpty ? b.values.first : Settings(id: 'default');
+}
+
+Random _rngFrom(String salt, int entryId, String seedHash) {
+  final s = '$salt|$entryId|$seedHash';
+  int acc = 0;
+  for (final code in s.codeUnits) { acc = (acc * 31 + code) & 0x7fffffff; }
+  return Random(acc);
+}
+
+SeedResult _asMonsterFromContext(SeedResult s, LexiconBundle bundle, {required int entryId, required String title, required String body, required List<String> tags}) {
+  // Use entryId to inject variety across similar entries while keeping weighting.
+  final rng = _rngFrom('monster_family', entryId, s.hash);
+  final family = _pickFamily(title: title, body: body, tags: tags, baseWord: s.baseWord, element: s.element, rng: rng);
+  // Base modifier from generator, with a 20% chance to swap to an element-appropriate synonym
+  String mod = (s.secondaryWord.isNotEmpty) ? s.secondaryWord : _fallbackModForElement(s.element, rng);
+  final syns = _synonymsForElement(s.element);
+  if (syns.isNotEmpty && (rng.nextDouble() < 0.20)) {
+    // pick a synonym different from current when possible
+    final pool = syns.where((w) => w.toLowerCase() != mod.toLowerCase()).toList(growable: true);
+    if (pool.isEmpty) pool.addAll(syns);
+    mod = pool[rng.nextInt(pool.length)];
+  }
+  final display = '${_cap(mod)} ${_cap(family)}';
+  // Lock the type to the canonical family token (lowercase) for stability and asset matching.
+  final typeCanonical = family.toLowerCase();
+  return SeedResult(
+    kind: 'monster',
+    displayName: display,
+    baseWord: s.baseWord,
+    secondaryWord: s.secondaryWord,
+    element: s.element,
+    type: typeCanonical,
+    colorHex: s.colorHex,
+    rarity: s.rarity,
+    stats: s.stats,
+    attacks: s.attacks,
+    hash: s.hash,
+    version: s.version,
+  );
+}
+
+SeedResult _asSprite(SeedResult s, LexiconBundle bundle) {
+  final list = bundle.spriteTypes[s.element] ?? const <String>[];
+  final types = list.isNotEmpty ? list : const <String>['Wisp'];
+  final idx = _stableIndex('${s.hash}|sprite', types.length);
+  final t = types[idx];
+  return SeedResult(
+    kind: 'sprite',
+    displayName: s.displayName,
+    baseWord: s.baseWord,
+    secondaryWord: s.secondaryWord,
+    element: s.element,
+    type: t,
+    colorHex: s.colorHex,
+    rarity: s.rarity,
+    stats: s.stats,
+    attacks: s.attacks,
+    hash: s.hash,
+    version: s.version,
+  );
+}
+
+int _stableIndex(String s, int mod) {
+  if (mod <= 1) return 0;
+  int hash = 0;
+  for (final code in s.codeUnits) { hash = (hash * 31 + code) & 0x7fffffff; }
+  return hash % mod;
+}
+
+String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+String _fallbackModForElement(String element, Random rng) {
+  final byElem = <String, List<String>>{
+    'fire': ['Cinder','Ember','Ash','Forge'],
+    'water': ['Ripple','Brine','Tide','Mire'],
+    'air': ['Gust','Zephyr','Draft','Sigh'],
+    'light': ['Halo','Gleam','Ray','Prism'],
+    'shadow': ['Shade','Veil','Gloom','Dusk'],
+    'nature': ['Thorn','Bloom','Root','Leaf'],
+    'metal': ['Gear','Aegis','Iron','Copper'],
+  };
+  final list = byElem[element] ?? const ['Echo'];
+  return list[rng.nextInt(list.length)];
+}
+
+String _normalize(String input) {
+  final lower = input.toLowerCase();
+  final cleaned = lower.replaceAll(RegExp(r"[^a-z0-9\s]"), ' ');
+  return cleaned.replaceAll(RegExp(r"\s+"), ' ').trim();
+}
+
+List<String> _tokens(String s) {
+  if (s.isEmpty) return const [];
+  final raw = s.split(' ');
+  const stop = {
+    'a','an','the','and','or','but','if','then','else','at','by','for','from','in','on','of','to','up','with','as','is','it','be','are','was','were','so','that','this','these','those','i','you','he','she','they','we','me','my','your','our','their','them','do','did','does','not','no','yes','can','could','should','would','will','just','about','over','under','again','once','out','off','than','too','very','more','most','some','such','own','same'
+  };
+  final out = <String>[];
+  for (final t in raw) {
+    if (t.isEmpty || stop.contains(t)) continue;
+    out.add(t);
+  }
+  return out;
+}
+
+String _pickFamily({
+  required String title,
+  required String body,
+  required List<String> tags,
+  required String baseWord,
+  required String element,
+  required Random rng,
+}) {
+  const families = [
+    'slime','wisp','shade','imp','goblin','beast','drake','serpent','insectoid','myconid','spriggan','golem','gargoyle','harpy','undead','construct'
+  ];
+  final scores = {for (final f in families) f: 1.0};
+
+  final text = _normalize('$title $body ${tags.join(' ')}');
+  final toks = _tokens(text).toSet();
+
+  final map = <String, List<String>>{
+    'slime': ['slime','ooze','gel','goo','mire'],
+    'wisp': ['wisp','orb','spark','flare','echo','gleam'],
+    'shade': ['shade','dusk','gloom','night','veil','void','shadow'],
+    'imp': ['imp','mischief','prank','sprite'],
+    'goblin': ['goblin','gremlin','trick','scrap','tinker'],
+    'beast': ['beast','wolf','cat','claw','fang','pounce'],
+    'drake': ['drake','dragon','wyrm','scale','fire'],
+    'serpent': ['serpent','snake','cobra','coil','venom','hiss'],
+    'insectoid': ['insect','beetle','mantis','bug','chitin'],
+    'myconid': ['mushroom','spore','fungi','cap','mold'],
+    'spriggan': ['thorn','briar','sprig','root','leaf','twig','wood'],
+    'golem': ['golem','stone','rock','boulder','monolith'],
+    'gargoyle': ['gargoyle','statue','perch','spire'],
+    'harpy': ['harpy','bird','talon','wing','gust'],
+    'undead': ['undead','skeleton','bone','ghoul','revenant'],
+    'construct': ['construct','gear','cog','metal','iron','tin','clock','robot','automaton'],
+  };
+
+  // Keyword matches
+  for (final entry in map.entries) {
+    final fam = entry.key;
+    for (final k in entry.value) {
+      if (toks.contains(k)) scores[fam] = (scores[fam]! + 3.0);
+    }
+  }
+
+  // Direct family word in tokens is a strong signal
+  for (final fam in families) {
+    if (toks.contains(fam)) scores[fam] = (scores[fam]! + 4.0);
+  }
+
+  // Element synergy
+  final synergy = <String, List<String>>{
+    'water': ['serpent','slime','myconid'],
+    'air': ['harpy','wisp','drake'],
+    'fire': ['drake','imp','gargoyle'],
+    'nature': ['spriggan','myconid','beast','serpent'],
+    'metal': ['construct','golem','gargoyle'],
+    'light': ['wisp','harpy','gargoyle'],
+    'shadow': ['shade','undead','gargoyle','imp'],
+  };
+  for (final fam in (synergy[element] ?? const <String>[])) {
+    scores[fam] = (scores[fam]! + 1.5);
+  }
+
+  // Avoid over-picking imp unless explicitly suggested
+  scores['imp'] = (scores['imp']! * 0.7);
+
+  // Weighted pick
+  final total = scores.values.fold<double>(0.0, (a, b) => a + b);
+  double roll = rng.nextDouble() * (total == 0 ? 1.0 : total);
+  for (final fam in families) {
+    final w = scores[fam]!;
+    if (roll <= w) return fam;
+    roll -= w;
+  }
+  return 'goblin';
+}
+
+List<String> _synonymsForElement(String element) {
+  switch (element.toLowerCase()) {
+    case 'fire':
+      return const ['Ember','Cinder','Ash','Flare','Flame','Blaze','Forge','Sear','Spark'];
+    case 'water':
+      return const ['Ripple','Tide','Brine','Surge','Spray','Mist','Current','Stream','Wave'];
+    case 'air':
+      return const ['Gust','Zephyr','Draft','Sigh','Whirl','Gale','Breath','Vapor'];
+    case 'light':
+      return const ['Halo','Gleam','Prism','Ray','Beam','Shine','Aurora','Glow'];
+    case 'shadow':
+      return const ['Shade','Veil','Gloom','Dusk','Night','Umbral','Eclipse'];
+    case 'nature':
+      return const ['Thorn','Briar','Root','Leaf','Bloom','Petal','Sap','Vine'];
+    case 'metal':
+      return const ['Gear','Aegis','Iron','Steel','Copper','Rust','Alloy','Plate'];
+    default:
+      return const ['Echo'];
+  }
 }
