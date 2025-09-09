@@ -89,22 +89,12 @@ class MonsterImageService {
 
     // Strategy: prefer paths that include both element and type strings (case-insensitive),
     // then fall back to element-only, then any.
-    bool hasElem(String p) {
-      final lp = p.toLowerCase();
-      return lp.contains('/$elem/') || lp.contains('_$elem') || lp.contains('${elem}_') || lp.contains('/$elem-') || lp.contains('$elem/');
-    }
+    bool hasElem(String p) => _pathHasSegment(p, elem);
     bool hasType(String p) {
-      final lp = p.toLowerCase();
       // Strong family match if we parsed one from type
-      if (fam != null) {
-        if (lp.contains('/$fam/') || lp.contains('_$fam') || lp.contains('${fam}_') || lp.contains('/$fam-') || lp.contains('$fam/')) {
-          return true;
-        }
-      }
+      if (fam != null && _pathHasSegment(p, fam)) return true;
       for (final t in typeTokens) {
-        if (lp.contains('/$t/') || lp.contains('_$t') || lp.contains('${t}_') || lp.contains('/$t-') || lp.contains('$t/')) {
-          return true;
-        }
+        if (_pathHasSegment(p, t)) return true;
       }
       return false;
     }
@@ -120,7 +110,7 @@ class MonsterImageService {
     // Family+element filter if both is empty but we can still identify the family from type
     List<String> famElem = const [];
     if (both.isEmpty && fam != null) {
-      famElem = elemOnly.where((p) => _pathHasToken(p, fam)).toList();
+      famElem = elemOnly.where((p) => _pathHasSegment(p, fam)).toList();
     }
     List<String> bucket =
         both.isNotEmpty ? both : (famElem.isNotEmpty ? famElem : (elemOnly.isNotEmpty ? elemOnly : any));
@@ -131,6 +121,20 @@ class MonsterImageService {
       if (subset.isNotEmpty) bucket = subset;
     }
     if (bucket.isEmpty) {
+      // Try: any family match (ignore element) if we have a family
+      if (fam != null) {
+        final famAny = assets.where((p) => _pathHasSegment(p, fam)).toList();
+        if (debug) {
+          // ignore: avoid_print
+          print('[MonsterImageService] no fam+elem match; using family-any fallback fam=$fam count=${famAny.length}');
+        }
+        if (famAny.isNotEmpty) {
+          final idx = _stableIndex(displayName, famAny.length);
+          final chosen = famAny[idx];
+          await box.put(displayName, chosen);
+          return chosen;
+        }
+      }
       // Fallback: probe a few well-known families directly (no manifest entries available?)
       final probe = await _probeCommonFamilies(elem, typeTokens);
       if (probe != null) {
@@ -184,11 +188,6 @@ class MonsterImageService {
     if (t.contains('coal') || t.contains('soot') || t.contains('ash')) { add('gargoyle'); add('golem'); }
     if (t.contains('draft') || t.contains('gust') || t.contains('flitter')) { add('harpy'); add('wisp'); }
 
-    // Also include our known family names as a general fallback
-    const families = [
-      'harpy','gargoyle','drake','golem','serpent','slime','shade','spriggan','myconid','imp','beast','construct','goblin','wisp','insectoid'
-    ];
-    out.addAll(families);
     return out.toList();
   }
 
@@ -284,33 +283,45 @@ class MonsterImageService {
     const families = [
       'slime','wisp','shade','imp','goblin','beast','drake','serpent','insectoid','myconid','spriggan','golem','gargoyle','harpy','undead','construct'
     ];
+    final tokens = t.split(RegExp(r'[\s_\-/]+')).where((s) => s.isNotEmpty).toList();
     for (final f in families) {
-      final pattern = r'(?:^|\s)' + RegExp.escape(f) + r'(?:\s|_|-|/|$)';
-      final re = RegExp(pattern);
-      if (re.hasMatch(t)) return f;
+      if (tokens.contains(f)) return f;
     }
     if (t.contains('gremlin')) return 'goblin';
     if (t.contains('wight')) return 'gargoyle';
     return null;
   }
 
-  bool _pathHasToken(String path, String token) {
-    final lp = path.toLowerCase();
+  // Robust token matching based on the entire path (lowercased),
+  // split each directory/file part by '_' or '-' and drop file extension.
+  List<String> _segments(String path) {
+    final lower = path.toLowerCase();
+    final parts = lower.split('/');
+    final segs = <String>[];
+    for (var part in parts) {
+      if (part.isEmpty) continue;
+      // Drop extension for file segment
+      final core = part.contains('.') ? part.split('.').first : part;
+      segs.addAll(core.split(RegExp(r'[_-]+')).where((s) => s.isNotEmpty));
+    }
+    return segs;
+  }
+
+  bool _pathHasSegment(String path, String token) {
+    final segs = _segments(path);
     final t = token.toLowerCase();
-    return lp.contains('/$t/') || lp.contains('_$t') || lp.contains('${t}_') || lp.contains('/$t-') || lp.contains('$t/');
+    return segs.contains(t);
   }
 
   bool _pathMatches(String path, String elem, String? fam, String typ) {
-    final lp = path.toLowerCase();
-    final elemOk = lp.contains('_$elem') || lp.contains('${elem}_') || lp.contains('/$elem/') || lp.contains('/$elem-');
-    if (!elemOk) return false;
-    if (fam != null) {
-      if (lp.contains('_$fam') || lp.contains('${fam}_') || lp.contains('/$fam/')) return true;
-    }
-    // fallback to token search
+    // Must match element as a filename segment
+    if (!_pathHasSegment(path, elem)) return false;
+    // Prefer family segment when provided
+    if (fam != null && _pathHasSegment(path, fam)) return true;
+    // Fallback to any type token as a segment
     final toks = _typeCandidates(typ);
     for (final t in toks) {
-      if (lp.contains('_$t') || lp.contains('${t}_') || lp.contains('/$t/')) return true;
+      if (_pathHasSegment(path, t)) return true;
     }
     return false;
   }
