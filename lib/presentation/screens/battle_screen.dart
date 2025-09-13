@@ -15,17 +15,17 @@ class BattleScreen extends ConsumerStatefulWidget {
 
 class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProviderStateMixin {
   Future<ui.Image?>? _playerImgFut;
-  // Animations
-  late final AnimationController _playerShake;
-  late final AnimationController _enemyShake;
-  late final AnimationController _playerLunge;
-  late final AnimationController _enemyLunge;
+  // Overlay flash
   late final AnimationController _overlayFlash;
-  late final Animation<double> _playerShakeAnim;
-  late final Animation<double> _enemyShakeAnim;
-  late final Animation<double> _playerLungeAnim;
-  late final Animation<double> _enemyLungeAnim;
+  // Manual frame-based movement
+  Offset _playerOffset = Offset.zero;
+  Offset _enemyOffset = Offset.zero;
   int _lastActionSeq = 0;
+  int _lastLogLen = 0;
+  String? _floatText;
+  Alignment _floatAlign = Alignment.center;
+  Color _floatColor = Colors.white;
+  DateTime _floatUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -34,15 +34,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       Future.microtask(() => ref.read(battleProvider.notifier).init(battleId: widget.battleId!));
     }
     _playerImgFut = PlayerImageService().renderCurrentPlayer();
-    _playerShake = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
-    _enemyShake = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
-    _playerLunge = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
-    _enemyLunge = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
     _overlayFlash = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
-    _playerShakeAnim = Tween<double>(begin: 0, end: 1).chain(CurveTween(curve: Curves.elasticIn)).animate(_playerShake);
-    _enemyShakeAnim = Tween<double>(begin: 0, end: 1).chain(CurveTween(curve: Curves.elasticIn)).animate(_enemyShake);
-    _playerLungeAnim = Tween<double>(begin: 0, end: 1).chain(CurveTween(curve: Curves.easeOut)).animate(_playerLunge);
-    _enemyLungeAnim = Tween<double>(begin: 0, end: 1).chain(CurveTween(curve: Curves.easeOut)).animate(_enemyLunge);
 
   }
 
@@ -55,38 +47,58 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
     final attacker = (action['attacker'] ?? 'player') as String;
     final target = (action['target'] ?? 'enemy') as String;
     final melee = (action['melee'] ?? false) as bool;
+    final box = context.size; // might be null at init; compute lunge distance from MediaQuery if so
+    final w = (box?.width ?? MediaQuery.of(context).size.width);
+    final double lungeDist = w * 0.12;
 
-    // Shake target
-    if (target == 'enemy') {
-      _enemyShake.stop(); _enemyShake.reset();
-      await _enemyShake.forward();
-      _enemyShake.reverse();
-    } else {
-      _playerShake.stop(); _playerShake.reset();
-      await _playerShake.forward();
-      _playerShake.reverse();
-    }
-
-    // Lunge if melee
+    // Sequence: lunge (if melee) then shake target; 5 frames total each
     if (melee) {
       if (attacker == 'player') {
-        _playerLunge.stop(); _playerLunge.reset();
-        await _playerLunge.forward();
-        _playerLunge.reverse();
+        await _runFrames(true, [
+          Offset(lungeDist * 0.25, 0),
+          Offset(lungeDist * 0.5, 0),
+          Offset(lungeDist * 0.9, 0),
+          Offset(lungeDist * 0.5, 0),
+          Offset.zero,
+        ]);
       } else {
-        _enemyLunge.stop(); _enemyLunge.reset();
-        await _enemyLunge.forward();
-        _enemyLunge.reverse();
+        await _runFrames(false, [
+          Offset(-lungeDist * 0.25, 0),
+          Offset(-lungeDist * 0.5, 0),
+          Offset(-lungeDist * 0.9, 0),
+          Offset(-lungeDist * 0.5, 0),
+          Offset.zero,
+        ]);
       }
+    }
+
+    // Shake target (5 discrete frames)
+    const double s = 6.0;
+    final shake = [
+      const Offset(-s, 0),
+      const Offset(s, 0),
+      const Offset(0, -s),
+      const Offset(0, s),
+      Offset.zero,
+    ];
+    await _runFrames(target != 'enemy', shake);
+  }
+
+  Future<void> _runFrames(bool player, List<Offset> frames) async {
+    for (final off in frames) {
+      setState(() {
+        if (player) {
+          _playerOffset = off;
+        } else {
+          _enemyOffset = off;
+        }
+      });
+      await Future.delayed(const Duration(milliseconds: 60));
     }
   }
 
   @override
   void dispose() {
-    _playerShake.dispose();
-    _enemyShake.dispose();
-    _playerLunge.dispose();
-    _enemyLunge.dispose();
     _overlayFlash.dispose();
     super.dispose();
   }
@@ -105,8 +117,32 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       _lastActionSeq = state.actionSeq;
     }
 
-    // Outcome routing
-    if (state.result != null) {
+    // Floating damage/heal text from latest log line
+    if (state.log.length > _lastLogLen && state.lastAction != null) {
+      final last = state.log.isNotEmpty ? state.log.last : '';
+      String? text;
+      Color color = Colors.white;
+      final dmg = RegExp(r'for\s+(\d+)\s+damage').firstMatch(last);
+      if (dmg != null) {
+        text = '-${dmg.group(1)}';
+        color = Colors.redAccent;
+      }
+      final heal = RegExp(r'\+(\d+)HP').firstMatch(last);
+      if (heal != null) {
+        text = '+${heal.group(1)}';
+        color = Colors.greenAccent;
+      }
+      if (text != null) {
+        _floatText = text;
+        _floatColor = color;
+        _floatAlign = (state.lastAction!['target'] == 'enemy') ? Alignment.bottomRight : Alignment.bottomLeft;
+        _floatUntil = DateTime.now().add(const Duration(milliseconds: 700));
+      }
+      _lastLogLen = state.log.length;
+    }
+
+    // Outcome routing (only for this battleId)
+    if (state.result != null && state.battleId == widget.battleId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.result == 'win' ? 'Victory! Loot added.' : 'Defeat.')));
@@ -135,11 +171,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
           // Foreground: player left, enemy right
           // Foreground combatants with transforms (shake/lunge)
           LayoutBuilder(builder: (context, cts) {
-            final width = cts.maxWidth;
-            final lungeDist = width * 0.12;
-            const double shakeAmp = 6.0;
-            final playerOffset = Offset(_playerLungeAnim.value * lungeDist, (_playerShakeAnim.value * shakeAmp) * ((DateTime.now().millisecond % 2 == 0) ? 1 : -1));
-            final enemyOffset = Offset(-_enemyLungeAnim.value * lungeDist, (_enemyShakeAnim.value * shakeAmp) * ((DateTime.now().millisecond % 2 == 0) ? 1 : -1));
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -147,10 +178,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Transform.translate(
-                    offset: playerOffset,
+                    offset: _playerOffset,
                     child: SizedBox(
-                      width: 128,
-                      height: 128,
+                      width: 64,
+                      height: 64,
                       child: FutureBuilder<ui.Image?>(
                         future: _playerImgFut,
                         builder: (context, snap) {
@@ -165,10 +196,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                     ),
                   ),
                   Transform.translate(
-                    offset: enemyOffset,
+                    offset: _enemyOffset,
                     child: SizedBox(
-                      width: 128,
-                      height: 128,
+                      width: 64,
+                      height: 64,
                       child: state.enemyAssetPath != null
                           ? Image.asset(state.enemyAssetPath!, filterQuality: FilterQuality.none, fit: BoxFit.contain)
                           : Center(child: Text(state.enemyName ?? 'Enemy', style: Theme.of(context).textTheme.titleSmall)),
@@ -192,14 +223,22 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
           // Status tags stubs for player/enemy
           Positioned(
             left: 16,
-            bottom: 128 + 12,
+            bottom: 64 + 12,
             child: _StatusTags(statuses: state.playerStatuses),
           ),
           Positioned(
             right: 16,
-            bottom: 128 + 12,
+            bottom: 64 + 12,
             child: _StatusTags(statuses: state.enemyStatuses, alignRight: true),
           ),
+          if (_floatText != null && DateTime.now().isBefore(_floatUntil))
+            Align(
+              alignment: _floatAlign,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 120, left: 24, right: 24),
+                child: Text(_floatText!, style: TextStyle(color: _floatColor, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
         ],
       ),
     );
@@ -340,6 +379,7 @@ class _StatusPill extends StatelessWidget {
       'regen': Colors.green,
       'guard': Colors.blue,
       'focus': Colors.purple,
+      'spirit+': Colors.amber,
     };
     final color = map[keyName] ?? Colors.white;
     final label = '$keyName${turns > 0 ? '($turns)' : ''}';

@@ -101,7 +101,7 @@ import '../../services/drop_table.dart';
     );
 }
 
-final battleProvider = StateNotifierProvider<BattleNotifier, BattleState>((ref) => BattleNotifier());
+final battleProvider = StateNotifierProvider.autoDispose<BattleNotifier, BattleState>((ref) => BattleNotifier());
 
 class BattleNotifier extends StateNotifier<BattleState> {
   BattleNotifier() : super(const BattleState());
@@ -113,6 +113,8 @@ class BattleNotifier extends StateNotifier<BattleState> {
   List<BattleSpriteAction> _playerSprites = const [];
 
   Future<void> init({required String battleId}) async {
+    // Reset state to avoid leaking result/action from previous battle
+    state = const BattleState();
     // Build stats
     final profile = profileBox().values.isNotEmpty ? profileBox().values.first : PlayerProfile(id: 'p', classKey: 'Sage');
     final classKey = profile.classKey;
@@ -147,6 +149,19 @@ class BattleNotifier extends StateNotifier<BattleState> {
     _playerSkills = SkillCatalog.forClass(classKey);
     _playerSprites = sprites;
     _player = Combatant(name: 'You', stats: pStats, skills: _playerSkills, spriteActions: _playerSprites);
+    // Apply any pending pre-battle buffs from meta
+    try {
+      final buffsRaw = (playerMetaBox().get('pendingBuffs') as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? const <Map<String, dynamic>>[];
+      for (final b in buffsRaw) {
+        final k = b['key']?.toString() ?? '';
+        final m = int.tryParse(b['magnitude']?.toString() ?? '0') ?? 0;
+        final d = int.tryParse(b['duration']?.toString() ?? '0') ?? 0;
+        if (k.isNotEmpty && m > 0 && d >= 0) {
+          _engine.applyStatus(_player, k, m, d);
+        }
+      }
+      await playerMetaBox().put('pendingBuffs', <Map<String, dynamic>>[]);
+    } catch (_) {}
 
     // Enemy from battle ticket/seed
     String enemyName = 'Monster';
@@ -302,8 +317,12 @@ class BattleNotifier extends StateNotifier<BattleState> {
           actionSeq: state.actionSeq + 1,
           lastAction: {'attacker':'player','target':'enemy','melee': false, 'element': null},
         );
-        // Using an item counts as action -> enemy turn
-        _enemyTurn();
+        // Using an item counts as action -> enemy turn after short delay
+        Future.delayed(const Duration(milliseconds: 450), () {
+          if (_enemy.isAlive() && (state.result == null)) {
+            _enemyTurn();
+          }
+        });
       }
     }
   }
@@ -319,7 +338,11 @@ class BattleNotifier extends StateNotifier<BattleState> {
       lastAction: lastAction,
     );
     if (_enemy.isAlive()) {
-      _enemyTurn();
+      Future.delayed(const Duration(milliseconds: 450), () {
+        if (_enemy.isAlive() && (state.result == null)) {
+          _enemyTurn();
+        }
+      });
     } else {
       _finish('win');
     }
@@ -361,6 +384,20 @@ class BattleNotifier extends StateNotifier<BattleState> {
     if (result == 'win') {
       // Drop simple loot
       _dropLoot();
+      // XP gain
+      try {
+        final box = profileBox();
+        if (box.values.isNotEmpty) {
+          final p = box.values.first;
+          int level = p.level;
+          int xp = p.xp + 10; // small gain
+          int target = level * 20;
+          while (xp >= target) {
+            xp -= target; level += 1; target = level * 20;
+          }
+          await box.put(p.id, PlayerProfile(id: p.id, classKey: p.classKey, level: level, xp: xp, unlockedSkills: p.unlockedSkills, cosmetics: p.cosmetics, titles: p.titles));
+        }
+      } catch (_) {}
     }
     // Persist HP back to meta
     try { playerMetaBox().put('hp', _player.stats.hp); } catch (_) {}

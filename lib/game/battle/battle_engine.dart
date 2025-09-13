@@ -12,7 +12,12 @@ class BattleStats {
   BattleStats({required this.maxHp, required this.hp, required this.atk, required this.def, Map<String,BattleStatus>? statuses})
       : statuses = statuses ?? {};
 
-  int get atkMod => statuses.containsKey('atk+') ? statuses['atk+']!.magnitude : 0;
+  int get atkMod {
+    final a = statuses['atk+']?.magnitude ?? 0;
+    final s = statuses['spirit+']?.magnitude ?? 0; // small spirit buff contributes to attack
+    final f = statuses['focus']?.magnitude ?? 0; // focus modeled as atk boost elsewhere
+    return a + s + f;
+  }
   int get defMod => (statuses['def+']?.magnitude ?? 0) - (statuses['def-']?.magnitude ?? 0);
   int get guard => statuses['guard']?.magnitude ?? 0; // flat reduction
   int get regen => statuses['regen']?.magnitude ?? 0; // per turn heal
@@ -150,6 +155,9 @@ class BattleEngine {
             break;
           }
         }
+        break;
+      case 'spirit+':
+        target.stats.statuses['spirit+'] = BattleStatus(eff.magnitude, eff.duration);
         break;
       case 'focus':
         // focus = +1 atk for 2 turns modeled via atk+
