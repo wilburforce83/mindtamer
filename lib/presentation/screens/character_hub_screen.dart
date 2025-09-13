@@ -19,6 +19,7 @@ import '../../services/sprite_palette.dart';
 import '../../game/models/seed_instance.dart';
 import 'dart:async';
 import '../../theme/colors.dart';
+import '../../game/services/player_image_service.dart';
 
 class CharacterHubScreen extends StatefulWidget {
   const CharacterHubScreen({super.key});
@@ -35,6 +36,8 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   SeedInstance? _inst1;
   SeedInstance? _inst2;
   StreamSubscription? _equipSub;
+  ui.Image? _playerImage;
+  String? _playerAssetPath; // raw asset fallback
 
   @override
   void initState() {
@@ -43,10 +46,12 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     spriteSlots = context.read<SpriteSlotsRepo>();
     vm.load();
     _loadEquippedSprites();
+    _refreshPlayerImage();
     // Refresh when equipment/sprite slots change
     _equipSub = equipmentBox().watch().listen((event) {
       if (!mounted) return;
       _loadEquippedSprites();
+      _refreshPlayerImage();
     });
   }
 
@@ -91,6 +96,26 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
       final render = await gen.generate(inst2.seedHash, 0, ramp);
       if (mounted) setState(() => _spriteImg2 = render.staticFrame);
     }
+  }
+
+  Future<void> _refreshPlayerImage() async {
+    final svc = PlayerImageService();
+    final img = await svc.renderCurrentPlayer();
+    String? path;
+    try {
+      final meta = playerMetaBox();
+      final cls = (profileBox().values.isNotEmpty)
+          ? profileBox().values.first.classKey
+          : (meta.get('class')?.toString() ?? 'Sage');
+      final gender = (meta.get('gender')?.toString() ?? 'm');
+      path = await PlayerImageService.resolveAssetPath(cls, gender);
+      path ??= PlayerImageService.assetPathFor(cls, gender);
+    } catch (_) {}
+    if (!mounted) return;
+    setState((){
+      _playerImage = img;
+      _playerAssetPath = path;
+    });
   }
 
   Future<void> _pickSprite(int slot) async {
@@ -176,14 +201,27 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                         height: charSize,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          border: Border.all(
-                              color:
-                                  Theme.of(context).colorScheme.outlineVariant),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                           borderRadius: BorderRadius.zero,
                         ),
-                        child: Text('Character',
-                            style: Theme.of(context).textTheme.titleMedium,
-                            textAlign: TextAlign.center),
+                        child: _playerImage != null
+                            ? RawImage(
+                                image: _playerImage,
+                                filterQuality: FilterQuality.none,
+                                fit: BoxFit.contain,
+                                width: charSize,
+                                height: charSize,
+                              )
+                            : (_playerAssetPath != null
+                                ? Image.asset(
+                                    _playerAssetPath!,
+                                    filterQuality: FilterQuality.none,
+                                    fit: BoxFit.contain,
+                                    width: charSize,
+                                    height: charSize,
+                                    errorBuilder: (_, __, ___) => Text('Character', style: Theme.of(context).textTheme.titleMedium),
+                                  )
+                                : Text('Character', style: Theme.of(context).textTheme.titleMedium)),
                       ),
 
                       // Top row center: head and neck aligned with top widgets

@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import '../../../data/hive/boxes.dart';
 import '../../../data/models/player_profile.dart';
 import 'package:hive/hive.dart';
+import 'dart:ui' as ui;
+import 'dart:math' as math;
+import '../../../game/services/player_image_service.dart';
 
 class CharacterSetupScreen extends StatefulWidget {
   const CharacterSetupScreen({super.key});
@@ -15,7 +18,12 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
   final _name = TextEditingController();
   String? _diagnosis;
   String? _classKey;
+  String _gender = 'm'; // m | f
+  String _hairBase = '#6B3F2A'; // hex strings
+  String _skinBase = '#E0B6A1';
   bool _classAuto = true; // whether class is following diagnosis suggestion
+  int _step = 0; // 0: choose class, 1: customize
+  ui.Image? _preview;
 
   final List<String> _diagnoses = const [
     'ADHD','Autism','Anxiety','Depression','Bipolar','PTSD','OCD','OCPD','BPD','Dyslexia','Dyscalculia','Dysgraphia','Dyspraxia','Tourette','SPD','ASD','GAD','Panic Disorder','Social Anxiety','PMDD','PME'
@@ -24,6 +32,78 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
   final List<String> _classes = const [
     'Sage','Warden','Trickster','Seer','Artificer','Empath','Sentinel','Oracle','Shadow','Alchemist'
   ];
+
+  final List<String> _hairOptions = const [
+    '#1C1C1C', // black
+    '#4B2E1E', // dark brown
+    '#6B3F2A', // brown
+    '#8C2A1C', // auburn
+    '#C22F2F', // red
+    '#D8B45B', // blonde
+    '#EAE5D6', // platinum
+    '#2C5EA8', // blue
+    '#2C8A5E', // green
+    '#6B2CA8', // purple
+  ];
+
+  final List<String> _skinOptions = const [
+    '#F2D6C2', '#E0B6A1', '#C58C6A', '#A1664A', '#8D5524', '#5C3D2E'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Default class and randomized colors for an engaging first preview
+    _classKey ??= 'Sage';
+    final r = math.Random();
+    _hairBase = _hairOptions[r.nextInt(_hairOptions.length)];
+    _skinBase = _skinOptions[r.nextInt(_skinOptions.length)];
+    _refreshPreview();
+  }
+
+  Future<void> _refreshPreview() async {
+    final cls = _classKey ?? 'Sage';
+    final asset = 'assets/images/players/${cls.toLowerCase()}_$_gender.png';
+    ui.Image? img;
+    try {
+      final resolved = await PlayerImageService.resolveAssetPath(cls, _gender) ?? asset;
+      img = await PlayerImageService().recolorAsset(
+        assetPath: resolved,
+        hairRamp6: PlayerImageService.makeRamp3(_hairBase),
+        skinRamp6: PlayerImageService.makeRamp3(_skinBase),
+        weaponGlowRamp3: null,
+      );
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() { _preview = img; });
+  }
+
+  String _classInfo(String cls) {
+    switch (cls) {
+      case 'Sage':
+        return 'A thoughtful caster who channels insight into protective wards and clever buffs. Primarily magic; excels at team support and control.';
+      case 'Warden':
+        return 'Armored bulwark on the front line. Primarily melee; sturdy defenses and rallying buffs that keep allies standing.';
+      case 'Trickster':
+        return 'Fast and evasive striker who exploits openings. Primarily melee; thrives on debuffs and momentum.';
+      case 'Seer':
+        return 'Long-range oracle who reads the flow of battle. Primarily magic; crit-prone volleys and soft control.';
+      case 'Artificer':
+        return 'Inventor wielding runic tools and gadgets. Hybrid damage; mixes buffs with clever tricks and mid-range strikes.';
+      case 'Empath':
+        return 'Heart-led healer who radiates resilience. Primarily magic; reliable heals and uplifting buffs.';
+      case 'Sentinel':
+        return 'Disciplined defender with measured strikes. Primarily melee; counters, guards, and formation buffs.';
+      case 'Oracle':
+        return 'Order-bound caster who imposes structure. Primarily magic; debuffs, cleanses, and tempo control.';
+      case 'Shadow':
+        return 'Silent blade from the dark. Primarily melee; burst windows, bleeds, and weakening debuffs.';
+      case 'Alchemist':
+        return 'Tinkerer of volatile brews. Hybrid ranged; status effects, quick buffs, and opportunistic damage.';
+      default:
+        return 'Adaptable adventurer ready for anything.';
+    }
+  }
 
   String _suggestClass(String dx) {
     switch (dx) {
@@ -40,59 +120,7 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
       default: return 'Sage';
     }
   }
-
-  Map<String, int> _classPerk(String cls) {
-    switch (cls) {
-      case 'Warden':
-        return const {'hp': 20, 'atk': 2, 'spd': 0, 'spirit': 2};
-      case 'Trickster':
-        return const {'hp': 10, 'atk': 4, 'spd': 6, 'spirit': 0};
-      case 'Sage':
-        return const {'hp': 12, 'atk': 0, 'spd': 2, 'spirit': 6};
-      case 'Sentinel':
-        return const {'hp': 16, 'atk': 3, 'spd': 1, 'spirit': 2};
-      case 'Seer':
-        return const {'hp': 12, 'atk': 1, 'spd': 3, 'spirit': 6};
-      case 'Artificer':
-        return const {'hp': 14, 'atk': 5, 'spd': 1, 'spirit': 2};
-      case 'Empath':
-        return const {'hp': 14, 'atk': 0, 'spd': 2, 'spirit': 6};
-      case 'Oracle':
-        return const {'hp': 12, 'atk': 2, 'spd': 2, 'spirit': 6};
-      case 'Shadow':
-        return const {'hp': 13, 'atk': 5, 'spd': 4, 'spirit': 0};
-      case 'Alchemist':
-        return const {'hp': 15, 'atk': 3, 'spd': 2, 'spirit': 3};
-      default:
-        return const {'hp': 12, 'atk': 2, 'spd': 2, 'spirit': 4};
-    }
-  }
-
-  String _classBlurb(String cls) {
-    switch (cls) {
-      case 'Warden': return 'Stalwart guardian who endures and protects.';
-      case 'Trickster': return 'Quick-witted rogue who thrives on agility.';
-      case 'Sage': return 'Thoughtful seeker who turns insight into power.';
-      case 'Sentinel': return 'Calm watchkeeper trained to hold the line.';
-      case 'Seer': return 'Farsighted mystic who reads the flow of moments.';
-      case 'Artificer': return 'Inventive mind channeling strength into craft.';
-      case 'Empath': return 'Heart-led healer who amplifies spirit.';
-      case 'Oracle': return 'Disciplined mind weaving order from chaos.';
-      case 'Shadow': return 'Silent striker who moves where light fails.';
-      case 'Alchemist': return 'Tireless tinkerer balancing change and control.';
-      default: return 'Adventurer charting a path through the unknown.';
-    }
-  }
-
-  String _startEffectText(String cls) {
-    final p = _classPerk(cls);
-    final parts = <String>[];
-    if ((p['hp'] ?? 0) != 0) parts.add('+${p['hp']} hp');
-    if ((p['atk'] ?? 0) != 0) parts.add('+${p['atk']} atk');
-    if ((p['spd'] ?? 0) != 0) parts.add('+${p['spd']} spd');
-    if ((p['spirit'] ?? 0) != 0) parts.add('+${p['spirit']} spirit');
-    return parts.isEmpty ? 'No starting bonus' : 'Starts with ${parts.join(', ')}';
-  }
+  // Class blurb and start effect text removed from the UI for now; keep perks for later use.
 
   Future<void> _create() async {
     try {
@@ -118,11 +146,22 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
       final profile = PlayerProfile(id: id, classKey: classKey);
       await profileBox().put(id, profile);
       // Save meta: name, diagnosis, class source
+      final asset = 'assets/images/players/${classKey.toLowerCase()}_$_gender.png';
       await playerMetaBox().putAll({
         'name': name,
         'classSource': classSource,
         'diagnosis': _diagnosis,
-        'appearance': {'preset':'default'},
+        'class': classKey,
+        'gender': _gender,
+        'hairBase': _hairBase,
+        'skinBase': _skinBase,
+        'playerImageAsset': asset,
+        'appearance': {
+          'preset': 'custom',
+          'hairBase': _hairBase,
+          'skinBase': _skinBase,
+          'gender': _gender,
+        },
         'onboardingComplete': false,
       });
       if (!mounted) return;
@@ -140,72 +179,150 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
     final body = ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Create Your Character', style: Theme.of(context).textTheme.titleLarge),
+        Text('Create Your Character', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
-        TextField(
-          controller: _name,
-          decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
-        ),
-        const SizedBox(height: 16),
-        Text('Class', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Text(
-          'Mind Tamer will select your class based on primary diagnosis; you can override it by choosing a different class.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: 8),
-        const Text('Primary diagnosis (optional)'),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: _diagnosis,
-          items: _diagnoses.map((d)=>DropdownMenuItem(value: d, child: Text(d))).toList(),
-          onChanged: (v){
-            setState((){
-              _diagnosis = v;
-              if (_classAuto && v != null) {
-                _classKey = _suggestClass(v);
-              }
-            });
-          },
-          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Diagnosis'),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _classKey,
-          items: _classes.map((c)=>DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: (v)=>setState((){ _classKey=v; _classAuto=false; }),
-          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Class'),
-        ),
-        if ((_classKey ?? '').isNotEmpty) ...[
+        if (_step == 0) ...[
+          TextField(
+            controller: _name,
+            decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 16),
+          Text('Class', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Builder(builder: (context){
-            final cls = _classKey ?? 'Sage';
-            final blurb = _classBlurb(cls);
-            final se = _startEffectText(cls);
-            return Text('$blurb $se.', style: Theme.of(context).textTheme.bodySmall);
+          Text('Mind Tamer may suggest a class based on your diagnosis; you can override it.', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          const Text('Primary diagnosis (optional)'),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _diagnosis,
+            items: _diagnoses.map((d)=>DropdownMenuItem(value: d, child: Text(d))).toList(),
+            onChanged: (v){
+              setState((){
+                _diagnosis = v;
+                if (_classAuto && v != null) {
+                  _classKey = _suggestClass(v);
+                  _refreshPreview();
+                }
+              });
+            },
+            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Diagnosis'),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _classKey,
+            items: _classes.map((c)=>DropdownMenuItem(value: c, child: Text(c))).toList(),
+            onChanged: (v){ setState((){ _classKey=v; _classAuto=false; }); _refreshPreview(); },
+            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Class'),
+          ),
+          const SizedBox(height: 12),
+          Text('What gender do you identify with?', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          Row(children: [
+            ChoiceChip(label: const Text('Female'), selected: _gender=='f', onSelected: (_){ setState(()=> _gender='f'); _refreshPreview(); }),
+            const SizedBox(width: 8),
+            ChoiceChip(label: const Text('Male'), selected: _gender=='m', onSelected: (_){ setState(()=> _gender='m'); _refreshPreview(); }),
+          ]),
+          const SizedBox(height: 16),
+          LayoutBuilder(builder: (ctx, cts) {
+            final w = cts.maxWidth;
+            final imgSize = (w * 0.42).clamp(200.0, 280.0);
+            final info = _classInfo(_classKey ?? 'Sage');
+            final infoStyle = Theme.of(context).textTheme.bodySmall;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: imgSize,
+                  height: imgSize,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
+                  child: _preview != null
+                      ? RawImage(image: _preview, filterQuality: FilterQuality.none, fit: BoxFit.contain)
+                      : Builder(builder: (ctx){
+                          final cls = (_classKey ?? 'Sage');
+                          final path = PlayerImageService.assetPathFor(cls, _gender);
+                          return Image.asset(path, filterQuality: FilterQuality.none, fit: BoxFit.contain, errorBuilder: (_, __, ___)=> const Text('No preview'));
+                        }),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(info, style: infoStyle),
+                ),
+              ],
+            );
           }),
+          const SizedBox(height: 20),
+          FilledButton(onPressed: ()=> setState(()=> _step=1), child: const Text('Customize')),
+        ] else ...[
+          Center(
+            child: Container(
+              width: 256,
+              height: 256,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
+              child: _preview != null
+                  ? RawImage(image: _preview, filterQuality: FilterQuality.none, fit: BoxFit.contain)
+                  : Builder(builder: (ctx){
+                      final cls = (_classKey ?? 'Sage');
+                      final path = PlayerImageService.assetPathFor(cls, _gender);
+                      return Image.asset(path, filterQuality: FilterQuality.none, fit: BoxFit.contain, errorBuilder: (_, __, ___)=> const Text('No preview'));
+                    }),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Hair Color', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final hex in _hairOptions)
+              _ColorChip(hex: hex, selected: _hairBase==hex, onTap: (){ setState(()=> _hairBase=hex); _refreshPreview(); }),
+          ]),
+          const SizedBox(height: 16),
+          Text('Skin Tone', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final hex in _skinOptions)
+              _ColorChip(hex: hex, selected: _skinBase==hex, onTap: (){ setState(()=> _skinBase=hex); _refreshPreview(); }),
+          ]),
+          const SizedBox(height: 20),
+          Row(children: [
+            OutlinedButton(onPressed: ()=> setState(()=> _step=0), child: const Text('Back')),
+            const Spacer(),
+            FilledButton(onPressed: _create, child: const Text('Finish')),
+          ]),
         ],
-        const SizedBox(height: 16),
-        Text('Appearance', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Container(
-          height: 80,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
-          child: const Text('Appearance customization coming soon'),
-        ),
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: _create,
-          child: const Text('Create Character'),
-        )
       ],
     );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Setup')),
       body: body,
+    );
+  }
+}
+
+class _ColorChip extends StatelessWidget {
+  final String hex;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ColorChip({required this.hex, required this.selected, required this.onTap});
+  Color _hex(String s){
+    var h = s.startsWith('#') ? s.substring(1) : s;
+    if (h.length==3) h = h.split('').map((c)=>'$c$c').join();
+    return Color(int.parse('FF$h', radix: 16));
+  }
+  @override
+  Widget build(BuildContext context) {
+    final c = _hex(hex);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: c,
+          border: Border.all(color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline),
+        ),
+      ),
     );
   }
 }
