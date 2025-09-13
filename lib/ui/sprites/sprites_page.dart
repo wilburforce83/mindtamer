@@ -197,6 +197,7 @@ class _SpritesPageState extends State<SpritesPage> {
     if (inst.attacks.isNotEmpty) {
       final a = inst.attacks.first;
       atkName = (a['name'] ?? atkName).toString();
+      if (atkName.toLowerCase().contains('shield')) { atkName = 'Shield Bash'; }
       power = (a['power'] ?? power) as int;
       duration = (a['cooldown'] ?? duration) as int; // reusing for demo
     }

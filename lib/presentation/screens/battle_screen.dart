@@ -248,6 +248,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
           // Foreground: player left, enemy right
           // Foreground combatants with transforms (shake/lunge)
           LayoutBuilder(builder: (context, cts) {
+            final width = cts.maxWidth;
+            final height = width / (16 / 9);
+            final baseShift = width * 0.10; // move 10% towards center (further apart by ~15% from previous)
+            final upShift = -height * 0.05; // move up by ~5%
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -255,7 +259,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Transform.translate(
-                    offset: _playerOffset,
+                    offset: _playerOffset + Offset(baseShift, upShift),
                     child: SizedBox(
                       width: 64,
                       height: 64,
@@ -273,7 +277,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                     ),
                   ),
                   Transform.translate(
-                    offset: _enemyOffset,
+                    offset: _enemyOffset + Offset(-baseShift, upShift),
                     child: SizedBox(
                       width: 64,
                       height: 64,

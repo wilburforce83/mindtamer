@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import '../widgets/gear_slot.dart';
-import '../widgets/action_tile.dart';
 import '../viewmodels/character_hub_vm.dart';
 import '../../data/repos/encounters_repo.dart';
 import '../../data/repos/equipment_repo.dart';
@@ -290,9 +289,9 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                             size: boxSize),
                       ),
 
-                      // Right column (top→bottom): rings, weapon
+                      // Right column (top→bottom): rings, weapon, menu
                       Positioned(
-                        top: vPos(0, 3),
+                        top: vPos(0, 4),
                         right: sideInset,
                         child: GearSlot(
                             slotId: 'ringLeft',
@@ -302,7 +301,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                             size: boxSize),
                       ),
                       Positioned(
-                        top: vPos(1, 3),
+                        top: vPos(1, 4),
                         right: sideInset,
                         child: GearSlot(
                             slotId: 'ringRight',
@@ -312,7 +311,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                             size: boxSize),
                       ),
                       Positioned(
-                        top: vPos(2, 3),
+                        top: vPos(2, 4),
                         right: sideInset,
                         child: GearSlot(
                             slotId: 'weapon',
@@ -320,6 +319,56 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                             onTap: () => context
                                 .push('/items', extra: {'slot': 'weapon'}),
                             size: boxSize),
+                      ),
+                      Positioned(
+                        top: vPos(3, 4),
+                        right: sideInset,
+                        child: SizedBox(
+                          width: boxSize,
+                          height: boxSize,
+                          child: PopupMenuButton<_HubMenuAction>(
+                            tooltip: 'Menu',
+                            padding: EdgeInsets.zero,
+                            position: PopupMenuPosition.under,
+                            onSelected: (v) {
+                              switch (v) {
+                                case _HubMenuAction.echoes:
+                                  context.push('/echoes');
+                                  break;
+                                case _HubMenuAction.items:
+                                  context.push('/items');
+                                  break;
+                                case _HubMenuAction.codex:
+                                  context.push('/codex');
+                                  break;
+                                case _HubMenuAction.fusion:
+                                  context.push('/fusion');
+                                  break;
+                                case _HubMenuAction.achievements:
+                                  context.push('/achievements');
+                                  break;
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(value: _HubMenuAction.echoes, child: _MenuItemRow(icon: Icons.graphic_eq, label: 'Echoes')),
+                              PopupMenuItem(value: _HubMenuAction.items, child: _MenuItemRow(icon: Icons.backpack, label: 'Items')),
+                              PopupMenuItem(value: _HubMenuAction.codex, child: _MenuItemRow(icon: Icons.auto_stories, label: 'Codex')),
+                              PopupMenuItem(value: _HubMenuAction.fusion, child: _MenuItemRow(icon: Icons.all_inclusive, label: 'Fusion')),
+                              PopupMenuItem(value: _HubMenuAction.achievements, child: _MenuItemRow(icon: Icons.emoji_events, label: 'Achievements')),
+                            ],
+                            child: Container(
+                              width: boxSize,
+                              height: boxSize,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+                                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.2),
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              child: Icon(Icons.menu, size: boxSize * 0.5, color: Theme.of(context).colorScheme.outline),
+                            ),
+                          ),
+                        ),
                       ),
 
                       // Sprite slots: bottom aligned, centered
@@ -421,20 +470,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
             ),
             const SizedBox(height: 16),
 
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              children: [
-                ActionTile(label: 'Echoes', icon: Icons.graphic_eq, onTap: () => context.push('/echoes')),
-                ActionTile(label: 'Fusion', icon: Icons.all_inclusive, onTap: () => context.push('/fusion')),
-                ActionTile(label: 'Codex', icon: Icons.auto_stories, onTap: () => context.push('/codex')),
-                ActionTile(label: 'Items', icon: Icons.backpack, onTap: () => context.push('/items')),
-                ActionTile(label: 'Achievements', icon: Icons.emoji_events, onTap: () => context.push('/achievements')),
-              ],
-            ),
+            // Grid of buttons removed; actions are now in the right-side menu slot.
           ],
         ),
       ),
@@ -477,9 +513,35 @@ class _HubBars extends StatelessWidget {
   Widget build(BuildContext context) {
     int hp = 60; int maxHp = 60;
     try { hp = (playerMetaBox().get('hp') as int?) ?? 60; } catch (_) {}
-    // Max HP simple baseline for now
-    maxHp = 60;
-    int level = 1; int xp = 0;
+    // Compute dynamic max HP: base + class mod + level bonus + sprite bonuses
+    const baseHp = 60;
+    String classKey = 'Sage';
+    int level = 1;
+    try {
+      final vals = profileBox().values;
+      if (vals.isNotEmpty) { level = vals.first.level; classKey = vals.first.classKey; }
+    } catch (_) {}
+    int classMod = 0;
+    switch (classKey) {
+      case 'Warden': classMod = 8; break;
+      case 'Sentinel': classMod = 5; break;
+      case 'Empath': classMod = 5; break;
+      default: classMod = 0; break;
+    }
+    final hpLv = ((level - 1).clamp(0, 999)) * 3;
+    // Sprite HP from equipped slots
+    int spriteHp = 0;
+    try {
+      final raw = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? const <String, String?>{};
+      for (final sid in ['sprite1','sprite2']) {
+        final id = raw[sid];
+        if (id == null || id.isEmpty) continue;
+        try { final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id); spriteHp += (inst.stats['hp'] ?? 0); } catch (_) {}
+      }
+    } catch (_) {}
+    maxHp = baseHp + classMod + hpLv + spriteHp;
+    if (hp > maxHp) { hp = maxHp; }
+    int xp = 0;
     try {
       final vals = profileBox().values;
       if (vals.isNotEmpty) { level = vals.first.level; xp = vals.first.xp; }
@@ -576,6 +638,14 @@ class _StatsAndAttacks extends StatelessWidget {
 
     final spriteStats = _sumStats();
     final baseStats = _classPerk(classKey);
+    // Apply level-based scaling: +3 HP per level, +1 ATK every 2 levels, +1 SPD every 3, +1 SPIRIT every 3
+    final lv = (level - 1).clamp(0, 999);
+    final scaled = {
+      'hp': (baseStats['hp'] ?? 0) + lv * 3,
+      'atk': (baseStats['atk'] ?? 0) + (lv ~/ 2),
+      'spd': (baseStats['spd'] ?? 0) + (lv ~/ 3),
+      'spirit': (baseStats['spirit'] ?? 0) + (lv ~/ 3),
+    };
     const keys = ['hp', 'atk', 'spd', 'spirit'];
     // Match mood window label size (titleMedium * 0.6)
     final base = Theme.of(context).textTheme.titleMedium;
@@ -625,7 +695,7 @@ class _StatsAndAttacks extends StatelessWidget {
               children: [
                 SizedBox(width: 70, child: Text(k.toUpperCase(), style: small)),
                 Builder(builder: (context) {
-                  final v = baseStats[k] ?? 0;
+                  final v = scaled[k] ?? 0;
                   final style = v > 0 ? small.copyWith(color: classColor(classKey)) : small;
                   return Text('$v', style: style);
                 }),
@@ -667,6 +737,25 @@ class _StatsAndAttacks extends StatelessWidget {
           )).toList();
         })(),
       ]),
+    );
+  }
+}
+
+enum _HubMenuAction { echoes, items, codex, fusion, achievements }
+
+class _MenuItemRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _MenuItemRow({required this.icon, required this.label});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 8),
+        Text(label),
+      ],
     );
   }
 }

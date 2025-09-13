@@ -64,20 +64,40 @@ class _ItemsScreenState extends State<ItemsScreen> {
       final meta = playerMetaBox();
       int hp = (meta.get('hp') as int?) ?? 0;
       const int baseHp = 60;
-      int mod = 0;
+      // Class HP perk
+      int classHp = 12;
+      int level = 1;
       try {
         final vals = profileBox().values;
         if (vals.isNotEmpty) {
-          final cls = vals.first.classKey;
+          final cls = vals.first.classKey; level = vals.first.level;
           switch (cls) {
-            case 'Warden': mod = 8; break;
-            case 'Sentinel': mod = 5; break;
-            case 'Empath': mod = 5; break;
-            default: mod = 0; break;
+            case 'Warden': classHp = 20; break;
+            case 'Trickster': classHp = 10; break;
+            case 'Sage': classHp = 12; break;
+            case 'Sentinel': classHp = 16; break;
+            case 'Seer': classHp = 12; break;
+            case 'Artificer': classHp = 14; break;
+            case 'Empath': classHp = 14; break;
+            case 'Oracle': classHp = 12; break;
+            case 'Shadow': classHp = 13; break;
+            case 'Alchemist': classHp = 15; break;
+            default: classHp = 12; break;
           }
         }
       } catch (_) {}
-      final maxHp = baseHp + mod;
+      final hpLv = ((level - 1).clamp(0, 999)) * 3;
+      // Sprite HP from equipped slots
+      int spriteHp = 0;
+      try {
+        final raw = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? const <String, String?>{};
+        for (final sid in ['sprite1','sprite2']) {
+          final sidv = raw[sid];
+          if (sidv == null || sidv.isEmpty) continue;
+          try { final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == sidv); spriteHp += (inst.stats['hp'] ?? 0); } catch (_) {}
+        }
+      } catch (_) {}
+      final maxHp = baseHp + classHp + hpLv + spriteHp;
       final newHp = (hp + amt).clamp(0, maxHp);
       await meta.put('hp', newHp);
       // Consume from inventory

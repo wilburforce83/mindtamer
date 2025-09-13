@@ -179,9 +179,10 @@ class HealthRewardsService {
     // Match battle init baseline
     const baseHp = 60;
     String classKey = 'Sage';
+    int level = 1;
     try {
       final vals = profileBox().values;
-      if (vals.isNotEmpty) classKey = vals.first.classKey;
+      if (vals.isNotEmpty) { classKey = vals.first.classKey; level = vals.first.level; }
     } catch (_) {}
     int mod = 0;
     switch (classKey) {
@@ -190,7 +191,8 @@ class HealthRewardsService {
       case 'Empath': mod = 5; break;
       default: mod = 0; break;
     }
-    return baseHp + mod;
+    final hpLv = ((level - 1).clamp(0, 999)) * 3;
+    return baseHp + mod + hpLv;
   }
 
   /// Regenerate HP linearly back to full over 6 hours of real time when idle.

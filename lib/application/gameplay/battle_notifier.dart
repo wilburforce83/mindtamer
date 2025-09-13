@@ -140,10 +140,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final classKey = profile.classKey;
     const int baseHp = 60; const int baseAtk = 4; const int baseDef = 2;
     final mods = _classMods(classKey);
+    final level = profile.level;
     int curHp = baseHp;
     try { curHp = (playerMetaBox().get('hp') as int?) ?? baseHp; } catch (_) {}
-    final maxHp = baseHp + mods[0];
-    final pStats = BattleStats(maxHp: maxHp, hp: curHp.clamp(1, maxHp), atk: baseAtk + mods[1], def: baseDef + mods[2]);
     // Load equipped sprites for actions
     final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
     final spriteIds = <String?>[
@@ -151,13 +150,17 @@ class BattleNotifier extends StateNotifier<BattleState> {
       (slots?['sprite2']?.toString()) ?? _readSlot('sprite2'),
     ];
     final sprites = <BattleSpriteAction>[];
+    int spriteHpBonus = 0;
     for (final id in spriteIds) {
-      if (id == null || id.isEmpty) continue;
+      if (id == null || id.isEmpty) { continue; }
       try {
         final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
+        // Sprite stats HP contribution
+        try { spriteHpBonus += (inst.stats['hp'] ?? 0); } catch (_) {}
         if (inst.attacks.isNotEmpty) {
           final a = inst.attacks.first; // single attack for now
-          final name = (a['name'] ?? 'Sprite').toString();
+          var name = (a['name'] ?? 'Sprite').toString();
+          if (name.toLowerCase().contains('shield')) { name = 'Shield Bash'; }
           final power = (a['power'] ?? 12) as int;
           final cd = (a['cooldown'] ?? (a['duration'] ?? 3)) as int;
           final sa = SpriteAttack(name: name, description: '', power: power, durationTurns: cd);
@@ -165,6 +168,17 @@ class BattleNotifier extends StateNotifier<BattleState> {
         }
       } catch (_) {}
     }
+
+    final maxHp = baseHp + _classHpPerk(classKey) + _hpLevelBonus(level) + spriteHpBonus;
+    final atk = baseAtk + mods[1] + _atkLevelBonus(level);
+    final def = baseDef + mods[2] + _defLevelBonus(level);
+    int clampedHp = curHp;
+    if (clampedHp < 1) {
+      clampedHp = 1;
+    } else if (clampedHp > maxHp) {
+      clampedHp = maxHp;
+    }
+    final pStats = BattleStats(maxHp: maxHp, hp: clampedHp, atk: atk, def: def);
 
     _playerSkills = SkillCatalog.forClass(classKey);
     // Deduplicate sprite actions by name, keeping higher power (tie-breaker: lower cooldown)
@@ -261,8 +275,24 @@ class BattleNotifier extends StateNotifier<BattleState> {
     }
   }
 
+  int _classHpPerk(String classKey) {
+    switch (classKey) {
+      case 'Warden': return 20;
+      case 'Trickster': return 10;
+      case 'Sage': return 12;
+      case 'Sentinel': return 16;
+      case 'Seer': return 12;
+      case 'Artificer': return 14;
+      case 'Empath': return 14;
+      case 'Oracle': return 12;
+      case 'Shadow': return 13;
+      case 'Alchemist': return 15;
+      default: return 12;
+    }
+  }
+
   void useSkill(int index) {
-    if (index < 0 || index >= _playerSkills.length) return;
+    if (index < 0 || index >= _playerSkills.length) { return; }
     final s = _playerSkills[index];
     final log = _engine.takeTurnBySkill(_player, _enemy, s);
     final element = _weaponElement();
@@ -275,7 +305,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void useSprite(int index) {
-    if (index < 0 || index >= _playerSprites.length) return;
+    if (index < 0 || index >= _playerSprites.length) { return; }
     final a = _playerSprites[index];
     final log = _engine.takeTurnBySprite(_player, _enemy, a);
     // Try derive element from the sprite instance if possible (not guaranteed here)
@@ -284,7 +314,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
       final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
       final ids = [slots?['sprite1']?.toString(), slots?['sprite2']?.toString()];
       for (final id in ids) {
-        if (id == null) continue;
+        if (id == null) { continue; }
         final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
         final name = (inst.attacks.isNotEmpty ? (inst.attacks.first['name'] ?? '').toString() : '');
         if (name == a.name) { elem = (inst.seedSnapshot['element'] ?? '').toString(); break; }
@@ -299,7 +329,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void useItem(int quickIndex) {
-    if (quickIndex < 0 || quickIndex >= state.quickItems.length) return;
+    if (quickIndex < 0 || quickIndex >= state.quickItems.length) { return; }
     final item = state.quickItems[quickIndex];
     final id = item['id'] as String;
     final type = item['type'] as String? ?? 'potion_small';
@@ -487,18 +517,26 @@ class BattleNotifier extends StateNotifier<BattleState> {
   int _computeMaxHpForPlayer() {
     const int baseHp = 60;
     String classKey = 'Sage';
+    int level = 1;
     try {
       final vals = profileBox().values;
-      if (vals.isNotEmpty) classKey = vals.first.classKey;
+      if (vals.isNotEmpty) { classKey = vals.first.classKey; level = vals.first.level; }
     } catch (_) {}
-    int mod = 0;
-    switch (classKey) {
-      case 'Warden': mod = 8; break;
-      case 'Sentinel': mod = 5; break;
-      case 'Empath': mod = 5; break;
-      default: mod = 0; break;
-    }
-    return baseHp + mod;
+    final classHp = _classHpPerk(classKey);
+    return baseHp + classHp + _hpLevelBonus(level);
+  }
+
+  int _hpLevelBonus(int level) {
+    final lv = (level - 1).clamp(0, 999);
+    return lv * 3; // +3 HP per level after level 1
+  }
+  int _atkLevelBonus(int level) {
+    final lv = (level - 1).clamp(0, 999);
+    return lv ~/ 2; // +1 ATK every 2 levels
+  }
+  int _defLevelBonus(int level) {
+    final lv = (level - 1).clamp(0, 999);
+    return lv ~/ 4; // small DEF every 4 levels
   }
 
   List<Map<String, dynamic>> _dropLoot() {
@@ -515,7 +553,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final out = <Map<String, dynamic>>[];
     for (final id in qs.take(4)) {
       final it = InventoryService.getById(id);
-      if (it == null) continue;
+      if (it == null) { continue; }
       out.add({'id': id, 'type': it['type'], 'label': ItemEffects.label(it['type']), 'qty': it['qty']});
     }
     return out;
@@ -537,7 +575,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
       ...inv.where((e) => (e['qty'] as int? ?? 0) > 0 && !slots.contains(e['id']) && !healingOrder.contains(e['type'])),
     ];
     for (final it in candidates) {
-      if (slots.length >= 4) break;
+      if (slots.length >= 4) { break; }
       final id = it['id'] as String;
       slots.add(id);
     }
