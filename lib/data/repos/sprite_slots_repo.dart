@@ -24,11 +24,17 @@ class SpriteSlotsRepoImpl implements SpriteSlotsRepo {
   Future<void> set(String slot, String? instanceId) async {
     try {
       final box = equipmentBox();
-      final raw = (box.get(_key) as Map?)?.map((k, v) => MapEntry(k.toString(), v)) ?? <String, dynamic>{};
-      if (instanceId == null || instanceId.isEmpty) {
-        raw.remove(slot);
-      } else {
+      final raw = (box.get(_key) as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? <String, String?>{};
+      // Prevent equipping the same sprite in both slots: remove from the other slot first
+      if (instanceId != null && instanceId.isNotEmpty) {
+        for (final s in _slots) {
+          if (s != slot && raw[s] == instanceId) {
+            raw.remove(s);
+          }
+        }
         raw[slot] = instanceId;
+      } else {
+        raw.remove(slot);
       }
       await box.put(_key, raw);
     } catch (_) {
@@ -36,4 +42,3 @@ class SpriteSlotsRepoImpl implements SpriteSlotsRepo {
     }
   }
 }
-

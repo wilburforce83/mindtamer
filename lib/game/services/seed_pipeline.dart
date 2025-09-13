@@ -272,21 +272,18 @@ class BattleServiceImpl implements BattleService {
     await bBox.put(battleId, updated);
 
     if (result != 'win') {
-      // debug setting: optionally return ticket to open on loss
-      final s = _settings();
-      if ((result == 'loss' || result == 'escape') && s.returnTicketOnLossDebug) {
-        final t = tBox.get(updated.ticketId);
-        if (t != null) {
-          await tBox.put(t.ticketId, EncounterTicket(
-            ticketId: t.ticketId,
-            entryId: t.entryId,
-            speciesId: t.speciesId,
-            seedHash: t.seedHash,
-            seedSnapshot: t.seedSnapshot,
-            state: 'open',
-            createdAt: t.createdAt,
-          ));
-        }
+      // On loss/escape, return the encounter to the open pool so it can be retried
+      final t = tBox.get(updated.ticketId);
+      if (t != null) {
+        await tBox.put(t.ticketId, EncounterTicket(
+          ticketId: t.ticketId,
+          entryId: t.entryId,
+          speciesId: t.speciesId,
+          seedHash: t.seedHash,
+          seedSnapshot: t.seedSnapshot,
+          state: 'open',
+          createdAt: t.createdAt,
+        ));
       }
       return;
     }

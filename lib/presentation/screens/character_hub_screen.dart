@@ -643,15 +643,29 @@ class _StatsAndAttacks extends StatelessWidget {
         if ((inst1?.attacks.isEmpty ?? true) &&
             (inst2?.attacks.isEmpty ?? true))
           Text('No attacks equipped', style: small),
-        ...[
-          ...(inst1?.attacks ?? const []),
-          ...(inst2?.attacks ?? const []),
-        ].map((a) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text(
-                  '- ${a['name'] ?? 'Attack'} (Pwr: ${a['power'] ?? '?'} )',
-                  style: small),
-            )),
+        ...((){
+          // Deduplicate by name, keeping the higher power
+          final all = <Map<String, dynamic>>[
+            ...((inst1?.attacks ?? const <Map<String, dynamic>>[]).map((e)=> Map<String,dynamic>.from(e))),
+            ...((inst2?.attacks ?? const <Map<String, dynamic>>[]).map((e)=> Map<String,dynamic>.from(e))),
+          ];
+          final byName = <String, Map<String, dynamic>>{};
+          for (final a in all) {
+            final n = (a['name'] ?? '').toString();
+            final p = (a['power'] is int) ? (a['power'] as int) : int.tryParse(a['power']?.toString() ?? '') ?? 0;
+            if (n.isEmpty) continue;
+            final existing = byName[n];
+            if (existing == null || (p > ((existing['power'] ?? 0) as int))) {
+              byName[n] = a;
+            }
+          }
+          final uniq = byName.values.toList()
+            ..sort((a,b)=> ((b['power']??0) as int).compareTo((a['power']??0) as int));
+          return uniq.map((a)=> Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text('- ${a['name'] ?? 'Attack'} (Pwr: ${a['power'] ?? '?'} )', style: small),
+          )).toList();
+        })(),
       ]),
     );
   }

@@ -1,8 +1,13 @@
 import 'dart:ui' as ui;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../application/gameplay/battle_notifier.dart';
 import '../../game/services/player_image_service.dart';
+import '../../data/hive/boxes.dart';
+import '../../services/inventory_service.dart';
+import '../../game/services/seed_pipeline.dart';
 import '../widgets/game_scaffold.dart';
 import '../widgets/pixel_button.dart';
 
@@ -15,8 +20,6 @@ class BattleScreen extends ConsumerStatefulWidget {
 
 class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProviderStateMixin {
   Future<ui.Image?>? _playerImgFut;
-  // Overlay flash
-  late final AnimationController _overlayFlash;
   // Manual frame-based movement
   Offset _playerOffset = Offset.zero;
   Offset _enemyOffset = Offset.zero;
@@ -26,6 +29,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
   Alignment _floatAlign = Alignment.center;
   Color _floatColor = Colors.white;
   DateTime _floatUntil = DateTime.fromMillisecondsSinceEpoch(0);
+  double _floatDrift = 0.0;
+  Timer? _floatTimer;
+  bool _popped = false;
 
   @override
   void initState() {
@@ -34,39 +40,57 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       Future.microtask(() => ref.read(battleProvider.notifier).init(battleId: widget.battleId!));
     }
     _playerImgFut = PlayerImageService().renderCurrentPlayer();
-    _overlayFlash = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
 
   }
 
-  void _runActionAnim(Map<String, dynamic> action) async {
-    // Flash overlay
-    _overlayFlash.stop();
-    _overlayFlash.reset();
-    _overlayFlash.forward().then((_) => _overlayFlash.reverse());
+  @override
+  void didUpdateWidget(covariant BattleScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.battleId != oldWidget.battleId && widget.battleId != null) {
+      // Reset UI state and re-init battle when navigating to a new battle id
+      _popped = false;
+      _playerOffset = Offset.zero;
+      _enemyOffset = Offset.zero;
+      _floatText = null;
+      _floatDrift = 0.0;
+      _lastActionSeq = 0;
+      _lastLogLen = 0;
+      try { _floatTimer?.cancel(); } catch (_) {}
+      // Defer provider update until after current build to satisfy Riverpod constraints
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.battleId == null) return;
+        ref.read(battleProvider.notifier).init(battleId: widget.battleId!);
+      });
+    }
+  }
 
+  void _runActionAnim(Map<String, dynamic> action) async {
     final attacker = (action['attacker'] ?? 'player') as String;
     final target = (action['target'] ?? 'enemy') as String;
     final melee = (action['melee'] ?? false) as bool;
-    final box = context.size; // might be null at init; compute lunge distance from MediaQuery if so
+    final box = context.size; // might be null at init; compute from MediaQuery if so
     final w = (box?.width ?? MediaQuery.of(context).size.width);
-    final double lungeDist = w * 0.12;
+    // Compute approximate distance between sprites: width - horizontal padding (32) - 2*spriteSize
+    const sprite = 64.0;
+    const pad = 32.0;
+    final double distBetween = (w - pad - (2 * sprite)).clamp(0.0, w);
 
     // Sequence: lunge (if melee) then shake target; 5 frames total each
     if (melee) {
       if (attacker == 'player') {
         await _runFrames(true, [
-          Offset(lungeDist * 0.25, 0),
-          Offset(lungeDist * 0.5, 0),
-          Offset(lungeDist * 0.9, 0),
-          Offset(lungeDist * 0.5, 0),
+          Offset(distBetween * 0.25, 0),
+          Offset(distBetween * 0.5, 0),
+          Offset(distBetween * 0.95, 0),
+          Offset(distBetween * 0.5, 0),
           Offset.zero,
         ]);
       } else {
         await _runFrames(false, [
-          Offset(-lungeDist * 0.25, 0),
-          Offset(-lungeDist * 0.5, 0),
-          Offset(-lungeDist * 0.9, 0),
-          Offset(-lungeDist * 0.5, 0),
+          Offset(-distBetween * 0.25, 0),
+          Offset(-distBetween * 0.5, 0),
+          Offset(-distBetween * 0.95, 0),
+          Offset(-distBetween * 0.5, 0),
           Offset.zero,
         ]);
       }
@@ -86,6 +110,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
 
   Future<void> _runFrames(bool player, List<Offset> frames) async {
     for (final off in frames) {
+      if (!mounted) return;
       setState(() {
         if (player) {
           _playerOffset = off;
@@ -99,7 +124,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
 
   @override
   void dispose() {
-    _overlayFlash.dispose();
+    try { _floatTimer?.cancel(); } catch (_) {}
     super.dispose();
   }
 
@@ -136,18 +161,70 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
         _floatText = text;
         _floatColor = color;
         _floatAlign = (state.lastAction!['target'] == 'enemy') ? Alignment.bottomRight : Alignment.bottomLeft;
-        _floatUntil = DateTime.now().add(const Duration(milliseconds: 700));
+        final start = DateTime.now();
+        _floatUntil = start.add(const Duration(milliseconds: 800));
+        _floatDrift = 0;
+        _floatTimer?.cancel();
+        _floatTimer = Timer.periodic(const Duration(milliseconds: 40), (t){
+          if (!mounted) { t.cancel(); return; }
+          final elapsed = DateTime.now().difference(start).inMilliseconds;
+          const total = 800;
+          final p = elapsed / total;
+          if (p >= 1) {
+            setState((){ _floatText = null; _floatDrift = 0; });
+            t.cancel();
+          } else {
+            setState((){ _floatDrift = 24.0 * p; });
+          }
+        });
       }
       _lastLogLen = state.log.length;
     }
 
-    // Outcome routing (only for this battleId)
-    if (state.result != null && state.battleId == widget.battleId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Outcome routing (only for this battleId): show modal summary
+    if (!_popped && state.result != null && state.battleId == widget.battleId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.result == 'win' ? 'Victory! Loot added.' : 'Defeat.')));
-        // Return to home
-        Navigator.of(context).pop();
+        _popped = true;
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            final items = state.winLoot.map((e)=> "${ItemEffects.label(e['type'] as String)} x${e['qty']}").toList();
+            final codex = state.codexAdded ? 'Added to Codex' : null;
+            final echo = state.echoDropped ? 'Resonant Echo acquired' : null;
+            final details = <String>[
+              'XP +${state.xpGained}${state.leveledUp ? ' (Level Up!)' : ''}',
+              if (items.isNotEmpty) 'Loot: ${items.join(', ')}',
+              if (codex != null) codex,
+              if (echo != null) echo,
+            ];
+            return AlertDialog(
+              title: Text(state.result == 'win' ? 'Victory!' : 'Defeat'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final line in details) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text(line)),
+                  if (details.isEmpty) const Text('No rewards this time.')
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: (){ Navigator.of(ctx).pop(); context.go('/character'); }, child: const Text('Home')),
+                Builder(builder: (bctx){
+                  final open = encounterTicketBox().values.where((e) => e.state == 'open').toList();
+                  if (open.isEmpty || state.result != 'win') return const SizedBox.shrink();
+                  return TextButton(onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    final first = open.first;
+                    final id = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(first.ticketId);
+                    if (!mounted) return; this.context.go('/battle', extra: {'battleId': id});
+                  }, child: const Text('Next Battle'));
+                })
+              ],
+            );
+          }
+        );
       });
     }
 
@@ -209,17 +286,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
               ),
             );
           }),
-          // Attack overlay stub tinted by element
-          if (state.lastAction != null)
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: true,
-                child: FadeTransition(
-                  opacity: _overlayFlash.drive(Tween<double>(begin: 0.0, end: 0.7)),
-                  child: _AttackOverlay(target: state.lastAction!['target'] == 'enemy' ? Alignment.bottomRight : Alignment.bottomLeft, element: state.lastAction!['element'] as String?),
-                ),
-              ),
-            ),
+          // Removed hit highlighting overlay per design
           // Status tags stubs for player/enemy
           Positioned(
             left: 16,
@@ -236,7 +303,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
               alignment: _floatAlign,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 120, left: 24, right: 24),
-                child: Text(_floatText!, style: TextStyle(color: _floatColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Transform.translate(
+                  offset: Offset(0, -_floatDrift),
+                  child: Text(_floatText!, style: TextStyle(color: _floatColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
               ),
             ),
         ],
@@ -315,39 +385,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
   }
 }
 
-class _AttackOverlay extends StatelessWidget {
-  final Alignment target; // where to place splash (approx near actor)
-  final String? element;
-  const _AttackOverlay({required this.target, this.element});
-  @override
-  Widget build(BuildContext context) {
-    final color = _elementColor(element);
-    return Align(
-      alignment: target,
-      child: Container(
-        width: 140,
-        height: 140,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          border: Border.all(color: color.withValues(alpha: 0.8), width: 2),
-        ),
-      ),
-    );
-  }
-}
-
-Color _elementColor(String? e) {
-  switch ((e ?? '').toLowerCase()) {
-    case 'fire': return const Color(0xFFF27961);
-    case 'water': return const Color(0xFF0B8BE6);
-    case 'air': return const Color(0xFFA3CCD9);
-    case 'nature': return const Color(0xFF119955);
-    case 'metal': return const Color(0xFF4D7A99);
-    case 'light': return const Color(0xFFF7C93E);
-    case 'shadow': return const Color(0xFF343473);
-    default: return Colors.white;
-  }
-}
+// Highlight overlay removed per updated design
 
 class _StatusTags extends StatelessWidget {
   final Map<String, int> statuses;

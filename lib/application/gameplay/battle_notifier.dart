@@ -33,6 +33,11 @@ import '../../services/drop_table.dart';
   final Map<String, int> enemyStatuses; // key->duration
   final String? result; // 'win' | 'loss' | null
   final int turnCount;
+  final int xpGained;
+  final bool leveledUp;
+  final List<Map<String, dynamic>> winLoot;
+  final bool codexAdded;
+  final bool echoDropped;
   const BattleState({
     this.battleId,
     this.enemyName,
@@ -54,6 +59,11 @@ import '../../services/drop_table.dart';
     this.lastAction,
     this.playerStatuses = const {},
     this.enemyStatuses = const {},
+    this.xpGained = 0,
+    this.leveledUp = false,
+    this.winLoot = const [],
+    this.codexAdded = false,
+    this.echoDropped = false,
   });
 
   BattleState copyWith({
@@ -77,6 +87,11 @@ import '../../services/drop_table.dart';
     Map<String, dynamic>? lastAction,
     Map<String, int>? playerStatuses,
     Map<String, int>? enemyStatuses,
+    int? xpGained,
+    bool? leveledUp,
+    List<Map<String, dynamic>>? winLoot,
+    bool? codexAdded,
+    bool? echoDropped,
   }) => BattleState(
       battleId: battleId ?? this.battleId,
       enemyName: enemyName ?? this.enemyName,
@@ -98,6 +113,11 @@ import '../../services/drop_table.dart';
       lastAction: lastAction ?? this.lastAction,
       playerStatuses: playerStatuses ?? this.playerStatuses,
       enemyStatuses: enemyStatuses ?? this.enemyStatuses,
+      xpGained: xpGained ?? this.xpGained,
+      leveledUp: leveledUp ?? this.leveledUp,
+      winLoot: winLoot ?? this.winLoot,
+      codexAdded: codexAdded ?? this.codexAdded,
+      echoDropped: echoDropped ?? this.echoDropped,
     );
 }
 
@@ -147,7 +167,15 @@ class BattleNotifier extends StateNotifier<BattleState> {
     }
 
     _playerSkills = SkillCatalog.forClass(classKey);
-    _playerSprites = sprites;
+    // Deduplicate sprite actions by name, keeping higher power (tie-breaker: lower cooldown)
+    final byName = <String, BattleSpriteAction>{};
+    for (final a in sprites) {
+      final e = byName[a.name];
+      if (e == null || a.power > e.power || (a.power == e.power && a.cooldown < e.cooldown)) {
+        byName[a.name] = a;
+      }
+    }
+    _playerSprites = byName.values.toList();
     _player = Combatant(name: 'You', stats: pStats, skills: _playerSkills, spriteActions: _playerSprites);
     // Apply any pending pre-battle buffs from meta
     try {
@@ -182,7 +210,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
         } catch (_) {}
       }
     }
-    const int eHp = 55; const int eAtk = 4; const int eDef = 1; // small numbers
+    const int eHp = 50; const int eAtk = 3; const int eDef = 0; // slightly easier enemy
     _enemy = Combatant(name: enemyName, stats: BattleStats(maxHp: eHp, hp: eHp, atk: eAtk, def: eDef), skills: _enemySkills());
     _engine = BattleEngine(player: _player, enemy: _enemy);
 
@@ -194,7 +222,8 @@ class BattleNotifier extends StateNotifier<BattleState> {
       enemyAssetPath = await MonsterImageService().resolveImagePath(displayName: enemyName, element: enemyElement, type: enemyType);
     } catch (_) {}
 
-    // Quick items
+    // Quick items: auto-refill before building list
+    await _refillQuickSlots();
     final qi = _loadQuickItems();
 
     state = state.copyWith(
@@ -276,6 +305,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final type = item['type'] as String? ?? 'potion_small';
     final logs = <String>[];
     bool consumed = false;
+    // Determine effect direction and apply
+    // Default: positive effects to player, negative to enemy
+    bool targetsEnemy = false;
     switch (type) {
       case 'potion_small':
         _player.stats.hp = (_player.stats.hp + 20).clamp(0, _player.stats.maxHp);
@@ -296,6 +328,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
         _engine.applyStatus(_enemy, 'def-', 2, 2);
         logs.add('Enemy defense fell!');
         consumed = true;
+        targetsEnemy = true;
         break;
       case 'buff_small':
         _engine.applyStatus(_player, 'atk+', 1, 2);
@@ -315,10 +348,15 @@ class BattleNotifier extends StateNotifier<BattleState> {
           playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
           enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
           actionSeq: state.actionSeq + 1,
-          lastAction: {'attacker':'player','target':'enemy','melee': false, 'element': null},
+          lastAction: {
+            'attacker':'player',
+            'target': targetsEnemy ? 'enemy' : 'player',
+            'melee': false,
+            'element': null
+          },
         );
         // Using an item counts as action -> enemy turn after short delay
-        Future.delayed(const Duration(milliseconds: 450), () {
+        Future.delayed(const Duration(milliseconds: 1200), () {
           if (_enemy.isAlive() && (state.result == null)) {
             _enemyTurn();
           }
@@ -338,7 +376,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
       lastAction: lastAction,
     );
     if (_enemy.isAlive()) {
-      Future.delayed(const Duration(milliseconds: 450), () {
+      Future.delayed(const Duration(milliseconds: 1200), () {
         if (_enemy.isAlive() && (state.result == null)) {
           _enemyTurn();
         }
@@ -371,6 +409,18 @@ class BattleNotifier extends StateNotifier<BattleState> {
 
   Future<void> _finish(String result) async {
     final id = state.battleId;
+    String? speciesId;
+    bool preCodexExists = false;
+    bool leveledUpLocal = false;
+    if (id != null) {
+      try {
+        final b = battleBox().get(id);
+        speciesId = b?.speciesId;
+        if (speciesId != null) {
+          preCodexExists = (monsterCodexBox().get(speciesId) != null);
+        }
+      } catch (_) {}
+    }
     if (id != null) {
       try {
         await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).resolve(
@@ -383,50 +433,85 @@ class BattleNotifier extends StateNotifier<BattleState> {
     }
     if (result == 'win') {
       // Drop simple loot
-      _dropLoot();
+      final loot = _dropLoot();
       // XP gain
       try {
         final box = profileBox();
         if (box.values.isNotEmpty) {
           final p = box.values.first;
           int level = p.level;
-          int xp = p.xp + 10; // small gain
+          const int gain = 10;
+          int xp = p.xp + gain; // small gain
           int target = level * 20;
+          bool leveled = false;
           while (xp >= target) {
             xp -= target; level += 1; target = level * 20;
+            leveled = true;
           }
           await box.put(p.id, PlayerProfile(id: p.id, classKey: p.classKey, level: level, xp: xp, unlockedSkills: p.unlockedSkills, cosmetics: p.cosmetics, titles: p.titles));
+          leveledUpLocal = leveled;
+          // Detect codex addition and echo dropped
+          bool codexAdded = false;
+          bool echoDropped = false;
+          try {
+            if (speciesId != null) {
+              final post = monsterCodexBox().get(speciesId);
+              codexAdded = !preCodexExists && (post != null);
+            }
+          } catch (_) {}
+          try {
+            echoDropped = resonantEchoBox().values.any((e) => e.battleId == (id ?? ''));
+          } catch (_) {}
+          state = state.copyWith(
+            xpGained: gain,
+            leveledUp: leveled,
+            winLoot: loot,
+            codexAdded: codexAdded,
+            echoDropped: echoDropped,
+          );
         }
       } catch (_) {}
     }
     // Persist HP back to meta
-    try { playerMetaBox().put('hp', _player.stats.hp); } catch (_) {}
+    try {
+      if (leveledUpLocal) {
+        // Heal to full on level up
+        playerMetaBox().put('hp', _computeMaxHpForPlayer());
+      } else {
+        playerMetaBox().put('hp', _player.stats.hp);
+      }
+    } catch (_) {}
     state = state.copyWith(result: result);
   }
 
-  void _dropLoot() {
+  int _computeMaxHpForPlayer() {
+    const int baseHp = 60;
+    String classKey = 'Sage';
+    try {
+      final vals = profileBox().values;
+      if (vals.isNotEmpty) classKey = vals.first.classKey;
+    } catch (_) {}
+    int mod = 0;
+    switch (classKey) {
+      case 'Warden': mod = 8; break;
+      case 'Sentinel': mod = 5; break;
+      case 'Empath': mod = 5; break;
+      default: mod = 0; break;
+    }
+    return baseHp + mod;
+  }
+
+  List<Map<String, dynamic>> _dropLoot() {
     final seed = DateTime.now().microsecondsSinceEpoch;
-    for (final it in DropTable.roll(luckSeed: seed)) {
+    final rolled = DropTable.roll(luckSeed: seed);
+    for (final it in rolled) {
       InventoryService.add(it['type'] as String, qty: (it['qty'] as int?) ?? 1);
     }
+    return rolled;
   }
 
   List<Map<String, dynamic>> _loadQuickItems() {
-    // Ensure quick slots; auto-fill with up to 4 potions if empty
     var qs = InventoryService.quickSlots();
-    if (qs.isEmpty) {
-      // ensure at least one potion exists
-      final inv = InventoryService.inventory();
-      final pot = inv.firstWhere((e) => e['type'] == 'potion_small', orElse: () => {});
-      String id;
-      if (pot.isEmpty) {
-        id = InventoryService.add('potion_small', qty: 2);
-      } else {
-        id = pot['id'] as String;
-      }
-      qs = [id];
-      InventoryService.setQuickSlots(qs);
-    }
     final out = <Map<String, dynamic>>[];
     for (final id in qs.take(4)) {
       final it = InventoryService.getById(id);
@@ -436,11 +521,34 @@ class BattleNotifier extends StateNotifier<BattleState> {
     return out;
   }
 
+  Future<void> _refillQuickSlots() async {
+    // Remove invalid/empty items from current quick slots, then fill up to 4 from inventory
+    var slots = InventoryService.quickSlots();
+    final inv = InventoryService.inventory();
+    bool hasId(String id) => inv.any((e) => e['id'] == id && (e['qty'] as int? ?? 0) > 0);
+    // Clean existing
+    slots = slots.where((id) => id.isNotEmpty && hasId(id)).toList();
+    // Build candidate pool in priority order (healing first)
+    List<Map<String, dynamic>> pick(List<String> types) =>
+        inv.where((e) => (e['qty'] as int? ?? 0) > 0 && (types.contains(e['type'])) && !slots.contains(e['id'])).toList();
+    final healingOrder = ['potion_small', 'food', 'fruit'];
+    final candidates = <Map<String, dynamic>>[
+      ...pick(healingOrder),
+      ...inv.where((e) => (e['qty'] as int? ?? 0) > 0 && !slots.contains(e['id']) && !healingOrder.contains(e['type'])),
+    ];
+    for (final it in candidates) {
+      if (slots.length >= 4) break;
+      final id = it['id'] as String;
+      slots.add(id);
+    }
+    InventoryService.setQuickSlots(slots);
+  }
+
   List<Skill> _enemySkills() {
     // Enemy uses generic basic/special to keep balance
     return const [
-      Skill(id:'Enemy.basic', name:'Claw', description:'A crude strike.', type:SkillType.basic, power:5, cooldown:0),
-      Skill(id:'Enemy.special', name:'Rend', description:'A heavy tear.', type:SkillType.special, power:9, cooldown:4),
+      Skill(id:'Enemy.basic', name:'Claw', description:'A crude strike.', type:SkillType.basic, power:3, cooldown:0),
+      Skill(id:'Enemy.special', name:'Rend', description:'A heavy tear.', type:SkillType.special, power:6, cooldown:4),
     ];
   }
 
