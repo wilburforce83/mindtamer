@@ -68,7 +68,7 @@ class PlayerImageService {
       final asset = await resolveAssetPath(classKey, gender) ?? assetPathFor(classKey, gender);
       final hairRamp = PlayerImageService.makeRamp3(hairBase);
       final skinRamp = PlayerImageService.makeRamp3(skinBase);
-      final glowRamp3 = _elementRamp3(weaponElement); // already 3-step
+      final glowRamp3 = _elementRamp3(weaponElement) ?? PlayerImageService.defaultWeaponGlowRamp3(); // default to brown tones
       return recolorAsset(
         assetPath: asset,
         hairRamp6: hairRamp,
@@ -192,6 +192,12 @@ class PlayerImageService {
       default:
         return null;
     }
+    return hex.map((h) => 0xFF000000 | _parseHex(h)).toList();
+  }
+
+  // Default weapon glow ramp (brown tones: dark → mid → light)
+  static List<int> defaultWeaponGlowRamp3() {
+    const hex = ['#5A3A1F', '#8C5E34', '#D0A56B'];
     return hex.map((h) => 0xFF000000 | _parseHex(h)).toList();
   }
 

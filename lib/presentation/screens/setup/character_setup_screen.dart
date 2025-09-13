@@ -71,7 +71,8 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
         assetPath: resolved,
         hairRamp6: PlayerImageService.makeRamp3(_hairBase),
         skinRamp6: PlayerImageService.makeRamp3(_skinBase),
-        weaponGlowRamp3: null,
+        // Default to brown tones until weapon details exist
+        weaponGlowRamp3: PlayerImageService.defaultWeaponGlowRamp3(),
       );
     } catch (_) {}
     if (!mounted) return;
@@ -237,11 +238,24 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
                   child: _preview != null
-                      ? RawImage(image: _preview, filterQuality: FilterQuality.none, fit: BoxFit.contain)
+                      ? RawImage(
+                          image: _preview,
+                          filterQuality: FilterQuality.none,
+                          fit: BoxFit.cover,
+                          width: imgSize,
+                          height: imgSize,
+                        )
                       : Builder(builder: (ctx){
                           final cls = (_classKey ?? 'Sage');
                           final path = PlayerImageService.assetPathFor(cls, _gender);
-                          return Image.asset(path, filterQuality: FilterQuality.none, fit: BoxFit.contain, errorBuilder: (_, __, ___)=> const Text('No preview'));
+                          return Image.asset(
+                            path,
+                            filterQuality: FilterQuality.none,
+                            fit: BoxFit.cover,
+                            width: imgSize,
+                            height: imgSize,
+                            errorBuilder: (_, __, ___)=> const Text('No preview'),
+                          );
                         }),
                 ),
                 const SizedBox(width: 12),
@@ -261,11 +275,24 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
               alignment: Alignment.center,
               decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
               child: _preview != null
-                  ? RawImage(image: _preview, filterQuality: FilterQuality.none, fit: BoxFit.contain)
+                  ? RawImage(
+                      image: _preview,
+                      filterQuality: FilterQuality.none,
+                      fit: BoxFit.cover,
+                      width: 256,
+                      height: 256,
+                    )
                   : Builder(builder: (ctx){
                       final cls = (_classKey ?? 'Sage');
                       final path = PlayerImageService.assetPathFor(cls, _gender);
-                      return Image.asset(path, filterQuality: FilterQuality.none, fit: BoxFit.contain, errorBuilder: (_, __, ___)=> const Text('No preview'));
+                      return Image.asset(
+                        path,
+                        filterQuality: FilterQuality.none,
+                        fit: BoxFit.cover,
+                        width: 256,
+                        height: 256,
+                        errorBuilder: (_, __, ___)=> const Text('No preview'),
+                      );
                     }),
             ),
           ),
