@@ -36,6 +36,9 @@ class JournalEditorScreen extends StatelessWidget {
                 final saved = await c.save();
                 // Generate seed result for new entries
                 if (existing == null) {
+                  // Capture pre-drop count to detect new sprite creation
+                  int preCount = 0;
+                  try { preCount = summonsInventoryBox().length; } catch (_) {}
                   final seedResult = await _generateSeed(c);
                   // Route seed according to kind (sprite immediate, monster -> ticket)
                   final router = _makeRouter();
@@ -46,6 +49,20 @@ class JournalEditorScreen extends StatelessWidget {
                     body: c.body,
                     tags: List.of(c.tags),
                   );
+                  // Sprite-drop notification
+                  try {
+                    final postCount = summonsInventoryBox().length;
+                    if (postCount > preCount && context.mounted) {
+                      await showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Summoning Sprite Created'),
+                          content: const Text('Your journal entry has created a summoning sprite.'),
+                          actions: [TextButton(onPressed: ()=> Navigator.of(context).pop(), child: const Text('OK'))],
+                        ),
+                      );
+                    }
+                  } catch (_) {}
                   // Emit event for potential listeners (legacy)
                   JournalEvents.emitSaved(saved, seed: null);
                   // If debug mode is on, show modal
