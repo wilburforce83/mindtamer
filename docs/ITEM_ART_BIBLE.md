@@ -116,19 +116,6 @@ Small trinket icons: coin, charm, rune tile, bell, feather, fang. Metallic trim 
 - Effects: situational buffs or on‑use skills (e.g., barrier, attract, repel).
 - Count: 8.
 
-### 8) Traps & Tools
-- Traps: `snare_trap`, `spike_trap`, `frost_trap`, `hex_trap`.
-- Tools: `lockpick_set`, `camp_kit`, `fishing_rod`, `torch`, `shovel`.
-- Count: 9.
-
-### 9) Echo Components (Meta‑Progression)
-Tie into Resonant Echoes systems.
-
-- `echo_shard_<element>`: crystal shard with element glow.
-- `echo_core`: larger core with internal swirl.
-- `echo_prism`: refined multi‑facet; used in fusion.
-- Count: 9 (7 shards + core + prism).
-
 ---
 
 ## Totals (Target)
@@ -139,8 +126,6 @@ Tie into Resonant Echoes systems.
 - Food: 22
 - Scrolls: 15
 - Talismans: 8
-- Traps/Tools: 9
-- Echo Components: 9
 - Blank placeholders: 4
 - Grand Total (icons): ~100–110
 

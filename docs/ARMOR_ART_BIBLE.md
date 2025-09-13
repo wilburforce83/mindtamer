@@ -21,7 +21,7 @@ Create neutral empties to match existing UI slot empties (ring/hand/chest exist)
 ---
 
 ## Class Armor Sets
-Each class receives 3 named sets (Early, Mid, Late). Each set includes 5 pieces: Head, Chest, Hands, Legs, Feet. Accessories are mostly neutral (see below).
+Each class receives 13 named sets (Tier n), the same image is used for Tier's 1-6 - early, then 7-12 - mid, the 13 - late (i.e. 3 distinct image sets, but 13 names). Each set includes 5 pieces: Head, Chest, Hands, Legs, Feet. Accessories are mostly neutral (see below).
 For each set, list: theme, materials, accent color, motif. Keep silhouettes distinct and readable at 32×32.
 
 ### Warden (plate + tabard)
@@ -123,8 +123,7 @@ Mix signet, bands, set stones; vary thickness and gem shapes (round/square/oval/
   - Slot breakdown: Head 30, Chest 30, Hands 30, Legs 30, Feet 30.
 - Necklaces: 12 icons.
 - Rings: 20 icons.
-- Blank placeholders: 4 new empties (head/neck/legs/feet). Existing ring/hand/chest already present.
-- Total Armor/Accessory Icons ≈ 186.
+- Blank placeholders: 7 new empties (head/neck/legs/hands/chest/feet/neck). Existing ring/hand/chest already present.
 
 ## QA Checklist
 - 32×32, transparent, centered piece; 1 px margin
