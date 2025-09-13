@@ -157,6 +157,7 @@ class _CharacterSetupScreenState extends State<CharacterSetupScreen> {
         'hairBase': _hairBase,
         'skinBase': _skinBase,
         'playerImageAsset': asset,
+        'hp': 60,
         'appearance': {
           'preset': 'custom',
           'hairBase': _hairBase,

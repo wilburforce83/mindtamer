@@ -83,7 +83,16 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         path: '/battle',
-        builder: (context, state) => const BattleScreen(),
+        builder: (context, state) {
+          final extra = state.extra;
+          String? battleId;
+          if (extra is Map) {
+            battleId = extra['battleId']?.toString();
+          } else if (extra is String) {
+            battleId = extra;
+          }
+          return BattleScreen(battleId: battleId);
+        },
       ),
       GoRoute(
         path: '/settings',

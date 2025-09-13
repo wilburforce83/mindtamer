@@ -169,6 +169,8 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            _HubBars(),
+            const SizedBox(height: 12),
             LayoutBuilder(
               builder: (ctx, c) {
                 final w = c.maxWidth;
@@ -395,14 +397,15 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                                 content: Text('No open encounters.')));
                         return;
                       }
-                      // Optional: start battle shell
+                      // Start battle and navigate to battle screen
                       try {
                         final battleId = await BattleServiceImpl(
                                 codex: CodexServiceImpl(),
                                 echo: EchoServiceImpl())
                             .start(id);
                         if (!context.mounted) return;
-                        await _showBattleStub(battleId);
+                        await context.push('/battle', extra: {'battleId': battleId});
+                        if (!context.mounted) return;
                         await vm.refreshTickets();
                       } catch (_) {
                         if (!context.mounted) return;
@@ -438,76 +441,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     );
   }
 
-  Future<void> _showBattleStub(String battleId) async {
-    int turns = 3;
-    String result = 'win';
-    bool flawless = true;
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('Battle (Stub)'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<String>(
-                value: result,
-                items: const [
-                  DropdownMenuItem(value: 'win', child: Text('Win')),
-                  DropdownMenuItem(value: 'loss', child: Text('Loss')),
-                  DropdownMenuItem(value: 'escape', child: Text('Escape')),
-                ],
-                onChanged: (v) {
-                  if (v != null) {
-                    setState(() => result = v);
-                  }
-                },
-              ),
-              Row(children: [
-                const Text('Turns:'),
-                const SizedBox(width: 8),
-                Expanded(
-                    child: Slider(
-                        value: turns.toDouble(),
-                        min: 1,
-                        max: 20,
-                        divisions: 19,
-                        label: '$turns',
-                        onChanged: (v) {
-                          setState(() => turns = v.round());
-                        }))
-              ]),
-              Row(children: [
-                const Text('Flawless:'),
-                Switch(
-                    value: flawless,
-                    onChanged: (v) {
-                      setState(() => flawless = v);
-                    })
-              ]),
-            ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
-            TextButton(
-                onPressed: () async {
-                  await BattleServiceImpl(
-                          codex: CodexServiceImpl(), echo: EchoServiceImpl())
-                      .resolve(
-                          battleId: battleId,
-                          result: result,
-                          turnCount: turns,
-                          flawless: flawless);
-                  if (context.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Resolve')),
-          ],
-        ),
-      ),
-    );
-  }
+  // Deprecated debug stub removed; use live battle flow via /battle.
 
   @override
   void dispose() {
@@ -534,6 +468,47 @@ class CharacterHubScope extends StatelessWidget {
         ),
       ],
       child: child,
+    );
+  }
+}
+
+class _HubBars extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    int hp = 60; int maxHp = 60;
+    try { hp = (playerMetaBox().get('hp') as int?) ?? 60; } catch (_) {}
+    // Max HP simple baseline for now
+    maxHp = 60;
+    int level = 1; int xp = 0;
+    try {
+      final vals = profileBox().values;
+      if (vals.isNotEmpty) { level = vals.first.level; xp = vals.first.xp; }
+    } catch (_) {}
+    final nextXp = level * 20; // small scale
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _HubStatBar(label: 'HP', current: hp, max: maxHp, color: Colors.redAccent),
+        const SizedBox(height: 6),
+        _HubStatBar(label: 'XP L$level', current: xp, max: nextXp, color: Colors.blueAccent),
+      ],
+    );
+  }
+}
+
+class _HubStatBar extends StatelessWidget {
+  final String label; final int current; final int max; final Color color;
+  const _HubStatBar({required this.label, required this.current, required this.max, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    final pct = max > 0 ? (current / max).clamp(0.0, 1.0) : 0.0;
+    return SizedBox(
+      height: 18,
+      child: Stack(children:[
+        Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant))),
+        FractionallySizedBox(widthFactor: pct, child: Container(color: color.withValues(alpha: 0.85))),
+        Positioned.fill(child: Center(child: Text('$label: $current/$max', style: Theme.of(context).textTheme.labelSmall))),
+      ]),
     );
   }
 }
