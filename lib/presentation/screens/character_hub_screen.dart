@@ -165,313 +165,210 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
       centerTitle: true,
       body: RefreshIndicator(
         onRefresh: vm.refreshTickets,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _HubBars(),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (ctx, c) {
-                final w = c.maxWidth;
-                // Use 30% of screen height for the character + slots area
-                final viewH = MediaQuery.of(context).size.height;
-                final double h = viewH * 0.35;
-                final sideInset = w * 0.08;
-                // Determine slot box size
-                final desired = w < 420 ? 56.0 : 64.0;
-                final double boxSize = desired;
-                // Character box (square)
-                const charWFactor = 0.42;
-                double charSize = w * charWFactor;
-                final maxCharByHeight = h -
-                    (2 * boxSize) -
-                    8; // leave small gap between top/bottom rows
-                if (maxCharByHeight > 0 && maxCharByHeight < charSize) {
-                  charSize = maxCharByHeight;
-                }
-                double vPos(int i, int count) =>
-                    (h - boxSize) * (count <= 1 ? 0.0 : i / (count - 1));
-                return SizedBox(
-                  height: h,
-                  child: Stack(
-                    alignment: Alignment.center,
+        child: LayoutBuilder(
+          builder: (ctx, constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Character center box
-                      Container(
-                        width: charSize,
-                        height: charSize,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        child: _playerImage != null
-                            ? RawImage(
-                                image: _playerImage,
-                                filterQuality: FilterQuality.none,
-                                fit: BoxFit.contain,
-                                width: charSize,
-                                height: charSize,
-                              )
-                            : (_playerAssetPath != null
-                                ? Image.asset(
-                                    _playerAssetPath!,
-                                    filterQuality: FilterQuality.none,
-                                    fit: BoxFit.contain,
-                                    width: charSize,
-                                    height: charSize,
-                                    errorBuilder: (_, __, ___) => Text('Character', style: Theme.of(context).textTheme.titleMedium),
-                                  )
-                                : Text('Character', style: Theme.of(context).textTheme.titleMedium)),
-                      ),
-
-                      // Top row center: head and neck aligned with top widgets
-                      Positioned(
-                        top: vPos(0, 4),
-                        left: (w / 2) - boxSize - 8,
-                        child: GearSlot(
-                            slotId: 'head',
-                            item: state.gear['head'],
-                            onTap: () =>
-                                context.push('/items', extra: {'slot': 'head'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(0, 4),
-                        left: (w / 2) + 8,
-                        child: GearSlot(
-                            slotId: 'neck',
-                            item: state.gear['neck'],
-                            onTap: () =>
-                                context.push('/items', extra: {'slot': 'neck'}),
-                            size: boxSize),
-                      ),
-
-                      // Left column (top→bottom): chest, hands, legs, feet
-                      Positioned(
-                        top: vPos(0, 4),
-                        left: sideInset,
-                        child: GearSlot(
-                            slotId: 'chest',
-                            item: state.gear['chest'],
-                            onTap: () => context
-                                .push('/items', extra: {'slot': 'chest'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(1, 4),
-                        left: sideInset,
-                        child: GearSlot(
-                            slotId: 'hands',
-                            item: state.gear['hands'],
-                            onTap: () => context
-                                .push('/items', extra: {'slot': 'hands'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(2, 4),
-                        left: sideInset,
-                        child: GearSlot(
-                            slotId: 'legs',
-                            item: state.gear['legs'],
-                            onTap: () =>
-                                context.push('/items', extra: {'slot': 'legs'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(3, 4),
-                        left: sideInset,
-                        child: GearSlot(
-                            slotId: 'feet',
-                            item: state.gear['feet'],
-                            onTap: () =>
-                                context.push('/items', extra: {'slot': 'feet'}),
-                            size: boxSize),
-                      ),
-
-                      // Right column (top→bottom): rings, weapon, menu
-                      Positioned(
-                        top: vPos(0, 4),
-                        right: sideInset,
-                        child: GearSlot(
-                            slotId: 'ringLeft',
-                            item: state.gear['ringLeft'],
-                            onTap: () => context
-                                .push('/items', extra: {'slot': 'ringLeft'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(1, 4),
-                        right: sideInset,
-                        child: GearSlot(
-                            slotId: 'ringRight',
-                            item: state.gear['ringRight'],
-                            onTap: () => context
-                                .push('/items', extra: {'slot': 'ringRight'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(2, 4),
-                        right: sideInset,
-                        child: GearSlot(
-                            slotId: 'weapon',
-                            item: state.gear['weapon'],
-                            onTap: () => context
-                                .push('/items', extra: {'slot': 'weapon'}),
-                            size: boxSize),
-                      ),
-                      Positioned(
-                        top: vPos(3, 4),
-                        right: sideInset,
-                        child: SizedBox(
-                          width: boxSize,
-                          height: boxSize,
-                          child: PopupMenuButton<_HubMenuAction>(
-                            tooltip: 'Menu',
-                            padding: EdgeInsets.zero,
-                            position: PopupMenuPosition.under,
-                            onSelected: (v) {
-                              switch (v) {
-                                case _HubMenuAction.echoes:
-                                  context.push('/echoes');
-                                  break;
-                                case _HubMenuAction.items:
-                                  context.push('/items');
-                                  break;
-                                case _HubMenuAction.codex:
-                                  context.push('/codex');
-                                  break;
-                                case _HubMenuAction.fusion:
-                                  context.push('/fusion');
-                                  break;
-                                case _HubMenuAction.achievements:
-                                  context.push('/achievements');
-                                  break;
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(value: _HubMenuAction.echoes, child: _MenuItemRow(icon: Icons.graphic_eq, label: 'Echoes')),
-                              PopupMenuItem(value: _HubMenuAction.items, child: _MenuItemRow(icon: Icons.backpack, label: 'Items')),
-                              PopupMenuItem(value: _HubMenuAction.codex, child: _MenuItemRow(icon: Icons.auto_stories, label: 'Codex')),
-                              PopupMenuItem(value: _HubMenuAction.fusion, child: _MenuItemRow(icon: Icons.all_inclusive, label: 'Fusion')),
-                              PopupMenuItem(value: _HubMenuAction.achievements, child: _MenuItemRow(icon: Icons.emoji_events, label: 'Achievements')),
-                            ],
-                            child: Container(
-                              width: boxSize,
-                              height: boxSize,
+                      _HubBars(),
+                      LayoutBuilder(
+                        builder: (ctx, c) {
+                          final w = c.maxWidth;
+                          final viewH = MediaQuery.of(context).size.height;
+                          final double h = viewH * 0.35; // character + slots area
+                          final sideInset = w * 0.08;
+                          final double boxSize = w < 420 ? 56.0 : 64.0;
+                          const charWFactor = 0.42;
+                          double charSize = w * charWFactor;
+                          final maxCharByHeight = h - (2 * boxSize) - 8;
+                          if (maxCharByHeight > 0 && maxCharByHeight < charSize) {
+                            charSize = maxCharByHeight;
+                          }
+                          double vPos(int i, int count) => (h - boxSize) * (count <= 1 ? 0.0 : i / (count - 1));
+                          return SizedBox(
+                            height: h,
+                            child: Stack(
                               alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
-                                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.2),
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              child: Icon(Icons.menu, size: boxSize * 0.5, color: Theme.of(context).colorScheme.outline),
+                              children: [
+                                Container(
+                                  width: charSize,
+                                  height: charSize,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                  child: _playerImage != null
+                                      ? RawImage(image: _playerImage, filterQuality: FilterQuality.none, fit: BoxFit.contain, width: charSize, height: charSize)
+                                      : (_playerAssetPath != null
+                                          ? Image.asset(_playerAssetPath!, filterQuality: FilterQuality.none, fit: BoxFit.contain, width: charSize, height: charSize, errorBuilder: (_, __, ___) => Text('Character', style: Theme.of(context).textTheme.titleMedium))
+                                          : Text('Character', style: Theme.of(context).textTheme.titleMedium)),
+                                ),
+                                Positioned(
+                                  top: vPos(0, 4),
+                                  left: (w / 2) - boxSize - 8,
+                                  child: GearSlot(slotId: 'head', item: state.gear['head'], onTap: () => context.push('/items', extra: {'slot': 'head'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(0, 4),
+                                  left: (w / 2) + 8,
+                                  child: GearSlot(slotId: 'neck', item: state.gear['neck'], onTap: () => context.push('/items', extra: {'slot': 'neck'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(0, 4),
+                                  left: sideInset,
+                                  child: GearSlot(slotId: 'chest', item: state.gear['chest'], onTap: () => context.push('/items', extra: {'slot': 'chest'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(1, 4),
+                                  left: sideInset,
+                                  child: GearSlot(slotId: 'hands', item: state.gear['hands'], onTap: () => context.push('/items', extra: {'slot': 'hands'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(2, 4),
+                                  left: sideInset,
+                                  child: GearSlot(slotId: 'legs', item: state.gear['legs'], onTap: () => context.push('/items', extra: {'slot': 'legs'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(3, 4),
+                                  left: sideInset,
+                                  child: GearSlot(slotId: 'feet', item: state.gear['feet'], onTap: () => context.push('/items', extra: {'slot': 'feet'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(0, 4),
+                                  right: sideInset,
+                                  child: GearSlot(slotId: 'ringLeft', item: state.gear['ringLeft'], onTap: () => context.push('/items', extra: {'slot': 'ringLeft'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(1, 4),
+                                  right: sideInset,
+                                  child: GearSlot(slotId: 'ringRight', item: state.gear['ringRight'], onTap: () => context.push('/items', extra: {'slot': 'ringRight'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(2, 4),
+                                  right: sideInset,
+                                  child: GearSlot(slotId: 'weapon', item: state.gear['weapon'], onTap: () => context.push('/items', extra: {'slot': 'weapon'}), size: boxSize),
+                                ),
+                                Positioned(
+                                  top: vPos(3, 4),
+                                  right: sideInset,
+                                  child: SizedBox(
+                                    width: boxSize,
+                                    height: boxSize,
+                                    child: PopupMenuButton<_HubMenuAction>(
+                                      tooltip: 'Menu',
+                                      padding: EdgeInsets.zero,
+                                      position: PopupMenuPosition.under,
+                                      onSelected: (v) {
+                                        switch (v) {
+                                          case _HubMenuAction.echoes:
+                                            context.push('/echoes');
+                                            break;
+                                          case _HubMenuAction.items:
+                                            context.push('/items');
+                                            break;
+                                          case _HubMenuAction.codex:
+                                            context.push('/codex');
+                                            break;
+                                          case _HubMenuAction.fusion:
+                                            context.push('/fusion');
+                                            break;
+                                          case _HubMenuAction.achievements:
+                                            context.push('/achievements');
+                                            break;
+                                        }
+                                      },
+                                      itemBuilder: (context) => const [
+                                        PopupMenuItem(value: _HubMenuAction.echoes, child: _MenuItemRow(icon: Icons.graphic_eq, label: 'Echoes')),
+                                        PopupMenuItem(value: _HubMenuAction.items, child: _MenuItemRow(icon: Icons.backpack, label: 'Items')),
+                                        PopupMenuItem(value: _HubMenuAction.codex, child: _MenuItemRow(icon: Icons.auto_stories, label: 'Codex')),
+                                        PopupMenuItem(value: _HubMenuAction.fusion, child: _MenuItemRow(icon: Icons.all_inclusive, label: 'Fusion')),
+                                        PopupMenuItem(value: _HubMenuAction.achievements, child: _MenuItemRow(icon: Icons.emoji_events, label: 'Achievements')),
+                                      ],
+                                      child: Container(
+                                        width: boxSize,
+                                        height: boxSize,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+                                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.2),
+                                          borderRadius: BorderRadius.zero,
+                                        ),
+                                        child: Icon(Icons.menu, size: boxSize * 0.5, color: Theme.of(context).colorScheme.outline),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: h - boxSize,
+                                  left: (w / 2) - boxSize - 8,
+                                  child: SizedBox(
+                                    width: boxSize,
+                                    height: boxSize,
+                                    child: Stack(alignment: Alignment.center, children: [
+                                      GearSlot(slotId: 'sprite1', item: null, onTap: () => _pickSprite(1), size: boxSize),
+                                      if (_spriteImg1 != null)
+                                        IgnorePointer(ignoring: true, child: RawImage(image: _spriteImg1, filterQuality: FilterQuality.none, width: boxSize * 0.8, height: boxSize * 0.8)),
+                                    ]),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: h - boxSize,
+                                  left: (w / 2) + 8,
+                                  child: SizedBox(
+                                    width: boxSize,
+                                    height: boxSize,
+                                    child: Stack(alignment: Alignment.center, children: [
+                                      GearSlot(slotId: 'sprite2', item: null, onTap: () => _pickSprite(2), size: boxSize),
+                                      if (_spriteImg2 != null)
+                                        IgnorePointer(ignoring: true, child: RawImage(image: _spriteImg2, filterQuality: FilterQuality.none, width: boxSize * 0.8, height: boxSize * 0.8)),
+                                    ]),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
-
-                      // Sprite slots: bottom aligned, centered
-                      Positioned(
-                        top: h - boxSize,
-                        left: (w / 2) - boxSize - 8,
-                        child: SizedBox(
-                          width: boxSize,
-                          height: boxSize,
-                          child: Stack(alignment: Alignment.center, children: [
-                            GearSlot(
-                                slotId: 'sprite1',
-                                item: null,
-                                onTap: () => _pickSprite(1),
-                                size: boxSize),
-                            if (_spriteImg1 != null)
-                              IgnorePointer(
-                                  ignoring: true,
-                                  child: RawImage(
-                                      image: _spriteImg1,
-                                      filterQuality: FilterQuality.none,
-                                      width: boxSize * 0.8,
-                                      height: boxSize * 0.8)),
-                          ]),
-                        ),
-                      ),
-                      Positioned(
-                        top: h - boxSize,
-                        left: (w / 2) + 8,
-                        child: SizedBox(
-                          width: boxSize,
-                          height: boxSize,
-                          child: Stack(alignment: Alignment.center, children: [
-                            GearSlot(
-                                slotId: 'sprite2',
-                                item: null,
-                                onTap: () => _pickSprite(2),
-                                size: boxSize),
-                            if (_spriteImg2 != null)
-                              IgnorePointer(
-                                  ignoring: true,
-                                  child: RawImage(
-                                      image: _spriteImg2,
-                                      filterQuality: FilterQuality.none,
-                                      width: boxSize * 0.8,
-                                      height: boxSize * 0.8)),
-                          ]),
-                        ),
+                      _StatsAndAttacks(inst1: _inst1, inst2: _inst2),
+                      FilledButton(
+                        style: FilledButton.styleFrom(shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
+                        onPressed: state.openTickets > 0
+                            ? () async {
+                                final encounters = context.read<EncountersRepo>();
+                                final id = await encounters.getFirstOpenTicketId();
+                                if (id == null) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No open encounters.')));
+                                  return;
+                                }
+                                try {
+                                  final battleId = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(id);
+                                  if (!context.mounted) return;
+                                  await context.push('/battle', extra: {'battleId': battleId});
+                                  if (!context.mounted) return;
+                                  await vm.refreshTickets();
+                                } catch (_) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Battle flow not ready')));
+                                }
+                              }
+                            : null,
+                        child: Text(state.openTickets > 0 ? 'Battle Now' : 'No Battles Available'),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-
-            // Stats and Attacks panel
-            const SizedBox(height: 12),
-            _StatsAndAttacks(inst1: _inst1, inst2: _inst2),
-
-            const SizedBox(height: 16),
-
-            // Battle button above tiles
-            FilledButton(
-              style: FilledButton.styleFrom(
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                ),
               ),
-              onPressed: state.openTickets > 0
-                  ? () async {
-                      final encounters = context.read<EncountersRepo>();
-                      final id = await encounters.getFirstOpenTicketId();
-                      if (id == null) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('No open encounters.')));
-                        return;
-                      }
-                      // Start battle and navigate to battle screen
-                      try {
-                        final battleId = await BattleServiceImpl(
-                                codex: CodexServiceImpl(),
-                                echo: EchoServiceImpl())
-                            .start(id);
-                        if (!context.mounted) return;
-                        await context.push('/battle', extra: {'battleId': battleId});
-                        if (!context.mounted) return;
-                        await vm.refreshTickets();
-                      } catch (_) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Battle flow not ready')));
-                      }
-                    }
-                  : null,
-              child: Text(state.openTickets > 0
-                  ? 'Battle Now'
-                  : 'No Battles Available'),
-            ),
-            const SizedBox(height: 16),
-
-            // Grid of buttons removed; actions are now in the right-side menu slot.
-          ],
+            );
+          },
         ),
       ),
     );
