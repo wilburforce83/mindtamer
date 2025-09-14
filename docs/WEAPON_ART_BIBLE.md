@@ -4,9 +4,10 @@ This document specifies the full weapon icon set, with at least 8 unique weapons
 
 ## Global Style
 - Canvas: 32×32 px PNG, transparent.
-- Palette: Pineapple 32; metals use base_metal ramps; magical accents use WEAPON_GLOW ramps from the Monster/Player bibles.
+- Palette: Pineapple 32
 - Outline: 1 px where needed; no pillow shading.
 - Light: Top‑left; small specular on edges; avoid noisy textures.
+- Teirs; weapon will look the same no matter what tier it is, teiring and enchanments will be handles by blushed colouring of the item slot boxes in the inventory and equip slot.
 - Pose: Present weapons at a 30–45° angle to maximize silhouette.
 - Naming: `assets/images/weapons/<class>/<key>_32.png`
 
@@ -118,19 +119,10 @@ For each entry: Name — Silhouette & Materials — Accent/FX — Class Affinity
 7. Catalyst Rod — rod — purple core — Alchemist — core stripe.
 8. Distiller Crossbow — crossbow — flask mag — Alchemist — bottle icon.
 
----
-
-## Rarity & Trim
-- Common: iron/wood; plain wraps.
-- Uncommon: steel/bronze; colored leather.
-- Rare: gold/silver trim; gem insets.
-- Epic: brighter glow; unique silhouettes.
-Apply small insets (2–4 px gems) to signal rarity.
 
 ## QA Checklist
 - 32×32, transparent, clean silhouette at 1×
 - Angle shows mass and edge; specular on blade/metal
 - Consistent light; no over‑noise; 1 px safe margin
 - File path matches class folder; key snake‑case
-- If magical, glow uses correct ramp
 
