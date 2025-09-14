@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/inventory_service.dart';
+import '../../services/item_catalog.dart';
 import '../../data/hive/boxes.dart';
+import '../../core/pixel_assets.dart';
 
 class ItemsScreen extends StatefulWidget {
   final String? slot; // equipment slot if navigated from a gear slot
@@ -11,53 +13,39 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   late List<Map<String, dynamic>> _inventory;
-  late List<String> _quickSlots;
 
   @override
   void initState() {
     super.initState();
+    // Load asset manifest so we can gate image loads on availability
+    PixelAssets.init().then((_) { if (mounted) setState((){}); });
     _reload();
   }
 
   void _reload() {
     _inventory = InventoryService.inventory();
-    _quickSlots = InventoryService.quickSlots();
     setState(() {});
-  }
-
-  void _assignToSlot(String itemId) async {
-    final slot = await showDialog<int>(context: context, builder: (ctx) {
-      return SimpleDialog(title: const Text('Assign to Quick Slot'), children: [
-        for (int i = 0; i < 4; i++)
-          SimpleDialogOption(onPressed: () => Navigator.pop(ctx, i), child: Text('Slot ${i + 1}')),
-      ]);
-    });
-    if (slot == null) return;
-    // ensure list length 4
-    while (_quickSlots.length < 4) { _quickSlots.add(''); }
-    _quickSlots[slot] = itemId;
-    InventoryService.setQuickSlots(_quickSlots);
-    _reload();
   }
 
   // Quick slots are indicators only here; no unassign action in this view.
 
-  bool _isHealing(String type) =>
-      type == 'potion_small' || type == 'fruit' || type == 'food';
+  bool _isHealing(String type) {
+    final def = ItemCatalog.defOf(type);
+    if (def == null) return false;
+    return def.fullHealOutOfBattle || (def.outOfBattleHealAmount() != null);
+  }
 
   int _healAmount(String type) {
-    switch (type) {
-      case 'potion_small': return 20;
-      case 'fruit': return 10;
-      case 'food': return 15;
-      default: return 0;
-    }
+    final def = ItemCatalog.defOf(type);
+    if (def == null) return 0;
+    return def.outOfBattleHealAmount() ?? 0;
   }
 
   Future<void> _useItem(Map<String, dynamic> item) async {
     final id = item['id'] as String;
     final type = item['type']?.toString() ?? '';
     if (!_isHealing(type)) return;
+    final def = ItemCatalog.defOf(type);
     final amt = _healAmount(type);
     // Compute current and max HP similar to battle init
     try {
@@ -98,13 +86,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
         }
       } catch (_) {}
       final maxHp = baseHp + classHp + hpLv + spriteHp;
-      final newHp = (hp + amt).clamp(0, maxHp);
+      final newHp = (def?.fullHealOutOfBattle == true) ? maxHp : (hp + amt).clamp(0, maxHp);
       await meta.put('hp', newHp);
       // Consume from inventory
       InventoryService.consume(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Healed +$amt HP')),
+          SnackBar(content: Text(def?.fullHealOutOfBattle == true ? 'Fully healed' : 'Healed +$amt HP')),
         );
       }
       _reload();
@@ -126,25 +114,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Quick Items (4 slots)'),
-            const SizedBox(height: 8),
-            // Small, non-interactive indicators for quick slots
-            Row(children: [
-              for (int i = 0; i < 4; i++) ...[
-                Expanded(
-                  child: _QuickSlot(
-                    index: i,
-                    item: (i < _quickSlots.length && _quickSlots[i].isNotEmpty)
-                        ? InventoryService.getById(_quickSlots[i])
-                        : null,
-                  ),
-                ),
-                if (i != 3) const SizedBox(width: 6),
-              ]
-            ]),
-            const SizedBox(height: 12),
-            const Divider(),
-            const SizedBox(height: 12),
+            // Quick slots removed
             const Text('Inventory'),
             const SizedBox(height: 8),
             Expanded(
@@ -155,20 +125,49 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   final it = _inventory[i];
                   final type = it['type'] as String;
                   final isHealing = _isHealing(type);
-                  return ListTile(
-                    title: Text(ItemEffects.label(type)),
-                    subtitle: Text('x${it['qty']}'),
-                    trailing: Wrap(spacing: 8, children: [
-                      if (isHealing)
-                        TextButton(
-                          onPressed: (it['qty'] as int) > 0 ? () => _useItem(it) : null,
-                          child: const Text('Use'),
+                  final asset = ItemCatalog.assetOf(type);
+                  final hasAsset = asset != null && PixelAssets.has(asset);
+                  final label = ItemEffects.label(type);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        if (hasAsset)
+                          Image.asset(
+                            asset,
+                            width: 20,
+                            height: 20,
+                            filterQuality: FilterQuality.none,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.inventory_2_outlined, size: 18),
+                          )
+                        else
+                          const Icon(Icons.inventory_2_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(label, style: Theme.of(context).textTheme.labelSmall, overflow: TextOverflow.ellipsis),
+                              Text('x${it['qty']}', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.8))),
+                            ],
+                          ),
                         ),
-                      TextButton(
-                        onPressed: () => _assignToSlot(it['id'] as String),
-                        child: const Text('Equip'),
-                      ),
-                    ]),
+                        const SizedBox(width: 8),
+                        Wrap(spacing: 6, children: [
+                          if (isHealing)
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                minimumSize: const Size(0, 0),
+                              ),
+                              onPressed: (it['qty'] as int) > 0 ? () => _useItem(it) : null,
+                              child: const Text('Use', style: TextStyle(fontSize: 11)),
+                            ),
+                        ]),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -176,24 +175,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _QuickSlot extends StatelessWidget {
-  final int index;
-  final Map<String, dynamic>? item;
-  const _QuickSlot({required this.index, required this.item});
-  @override
-  Widget build(BuildContext context) {
-    final label = item == null ? 'Empty' : ItemEffects.label(item!['type'] as String);
-    final qty = (item == null) ? '' : ' x${item!['qty']}';
-    return Container(
-      height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
-      alignment: Alignment.center,
-      child: Text('S${index + 1}: $label$qty', style: Theme.of(context).textTheme.labelSmall),
     );
   }
 }

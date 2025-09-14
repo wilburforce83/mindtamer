@@ -42,6 +42,15 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    # Explicitly include items dir to ensure bundling on hot restart
+    - assets/images/items/
+    - assets/images/items/potions/
+    - assets/images/items/food/
+    - assets/images/items/debuffs/
+    - assets/images/items/bombs/
+    - assets/images/items/elixirs/
+    - assets/images/items/scrolls/
+    - assets/images/items/talismans/
     - assets/images/backgrounds/
     - assets/images/players/
     - assets/images/monsters/

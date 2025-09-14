@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import '../data/hive/boxes.dart';
+import 'item_catalog.dart';
 
 class InventoryService {
   static List<Map<String, dynamic>> inventory() {
@@ -60,14 +61,6 @@ class InventoryService {
 class ItemEffects {
   // Define a small set of item effects
   static String label(String type) {
-    switch (type) {
-      case 'potion_small': return 'Potion +20HP';
-      case 'fruit': return 'Fruit +10HP';
-      case 'food': return 'Snack +15HP';
-      case 'poison_small': return 'Poison -2 DEF (2T)';
-      case 'buff_small': return 'Focus +1 ATK (2T)';
-      default: return type;
-    }
+    return ItemCatalog.labelOf(type);
   }
 }
-

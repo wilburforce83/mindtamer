@@ -10,6 +10,7 @@ import '../../game/skills/skill_catalog.dart';
 import '../../models/sprite_attack.dart';
 import '../../game/services/monster_image_service.dart';
 import '../../services/inventory_service.dart';
+import '../../services/item_catalog.dart';
 import '../../services/drop_table.dart';
 
   class BattleState {
@@ -254,7 +255,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
       backgroundAsset: bg,
       enemyAssetPath: enemyAssetPath,
       quickItems: qi,
-      log: ['A wild $enemyName appears!'],
+      log: ['An Echo manifests: $enemyName.'],
       turnCount: 0,
       playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
       enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
@@ -332,66 +333,177 @@ class BattleNotifier extends StateNotifier<BattleState> {
     if (quickIndex < 0 || quickIndex >= state.quickItems.length) { return; }
     final item = state.quickItems[quickIndex];
     final id = item['id'] as String;
-    final type = item['type'] as String? ?? 'potion_small';
+    final type = item['type'] as String? ?? '';
+    final def = ItemCatalog.defOf(type);
+    if (def == null) return;
     final logs = <String>[];
-    bool consumed = false;
-    // Determine effect direction and apply
-    // Default: positive effects to player, negative to enemy
     bool targetsEnemy = false;
-    switch (type) {
-      case 'potion_small':
-        _player.stats.hp = (_player.stats.hp + 20).clamp(0, _player.stats.maxHp);
-        logs.add('You used Potion (+20HP).');
-        consumed = true;
-        break;
-      case 'fruit':
-        _player.stats.hp = (_player.stats.hp + 10).clamp(0, _player.stats.maxHp);
-        logs.add('You ate Fruit (+10HP).');
-        consumed = true;
-        break;
-      case 'food':
-        _player.stats.hp = (_player.stats.hp + 15).clamp(0, _player.stats.maxHp);
-        logs.add('You ate Snack (+15HP).');
-        consumed = true;
-        break;
-      case 'poison_small':
-        _engine.applyStatus(_enemy, 'def-', 2, 2);
-        logs.add('Enemy defense fell!');
-        consumed = true;
-        targetsEnemy = true;
-        break;
-      case 'buff_small':
-        _engine.applyStatus(_player, 'atk+', 1, 2);
-        logs.add('Your attack rose!');
-        consumed = true;
-        break;
-      default:
-        break;
+
+    // Instant heal
+    if (def.healInstant != null && def.healInstant! > 0) {
+      _player.stats.hp = (_player.stats.hp + def.healInstant!).clamp(0, _player.stats.maxHp);
+      logs.add('You used ${def.name} (+${def.healInstant}HP).');
     }
-    if (consumed) {
-      if (InventoryService.consume(id)) {
-        final qi = _loadQuickItems();
-        state = state.copyWith(
-          playerHp: _player.stats.hp,
-          quickItems: qi,
-          log: [...state.log, ...logs],
-          playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-          enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-          actionSeq: state.actionSeq + 1,
-          lastAction: {
-            'attacker':'player',
-            'target': targetsEnemy ? 'enemy' : 'player',
-            'melee': false,
-            'element': null
-          },
-        );
-        // Using an item counts as action -> enemy turn after short delay
-        Future.delayed(const Duration(milliseconds: 1200), () {
-          if (_enemy.isAlive() && (state.result == null)) {
-            _enemyTurn();
-          }
-        });
+    // Regen
+    if (def.regenPerTurn != null && def.regenTurns != null) {
+      _engine.applyStatus(_player, 'regen', def.regenPerTurn!, def.regenTurns!);
+      logs.add('You gained Regen ${def.regenPerTurn}/T for ${def.regenTurns}T.');
+    }
+    // Buff / Debuff
+    if (def.buffKey != null && def.buffMagnitude != null && def.buffDuration != null) {
+      final target = def.buffTargetsEnemy ? _enemy : _player;
+      _engine.applyStatus(target, def.buffKey!, def.buffMagnitude!, def.buffDuration!);
+      targetsEnemy = def.buffTargetsEnemy;
+      if (def.buffTargetsEnemy) {
+        logs.add('Enemy afflicted: ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+      } else {
+        logs.add('You gained ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
       }
+    }
+    // Damage
+    if (def.damage != null && def.damage! > 0) {
+      final dmg = def.damage!.clamp(1, 999);
+      _enemy.stats.hp = (_enemy.stats.hp - dmg).clamp(0, _enemy.stats.maxHp);
+      logs.add('You used ${def.name} for $dmg damage.');
+      targetsEnemy = true;
+    }
+    // Cleanse
+    if (def.cleanseAll) {
+      _engine.applyStatus(_player, 'cleanse', 0, 0);
+      logs.add('You cleansed all negatives.');
+    }
+    // Antidote
+    if (def.antidote) {
+      // Remove poison only
+      if (_player.stats.statuses.containsKey('poison')) {
+        _player.stats.statuses.remove('poison');
+        logs.add('Poison removed.');
+      } else {
+        logs.add('No poison to cleanse.');
+      }
+    }
+    // Reduce cooldowns
+    if (def.reduceCooldowns != null && def.reduceCooldowns! > 0) {
+      final n = def.reduceCooldowns!;
+      final keys = _player.cooldowns.keys.toList();
+      for (final k in keys) {
+        final cur = _player.cooldowns[k] ?? 0;
+        final nv = (cur - n).clamp(0, 99);
+        if (nv == 0) {
+          _player.cooldowns.remove(k);
+        } else {
+          _player.cooldowns[k] = nv;
+        }
+      }
+      logs.add('Cooldowns reduced by $n.');
+    }
+
+    // Consume and update state if any effect occurred
+    if (logs.isNotEmpty && InventoryService.consume(id)) {
+      final qi = _loadQuickItems();
+      state = state.copyWith(
+        playerHp: _player.stats.hp,
+        enemyHp: _enemy.stats.hp,
+        quickItems: qi,
+        log: [...state.log, ...logs],
+        playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+        enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+        actionSeq: state.actionSeq + 1,
+        lastAction: {
+          'attacker':'player',
+          'target': targetsEnemy ? 'enemy' : 'player',
+          'melee': false,
+          'element': null
+        },
+      );
+      // Using an item counts as action -> enemy turn after short delay
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (_enemy.isAlive() && (state.result == null)) {
+          _enemyTurn();
+        }
+      });
+    }
+  }
+
+  // Use an item directly from inventory by id (modal flow). Counts as a turn.
+  void useItemFromInventory(String invId) {
+    final it = InventoryService.getById(invId);
+    if (it == null) return;
+    final type = (it['type'] as String?) ?? '';
+    final def = ItemCatalog.defOf(type);
+    if (def == null) return;
+    final logs = <String>[];
+    bool targetsEnemy = false;
+
+    if (def.healInstant != null && def.healInstant! > 0) {
+      _player.stats.hp = (_player.stats.hp + def.healInstant!).clamp(0, _player.stats.maxHp);
+      logs.add('You used ${def.name} (+${def.healInstant}HP).');
+    }
+    if (def.regenPerTurn != null && def.regenTurns != null) {
+      _engine.applyStatus(_player, 'regen', def.regenPerTurn!, def.regenTurns!);
+      logs.add('You gained Regen ${def.regenPerTurn}/T for ${def.regenTurns}T.');
+    }
+    if (def.buffKey != null && def.buffMagnitude != null && def.buffDuration != null) {
+      final target = def.buffTargetsEnemy ? _enemy : _player;
+      _engine.applyStatus(target, def.buffKey!, def.buffMagnitude!, def.buffDuration!);
+      targetsEnemy = def.buffTargetsEnemy;
+      if (def.buffTargetsEnemy) {
+        logs.add('Enemy afflicted: ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+      } else {
+        logs.add('You gained ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+      }
+    }
+    if (def.damage != null && def.damage! > 0) {
+      final dmg = def.damage!.clamp(1, 999);
+      _enemy.stats.hp = (_enemy.stats.hp - dmg).clamp(0, _enemy.stats.maxHp);
+      logs.add('You used ${def.name} for $dmg damage.');
+      targetsEnemy = true;
+    }
+    if (def.cleanseAll) {
+      _engine.applyStatus(_player, 'cleanse', 0, 0);
+      logs.add('You cleansed all negatives.');
+    }
+    if (def.antidote) {
+      if (_player.stats.statuses.containsKey('poison')) {
+        _player.stats.statuses.remove('poison');
+        logs.add('Poison removed.');
+      } else {
+        logs.add('No poison to cleanse.');
+      }
+    }
+    if (def.reduceCooldowns != null && def.reduceCooldowns! > 0) {
+      final n = def.reduceCooldowns!;
+      final keys = _player.cooldowns.keys.toList();
+      for (final k in keys) {
+        final cur = _player.cooldowns[k] ?? 0;
+        final nv = (cur - n).clamp(0, 99);
+        if (nv == 0) { _player.cooldowns.remove(k); } else { _player.cooldowns[k] = nv; }
+      }
+      logs.add('Cooldowns reduced by $n.');
+    }
+
+    if (logs.isNotEmpty && InventoryService.consume(invId)) {
+      final qi = _loadQuickItems();
+      state = state.copyWith(
+        playerHp: _player.stats.hp,
+        enemyHp: _enemy.stats.hp,
+        quickItems: qi,
+        log: [...state.log, ...logs],
+        playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+        enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+        actionSeq: state.actionSeq + 1,
+        lastAction: {
+          'attacker':'player',
+          'target': targetsEnemy ? 'enemy' : 'player',
+          'melee': false,
+          'element': null
+        },
+      );
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (_enemy.isAlive() && (state.result == null)) {
+          _enemyTurn();
+        }
+      });
     }
   }
 
@@ -549,37 +661,47 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   List<Map<String, dynamic>> _loadQuickItems() {
-    var qs = InventoryService.quickSlots();
-    final out = <Map<String, dynamic>>[];
-    for (final id in qs.take(4)) {
-      final it = InventoryService.getById(id);
-      if (it == null) { continue; }
-      out.add({'id': id, 'type': it['type'], 'label': ItemEffects.label(it['type']), 'qty': it['qty']});
-    }
-    return out;
+    // Quick slots removed: still return empty list to avoid state churn
+    return const <Map<String, dynamic>>[];
   }
 
   Future<void> _refillQuickSlots() async {
-    // Remove invalid/empty items from current quick slots, then fill up to 4 from inventory
-    var slots = InventoryService.quickSlots();
+    // Quick slots removed: no-op
+  }
+
+  void quickHeal() {
     final inv = InventoryService.inventory();
-    bool hasId(String id) => inv.any((e) => e['id'] == id && (e['qty'] as int? ?? 0) > 0);
-    // Clean existing
-    slots = slots.where((id) => id.isNotEmpty && hasId(id)).toList();
-    // Build candidate pool in priority order (healing first)
-    List<Map<String, dynamic>> pick(List<String> types) =>
-        inv.where((e) => (e['qty'] as int? ?? 0) > 0 && (types.contains(e['type'])) && !slots.contains(e['id'])).toList();
-    final healingOrder = ['potion_small', 'food', 'fruit'];
-    final candidates = <Map<String, dynamic>>[
-      ...pick(healingOrder),
-      ...inv.where((e) => (e['qty'] as int? ?? 0) > 0 && !slots.contains(e['id']) && !healingOrder.contains(e['type'])),
-    ];
-    for (final it in candidates) {
-      if (slots.length >= 4) { break; }
-      final id = it['id'] as String;
-      slots.add(id);
+    String? bestId;
+    int bestHeal = -1;
+    // Prefer instant heals
+    for (final it in inv) {
+      final t = (it['type'] ?? '').toString();
+      final q = (it['qty'] as int?) ?? 0;
+      if (q <= 0) continue;
+      final def = ItemCatalog.defOf(t);
+      if (def == null) continue;
+      final heal = (def.healInstant ?? 0);
+      if (heal > bestHeal) { bestHeal = heal; bestId = it['id'] as String; }
     }
-    InventoryService.setQuickSlots(slots);
+    if (bestId == null) {
+      // choose best regen
+      for (final it in inv) {
+        final t = (it['type'] ?? '').toString();
+        final q = (it['qty'] as int?) ?? 0;
+        if (q <= 0) continue;
+        final def = ItemCatalog.defOf(t);
+        if (def == null) continue;
+        final total = (def.regenPerTurn ?? 0) * (def.regenTurns ?? 0);
+        if (total > bestHeal) { bestHeal = total; bestId = it['id'] as String; }
+      }
+    }
+    if (bestId != null) {
+      useItemFromInventory(bestId);
+    }
+  }
+
+  void escapeBattle() {
+    _finish('escape');
   }
 
   List<Skill> _enemySkills() {

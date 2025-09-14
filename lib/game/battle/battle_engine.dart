@@ -16,7 +16,8 @@ class BattleStats {
     final a = statuses['atk+']?.magnitude ?? 0;
     final s = statuses['spirit+']?.magnitude ?? 0; // small spirit buff contributes to attack
     final f = statuses['focus']?.magnitude ?? 0; // focus modeled as atk boost elsewhere
-    return a + s + f;
+    final down = statuses['atk-']?.magnitude ?? 0; // attack down
+    return (a + s + f) - down;
   }
   int get defMod => (statuses['def+']?.magnitude ?? 0) - (statuses['def-']?.magnitude ?? 0);
   int get guard => statuses['guard']?.magnitude ?? 0; // flat reduction
@@ -26,6 +27,11 @@ class BattleStats {
     // Regen first
     if (regen > 0) {
       hp = (hp + regen).clamp(0, maxHp);
+    }
+    // Damage over time (e.g., poison)
+    final poison = statuses['poison']?.magnitude ?? 0;
+    if (poison > 0) {
+      hp = (hp - poison).clamp(0, maxHp);
     }
     // Decrement durations and remove expired
     final expired = <String>[];
@@ -144,17 +150,18 @@ class BattleEngine {
       case 'def-':
       case 'guard':
       case 'regen':
+      case 'atk-':
+      case 'poison':
         target.stats.statuses[eff.key] = BattleStatus(eff.magnitude, eff.duration);
         break;
       case 'cleanse':
-        // remove first negative status if any
-        final negatives = ['def-', 'vuln'];
-        for (final k in negatives) {
-          if (target.stats.statuses.containsKey(k)) {
-            target.stats.statuses.remove(k);
-            break;
-          }
-        }
+        // remove all negative statuses
+        final negatives = ['def-', 'atk-', 'poison', 'vuln'];
+        final toRemove = <String>[];
+        target.stats.statuses.forEach((k, v) {
+          if (negatives.contains(k)) toRemove.add(k);
+        });
+        for (final k in toRemove) { target.stats.statuses.remove(k); }
         break;
       case 'spirit+':
         target.stats.statuses['spirit+'] = BattleStatus(eff.magnitude, eff.duration);

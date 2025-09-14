@@ -8,6 +8,8 @@ class PixelButton extends StatelessWidget {
   final bool primary;
   final Color? bgColor;
   final Color? fgColor;
+  final String? leadingAsset; // optional 16-24px icon asset
+  final double leadingSize;
 
   const PixelButton({
     super.key,
@@ -17,6 +19,8 @@ class PixelButton extends StatelessWidget {
     this.primary = true,
     this.bgColor,
     this.fgColor,
+    this.leadingAsset,
+    this.leadingSize = 16,
   });
 
   @override
@@ -26,9 +30,21 @@ class PixelButton extends StatelessWidget {
     final bg = bgColor ?? (primary ? scheme.primary : scheme.surface);
     final fg = fgColor ?? (primary ? scheme.onPrimary : scheme.onSurface);
 
-    final content = Center(
-      child: Text(label, style: TextStyle(color: fg, fontSize: 12)),
-    );
+    final labelWidget = Text(label, style: TextStyle(color: fg, fontSize: 12));
+    final inner = () {
+      if (leadingAsset == null) return labelWidget;
+      final has = PixelAssets.has(leadingAsset!);
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (has)
+            Image.asset(leadingAsset!, width: leadingSize, height: leadingSize, filterQuality: FilterQuality.none, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+          const SizedBox(width: 6),
+          Flexible(child: labelWidget),
+        ],
+      );
+    }();
+    final content = Center(child: inner);
 
     // If button sprite exists, use nine-slice with centerSlice and nearest-neighbor.
     if (PixelAssets.has(PixelAssets.btnPrimary9Slice)) {

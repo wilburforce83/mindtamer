@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,8 @@ import '../../services/inventory_service.dart';
 import '../../game/services/seed_pipeline.dart';
 import '../widgets/game_scaffold.dart';
 import '../widgets/pixel_button.dart';
+import '../../core/pixel_assets.dart';
+import '../../services/item_catalog.dart';
 
 class BattleScreen extends ConsumerStatefulWidget {
   final String? battleId;
@@ -32,6 +35,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
   double _floatDrift = 0.0;
   Timer? _floatTimer;
   bool _popped = false;
+  late AnimationController _pulseCtrl;
 
   @override
   void initState() {
@@ -40,6 +44,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       Future.microtask(() => ref.read(battleProvider.notifier).init(battleId: widget.battleId!));
     }
     _playerImgFut = PlayerImageService().renderCurrentPlayer();
+    // Preload asset manifest for item icons
+    PixelAssets.init();
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
 
   }
 
@@ -125,7 +132,70 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
   @override
   void dispose() {
     try { _floatTimer?.cancel(); } catch (_) {}
+    try { _pulseCtrl.dispose(); } catch (_) {}
     super.dispose();
+  }
+
+  void _showItemsModal(WidgetRef ref) async {
+    final inv = InventoryService.inventory();
+    // Filter only catalog-defined items
+    final usable = inv.where((e) => ItemCatalog.defOf((e['type'] ?? '').toString()) != null).toList();
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Use Item', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemCount: usable.length,
+                    itemBuilder: (_, i) {
+                      final it = usable[i];
+                      final id = it['id'] as String;
+                      final type = (it['type'] ?? '').toString();
+                      final label = ItemEffects.label(type);
+                      final asset = ItemCatalog.assetOf(type);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(children: [
+                          if (asset != null && PixelAssets.has(asset))
+                            Image.asset(asset, width: 20, height: 20, filterQuality: FilterQuality.none)
+                          else
+                            const Icon(Icons.inventory_2_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(label, style: Theme.of(context).textTheme.labelSmall, overflow: TextOverflow.ellipsis)),
+                          const SizedBox(width: 8),
+                          Text('x${it['qty']}', style: Theme.of(context).textTheme.labelSmall),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), visualDensity: VisualDensity.compact),
+                            onPressed: (it['qty'] as int) > 0 ? () {
+                              Navigator.of(ctx).pop();
+                              ref.read(battleProvider.notifier).useItemFromInventory(id);
+                            } : null,
+                            child: const Text('Use', style: TextStyle(fontSize: 11)),
+                          ),
+                        ]),
+                      );
+                    },
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -200,7 +270,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
               if (echo != null) echo,
             ];
             return AlertDialog(
-              title: Text(state.result == 'win' ? 'Victory!' : 'Defeat'),
+              title: Text(state.result == 'win' ? 'Victory!' : (state.result == 'escape' ? 'Escaped' : 'Defeat')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +387,34 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       ),
     );
 
-    final skills = Wrap(
+    Color _colorForElement(String? e) {
+      switch ((e ?? '').toLowerCase()) {
+        case 'fire': return Colors.deepOrange;
+        case 'water': return Colors.blueAccent;
+        case 'air': return Colors.lightBlueAccent;
+        case 'light': return Colors.amber;
+        case 'shadow': return Colors.purple;
+        case 'nature': return Colors.green;
+        case 'metal': return Colors.grey;
+        default: return Theme.of(context).colorScheme.surface; // neutral
+      }
+    }
+
+    String? _elementForSpriteName(String name) {
+      try {
+        final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
+        final ids = [slots?['sprite1']?.toString(), slots?['sprite2']?.toString()];
+        for (final id in ids) {
+          if (id == null || id.isEmpty) continue;
+          final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
+          final n = (inst.attacks.isNotEmpty ? (inst.attacks.first['name'] ?? '').toString() : '');
+          if (n == name) return (inst.seedSnapshot['element'] ?? '').toString();
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    final skillsWrap = Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
@@ -325,31 +422,111 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
           PixelButton(
             label: state.skillCooldowns.elementAt(i) > 0 ? '${state.skills[i]} (${state.skillCooldowns[i]})' : state.skills[i],
             onPressed: state.skillCooldowns.elementAt(i) > 0 ? null : () => ref.read(battleProvider.notifier).useSkill(i),
-          ),
-        for (int i = 0; i < state.sprites.length; i++)
-          PixelButton(
-            label: state.spriteCooldowns.elementAt(i) > 0 ? '${state.sprites[i]} (${state.spriteCooldowns[i]})' : state.sprites[i],
-            onPressed: state.spriteCooldowns.elementAt(i) > 0 ? null : () => ref.read(battleProvider.notifier).useSprite(i),
-            primary: false,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
       ],
     );
 
-    final items = Wrap(
+    final spritesWrap = Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (int i = 0; i < state.quickItems.length && i < 4; i++)
-          SizedBox(
-            width: 140,
-            child: PixelButton(
-              label: '${state.quickItems[i]['label']} x${state.quickItems[i]['qty']}',
-              onPressed: (state.quickItems[i]['qty'] as int) > 0 ? () => ref.read(battleProvider.notifier).useItem(i) : null,
+        for (int i = 0; i < state.sprites.length; i++)
+          Builder(builder: (ctx) {
+            final elem = _elementForSpriteName(state.sprites[i]);
+            final bg = _colorForElement(elem).withValues(alpha: 0.85);
+            final fg = Colors.white;
+            final label = state.spriteCooldowns.elementAt(i) > 0 ? '${state.sprites[i]} (${state.spriteCooldowns[i]})' : state.sprites[i];
+            return PixelButton(
+              label: label,
+              onPressed: state.spriteCooldowns.elementAt(i) > 0 ? null : () => ref.read(battleProvider.notifier).useSprite(i),
               primary: false,
-            ),
-          ),
+              bgColor: bg,
+              fgColor: fg,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            );
+          }),
       ],
     );
+
+    final itemsOpenButton = Align(
+      alignment: Alignment.centerLeft,
+      child: PixelButton(
+        label: 'Items',
+        onPressed: () => _showItemsModal(ref),
+        primary: false,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    );
+
+    bool _hasHealingItem() {
+      try {
+        for (final it in InventoryService.inventory()) {
+          final t = (it['type'] ?? '').toString();
+          final q = (it['qty'] as int?) ?? 0;
+          if (q <= 0) continue;
+          final def = ItemCatalog.defOf(t);
+          if (def == null) continue;
+          if ((def.healInstant ?? 0) > 0 || ((def.regenPerTurn ?? 0) > 0 && (def.regenTurns ?? 0) > 0)) return true;
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    final healAvailable = _hasHealingItem();
+    final below25 = state.playerMaxHp > 0 && (state.playerHp / state.playerMaxHp) <= 0.25;
+    final shouldPulse = healAvailable && below25 && (state.result == null);
+    if (shouldPulse) {
+      if (!_pulseCtrl.isAnimating) _pulseCtrl.repeat(reverse: true);
+    } else {
+      if (_pulseCtrl.isAnimating) _pulseCtrl.stop();
+    }
+
+    Widget _quickHealButton() {
+      final btn = PixelButton(
+        label: 'Quick Heal',
+        onPressed: healAvailable ? () => ref.read(battleProvider.notifier).quickHeal() : null,
+        primary: false,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      );
+      if (!shouldPulse) return btn;
+      return AnimatedBuilder(
+        animation: _pulseCtrl,
+        builder: (ctx, child) {
+          final t = _pulseCtrl.value; // 0..1
+          final w = 1.5 + 1.5 * (0.5 + 0.5 * math.sin(t * 2 * math.pi));
+          final c = Colors.redAccent.withValues(alpha: 0.7);
+          return Container(
+            decoration: BoxDecoration(border: Border.all(color: c, width: w)),
+            child: child,
+          );
+        },
+        child: btn,
+      );
+    }
+
+    Widget _runAwayButton() {
+      return PixelButton(
+        label: 'Run Away',
+        onPressed: () async {
+          final leave = await showDialog<bool>(context: context, builder: (ctx) {
+            return AlertDialog(
+              title: const Text('Leave Battle?'),
+              content: const Text('You can hide from your echoes, but you have to face them one day. Leave?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leave')),
+              ],
+            );
+          });
+          if (leave == true && mounted) {
+            ref.read(battleProvider.notifier).escapeBattle();
+          }
+        },
+        primary: false,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      );
+    }
 
     final logList = Expanded(
       child: Container(
@@ -376,9 +553,31 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(flex: 2, child: skills),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    skillsWrap,
+                    const SizedBox(height: 8),
+                    itemsOpenButton,
+                  ],
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: items),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    spritesWrap,
+                    const SizedBox(height: 8),
+                    _quickHealButton(),
+                    const SizedBox(height: 8),
+                    _runAwayButton(),
+                  ],
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -422,6 +621,8 @@ class _StatusPill extends StatelessWidget {
       'guard': Colors.blue,
       'focus': Colors.purple,
       'spirit+': Colors.amber,
+      'atk-': Colors.red,
+      'poison': Colors.greenAccent,
     };
     final color = map[keyName] ?? Colors.white;
     final label = '$keyName${turns > 0 ? '($turns)' : ''}';
