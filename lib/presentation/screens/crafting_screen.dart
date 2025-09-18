@@ -6,6 +6,7 @@ import '../../crafting/crafting_service.dart';
 import '../../crafting/inventory_service.dart';
 import '../../crafting/gear_catalog_service.dart';
 import '../../data/hive/boxes.dart';
+import '../../data/repos/equipment_repo.dart';
 import '../widgets/echo_wisp_icon.dart';
 import '../widgets/item_icon_badge.dart';
 import '../widgets/pixel_button.dart';
@@ -109,6 +110,8 @@ class _CraftingScreenState extends State<CraftingScreen> {
           // Item + Item → consume both items
           CraftedInventoryService.remove(_selItemA!.id);
           CraftedInventoryService.remove(_selItem!.id);
+          // If consumed items were equipped, auto-equip the result
+          await _autoEquipReplacement(consumedIds: {_selItemA!.id, _selItem!.id}, replacement: result);
         }
       } catch (_) {}
       // Save result
@@ -123,6 +126,37 @@ class _CraftingScreenState extends State<CraftingScreen> {
   }
 
   String _playerClass() { try { final v = profileBox().values; if (v.isNotEmpty) return v.first.classKey; } catch (_) {} return 'Sage'; }
+
+  Future<void> _autoEquipReplacement({required Set<String> consumedIds, required CraftedItem replacement}) async {
+    try {
+      final repo = EquipmentRepoImpl();
+      final slots = await repo.getAllSlots();
+      Future<String> resolveTarget(Map<String, EquippedItem?> eq, String? preferRingSide) async {
+        if (replacement.def.equipSlot == 'neck') return 'neck';
+        if (replacement.def.equipSlot == 'ring') {
+          if (preferRingSide == 'ringLeft' || preferRingSide == 'ringRight') return preferRingSide!;
+          if (eq['ringLeft'] == null) return 'ringLeft';
+          if (eq['ringRight'] == null) return 'ringRight';
+          return 'ringLeft';
+        }
+        return replacement.def.slot.name;
+      }
+      for (final entry in slots.entries) {
+        final slotKey = entry.key;
+        final equipped = entry.value;
+        if (equipped == null) continue;
+        if (!consumedIds.contains(equipped.id)) continue;
+        await repo.setItem(slotKey, null);
+        final target = await resolveTarget(slots, (slotKey == 'ringLeft' || slotKey == 'ringRight') ? slotKey : null);
+        await repo.setItem(target, EquippedItem(
+          id: replacement.id,
+          name: replacement.displayName,
+          rarity: replacement.rarity.name,
+          element: replacement.element.name,
+        ));
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,55 +181,54 @@ class _CraftingScreenState extends State<CraftingScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: LayoutBuilder(builder: (context, cts) {
-                final slotSize = (cts.biggest.shortestSide) * 0.26;
-                return Row(
+                // Make slots as large as possible side-by-side, with fixed spacing
+                const spacing = 24.0;
+                final maxSlotByWidth = (cts.biggest.width - spacing) / 2.0;
+                final maxSlotByHeight = cts.biggest.height * 0.55; // leave room for button
+                final base = maxSlotByWidth < maxSlotByHeight ? maxSlotByWidth : maxSlotByHeight;
+                final slotSize = base * 0.75; // scale down to avoid overflow
+                return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _ForgeSideSlot(
-                      size: slotSize,
-                      title: _selItemA != null
-                          ? '${_selItemA!.displayName} • T${_selItemA!.tier} ${_selItemA!.rarity.name}'
-                          : (_selEchoA == null ? '' : '${_selEchoA!.rarity.name.toUpperCase()} • ${_selEchoA!.element.name}'),
-                      onClear: (_selItemA != null || _selEchoA != null)
-                          ? () => setState((){ _selItemA = null; _selEchoA = null; })
-                          : null,
-                      child: _CraftSlotBox(
-                        size: slotSize,
-                        child: _selItemA != null
-                            ? ItemIconBadge(iconPath: _selItemA!.def.iconPath, rarity: _selItemA!.rarity, element: _selItemA!.element, tier: _selItemA!.tier, size: slotSize * 0.45, framed: false)
-                            : (_selEchoA == null
-                                ? const Text('Select', style: TextStyle(fontSize: 10))
-                                : EchoWispIcon(color: _echoColor(_selEchoA!), seed: _selEchoA!.id, size: slotSize * 0.45, pixelate: true, pixels: 16)),
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _ForgeSideSlot(
+                          size: slotSize,
+                          title: '',
+                          onClear: (_selItemA != null || _selEchoA != null)
+                              ? () => setState((){ _selItemA = null; _selEchoA = null; })
+                              : null,
+                          child: _CraftSlotBox(
+                            size: slotSize,
+                            child: _selItemA != null
+                                ? ItemIconBadge(iconPath: _selItemA!.def.iconPath, rarity: _selItemA!.rarity, element: _selItemA!.element, tier: _selItemA!.tier, size: slotSize * 0.45, framed: false)
+                                : (_selEchoA == null
+                                    ? const Text('Select', style: TextStyle(fontSize: 5))
+                                    : EchoWispIcon(color: _echoColor(_selEchoA!), seed: _selEchoA!.id, size: slotSize * 0.45, pixelate: true, pixels: 16)),
+                          ),
+                        ),
+                        const SizedBox(width: spacing),
+                        _ForgeSideSlot(
+                          size: slotSize,
+                          title: '',
+                          onClear: (_selItem != null || _selEchoB != null)
+                              ? () => setState((){ _selItem = null; _selEchoB = null; })
+                              : null,
+                          child: _CraftSlotBox(
+                            size: slotSize,
+                            child: _selItem != null
+                                ? ItemIconBadge(iconPath: _selItem!.def.iconPath, rarity: _selItem!.rarity, element: _selItem!.element, tier: _selItem!.tier, size: slotSize * 0.45, framed: false)
+                                : (_selEchoB == null
+                                    ? const Text('Select', style: TextStyle(fontSize: 5))
+                                    : EchoWispIcon(color: _echoColor(_selEchoB!), seed: _selEchoB!.id, size: slotSize * 0.45, pixelate: true, pixels: 16)),
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: slotSize * 0.20),
-                    Column(mainAxisSize: MainAxisSize.min, children: [
-                      Opacity(
-                        opacity: canForge ? 1.0 : 0.4,
-                        child: Image.asset('assets/images/crafting/crafting_icon.png', width: slotSize*0.9, height: slotSize*0.9, filterQuality: FilterQuality.none),
-                      ),
-                      const SizedBox(height: 6),
-                      PixelButton(label: 'Forge Now', onPressed: canForge ? _forge : null, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
-                    ]),
-                    SizedBox(width: slotSize * 0.20),
-                    _ForgeSideSlot(
-                      size: slotSize,
-                      title: _selItem != null
-                          ? '${_selItem!.displayName} • T${_selItem!.tier} ${_selItem!.rarity.name}'
-                          : (_selEchoB != null ? '${_selEchoB!.rarity.name.toUpperCase()} • ${_selEchoB!.element.name}' : ''),
-                      onClear: (_selItem != null || _selEchoB != null)
-                          ? () => setState((){ _selItem = null; _selEchoB = null; })
-                          : null,
-                      child: _CraftSlotBox(
-                        size: slotSize,
-                        child: _selItem != null
-                            ? ItemIconBadge(iconPath: _selItem!.def.iconPath, rarity: _selItem!.rarity, element: _selItem!.element, tier: _selItem!.tier, size: slotSize * 0.45, framed: false)
-                            : (_selEchoB == null
-                                ? const Text('Select', style: TextStyle(fontSize: 10))
-                                : EchoWispIcon(color: _echoColor(_selEchoB!), seed: _selEchoB!.id, size: slotSize * 0.45, pixelate: true, pixels: 16)),
-                      ),
-                    ),
+                    const SizedBox(height: 12),
+                    PixelButton(label: 'Forge Now', onPressed: canForge ? _forge : null, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6))
                   ],
                 );
               }),
@@ -284,13 +317,14 @@ class _ListPanel extends StatelessWidget {
       decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
+          width: double.infinity,
           color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Builder(builder: (context) {
             final base = Theme.of(context).textTheme.labelLarge;
             final baseSize = base?.fontSize ?? 14;
-            final small = base?.copyWith(fontSize: baseSize * 0.5) ?? const TextStyle(fontSize: 7);
-            return Text(title, style: small);
+            final bigger = base?.copyWith(fontSize: baseSize * 1.25) ?? TextStyle(fontSize: (baseSize * 1.25));
+            return Text(title, style: bigger, textAlign: TextAlign.center);
           }),
         ),
         Expanded(child: ListView(children: children)),
@@ -354,7 +388,7 @@ class _ForgeSideSlot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (title.isNotEmpty) SizedBox(width: size, child: Text(title, style: const TextStyle(fontSize: 10), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
+        if (title.isNotEmpty) SizedBox(width: size, child: Text(title, style: const TextStyle(fontSize: 5), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
         const SizedBox(height: 4),
         child,
         const SizedBox(height: 4),
@@ -438,6 +472,8 @@ class _CraftDetailsPanel extends StatelessWidget {
       case ElementType.shadow: return Colors.purpleAccent;
     }
   }
+
+  
 
   // UI helpers
   Widget _pill({required String text, required Color color}) => Container(

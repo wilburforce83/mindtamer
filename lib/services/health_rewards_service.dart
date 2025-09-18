@@ -1,9 +1,16 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../data/hive/boxes.dart';
 import '../data/models/journal_entry.dart';
 import '../data/models/med_log.dart';
 import '../features/mood/models/mood_entry.dart';
+import '../seed/lexicon_loader.dart';
+import '../seed/seed_generator.dart';
+import '../game/services/seed_pipeline.dart';
+import '../game/services/monster_image_service.dart';
+import '../game/models/encounter_ticket.dart';
 
 /// Applies passive healing and pre-battle buffs based on user activities.
 /// - Heal 25% max HP per mood snapshot
@@ -32,6 +39,7 @@ class HealthRewardsService {
     _hpTimer?.cancel();
     _hpTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
       await _applyIdleRegen();
+      await _maybeSpawnHourlyEncounter();
     });
 
     // Watch new entries live
@@ -121,6 +129,69 @@ class HealthRewardsService {
     }
     if (buffs.isNotEmpty) _queueBuffs(buffs);
     try { await playerMetaBox().put('lastProcessedMoodAt', entry.timestamp.toIso8601String()); } catch (_) {}
+
+    // Generate two mood-driven monster encounters
+    try { await _createMoodEncounters(entry, count: 2); } catch (_) {}
+  }
+
+  static Future<void> _createMoodEncounters(MoodEntry entry, {int count = 2}) async {
+    final bundle = await LexiconLoader.load();
+    final gen = SeedGenerator();
+    String sentiment;
+    final mood = entry.values['mood'] ?? 50;
+    if (mood >= 66) {
+      sentiment = 'positive';
+    } else if (mood <= 33) {
+      sentiment = 'negative';
+    } else {
+      sentiment = 'neutral';
+    }
+    final stress = entry.values['stress'] ?? 50;
+    final energy = entry.values['energy'] ?? (entry.values['sleep'] ?? 50);
+    final focus = entry.values['focus'] ?? 50;
+    final tags = <String>[
+      'mood_${mood >= 66 ? 'high' : mood <= 33 ? 'low' : 'mid'}',
+      'stress_${stress >= 66 ? 'high' : stress <= 33 ? 'low' : 'mid'}',
+      'energy_${energy >= 66 ? 'high' : energy <= 33 ? 'low' : 'mid'}',
+      'focus_${focus >= 66 ? 'high' : focus <= 33 ? 'low' : 'mid'}',
+      MoodEntry.bucketOf(entry.timestamp),
+    ];
+    for (int i = 0; i < count; i++) {
+      final req = SeedRequest(
+        version: bundle.version,
+        title: 'Mood ${entry.timestamp.toIso8601String()} v${i+1}',
+        body: 'mood:$mood stress:$stress energy:$energy focus:$focus',
+        tags: tags,
+        sentiment: sentiment,
+      );
+      final seed = gen.generate(req, bundle);
+      // Create ticket directly
+      final entryId = entry.timestamp.millisecondsSinceEpoch + i;
+      final encounter = EncounterServiceImpl();
+      await encounter.createTicket(entryId: entryId, seed: seed, sourceTitle: 'Mood Snapshot', sourceDate: entry.timestamp.toUtc());
+      // Pre-resolve image mapping
+      try {
+        await MonsterImageService().resolveImagePath(displayName: seed.displayName, element: seed.element, type: seed.type);
+      } catch (_) {}
+      // Low-chance sprite
+      try {
+        const dropRate = 0.15;
+        final rng = Random(entry.timestamp.millisecondsSinceEpoch + i);
+        if (rng.nextDouble() <= dropRate) {
+          final sprite = SummonServiceImpl();
+          final snap = seed.toMap();
+          snap['sourceTitle'] = 'Mood Snapshot';
+          snap['sourceDate'] = entry.timestamp.toUtc().toIso8601String();
+          await sprite.createSummonInstance(
+            speciesId: speciesIdFrom(seed),
+            seedSnapshot: snap,
+            seedHash: seed.hash,
+            stats: seed.stats,
+            attacks: seed.attacks,
+          );
+        }
+      } catch (_) {}
+    }
   }
 
   static Future<void> _onJournalAdded(JournalEntry? entry) async {
@@ -156,6 +227,47 @@ class HealthRewardsService {
       final diff = actual.difference(scheduled).inMinutes.abs();
       return diff <= 15;
     } catch (_) { return false; }
+  }
+
+  static Future<void> _maybeSpawnHourlyEncounter() async {
+    final meta = playerMetaBox();
+    DateTime last = DateTime.fromMillisecondsSinceEpoch(0);
+    try {
+      final s = meta.get('lastRandomEncounterAt')?.toString();
+      if (s != null && s.isNotEmpty) last = DateTime.tryParse(s) ?? last;
+    } catch (_) {}
+    final now = DateTime.now().toUtc();
+    if (now.difference(last).inMinutes < 60) return;
+    try {
+      final bundle = await LexiconLoader.load();
+      final gen = SeedGenerator();
+      final req = SeedRequest(
+        version: bundle.version,
+        title: 'Wandering Encounter',
+        body: 'A random challenge appears',
+        tags: const [],
+        sentiment: 'neutral',
+      );
+      final seed = gen.generate(req, bundle);
+      final snap = seed.toMap();
+      snap['sourceTitle'] = 'Random Encounter';
+      snap['sourceDate'] = now.toIso8601String();
+      snap['noEcho'] = true;
+      final ticket = EncounterTicket(
+        ticketId: const Uuid().v4(),
+        entryId: -1,
+        speciesId: speciesIdFrom(seed),
+        seedHash: seed.hash,
+        seedSnapshot: snap,
+        state: 'open',
+        createdAt: now,
+      );
+      await encounterTicketBox().put(ticket.ticketId, ticket);
+      await meta.put('lastRandomEncounterAt', now.toIso8601String());
+      try {
+        await MonsterImageService().resolveImagePath(displayName: seed.displayName, element: seed.element, type: seed.type);
+      } catch (_) {}
+    } catch (_) {}
   }
 
   static Future<void> _healPercent(int percent) async {

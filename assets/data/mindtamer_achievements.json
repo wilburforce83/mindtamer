@@ -1,0 +1,4138 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "generated_utc": "2025-09-18T19:54:27.692687Z",
+    "notes": "MindTamer Achievements pack with readable triggers; integrate counters/streaks in engine."
+  },
+  "schema": {
+    "id": "string",
+    "title": "string",
+    "description": "string",
+    "category": "string",
+    "points": "integer",
+    "secret": "boolean",
+    "repeatable": "boolean",
+    "max_times": "integer|null",
+    "tags": "string[]",
+    "trigger": {
+      "event": "string",
+      "condition": "string // mini-DSL: see file header",
+      "counter_key": "string?",
+      "threshold": "integer?",
+      "window_days": "integer?"
+    },
+    "reward": {
+      "xp": "integer?",
+      "item": "string?",
+      "cosmetic": "string?",
+      "title": "string?"
+    }
+  },
+  "achievements": [
+    {
+      "id": "ACCESSORY_COLLECTOR_10",
+      "title": "Trinket Tinkerer",
+      "description": "Equip 10 unique accessories across any types.",
+      "category": "Accessories",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "collection",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && unique('accessories_equipped')>=10",
+        "counter_key": "accessories_equipped",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ACCESSORY_COLLECTOR_25",
+      "title": "Bauble Baron",
+      "description": "Equip 25 unique accessories across any types.",
+      "category": "Accessories",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "collection",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && unique('accessories_equipped')>=25",
+        "counter_key": "accessories_equipped",
+        "threshold": 25
+      },
+      "reward": {}
+    },
+    {
+      "id": "ALL_SLOTS_ONCE",
+      "title": "Well Dressed",
+      "description": "Equip something in every armour slot at least once.",
+      "category": "Equipment",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && unique('equipped_slots')>=6",
+        "counter_key": "equipped_slots",
+        "threshold": 6
+      },
+      "reward": {}
+    },
+    {
+      "id": "AXE_VICTOR_10",
+      "title": "Axe Handed",
+      "description": "Win 10 battles while wielding a axe.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Axe' && counter('wins_axe')>=10",
+        "counter_key": "wins_axe",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "AXE_VICTOR_200",
+      "title": "Axe Handed",
+      "description": "Win 200 battles while wielding a axe.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Axe' && counter('wins_axe')>=200",
+        "counter_key": "wins_axe",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "AXE_VICTOR_50",
+      "title": "Axe Handed",
+      "description": "Win 50 battles while wielding a axe.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Axe' && counter('wins_axe')>=50",
+        "counter_key": "wins_axe",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_CLEAN_HANDS",
+      "title": "No Bandages Required",
+      "description": "Win a battle without using any healing items or skills.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && items_used.heal==0 && skills_used.heal==0"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_CLUTCH",
+      "title": "Hanging By A Thread",
+      "description": "Win with 5% HP or less.",
+      "category": "Combat",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && hp_pct<=5"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_FLAWLESS",
+      "title": "Unscathed",
+      "description": "Win a battle without taking damage.",
+      "category": "Combat",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && damage_taken==0"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_MARATHON",
+      "title": "Patient, Not Passive",
+      "description": "Win in 15+ turns.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && turns>=15"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_NO_ITEMS",
+      "title": "Pocket Protector",
+      "description": "Win without using any items.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && items_used.total==0"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_SPEEDRUN",
+      "title": "Make It Quick",
+      "description": "Win in 3 turns or fewer.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && turns<=3"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BATTLE_UNDERGEARED",
+      "title": "Threadbare Triumph",
+      "description": "Win with average gear score below your level.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "combat",
+        "feat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && gear_score<level"
+      },
+      "reward": {}
+    },
+    {
+      "id": "BOSS_DEFEATS_1",
+      "title": "Big Game",
+      "description": "Defeat 1 bosses.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "boss",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && is_boss==true && counter('boss_defeats')>=1",
+        "counter_key": "boss_defeats",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "BOSS_DEFEATS_10",
+      "title": "Legend",
+      "description": "Defeat 10 bosses.",
+      "category": "Combat",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "boss",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && is_boss==true && counter('boss_defeats')>=10",
+        "counter_key": "boss_defeats",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "BOSS_DEFEATS_5",
+      "title": "Nemesis",
+      "description": "Defeat 5 bosses.",
+      "category": "Combat",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "boss",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && is_boss==true && counter('boss_defeats')>=5",
+        "counter_key": "boss_defeats",
+        "threshold": 5
+      },
+      "reward": {}
+    },
+    {
+      "id": "BOW_VICTOR_10",
+      "title": "Bow Handed",
+      "description": "Win 10 battles while wielding a bow.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Bow' && counter('wins_bow')>=10",
+        "counter_key": "wins_bow",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "BOW_VICTOR_200",
+      "title": "Bow Handed",
+      "description": "Win 200 battles while wielding a bow.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Bow' && counter('wins_bow')>=200",
+        "counter_key": "wins_bow",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "BOW_VICTOR_50",
+      "title": "Bow Handed",
+      "description": "Win 50 battles while wielding a bow.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Bow' && counter('wins_bow')>=50",
+        "counter_key": "wins_bow",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "CROSSBOW_VICTOR_10",
+      "title": "Crossbow Handed",
+      "description": "Win 10 battles while wielding a crossbow.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Crossbow' && counter('wins_crossbow')>=10",
+        "counter_key": "wins_crossbow",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "CROSSBOW_VICTOR_200",
+      "title": "Crossbow Handed",
+      "description": "Win 200 battles while wielding a crossbow.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Crossbow' && counter('wins_crossbow')>=200",
+        "counter_key": "wins_crossbow",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "CROSSBOW_VICTOR_50",
+      "title": "Crossbow Handed",
+      "description": "Win 50 battles while wielding a crossbow.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Crossbow' && counter('wins_crossbow')>=50",
+        "counter_key": "wins_crossbow",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "DAGGER_VICTOR_10",
+      "title": "Dagger Handed",
+      "description": "Win 10 battles while wielding a dagger.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Dagger' && counter('wins_dagger')>=10",
+        "counter_key": "wins_dagger",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "DAGGER_VICTOR_200",
+      "title": "Dagger Handed",
+      "description": "Win 200 battles while wielding a dagger.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Dagger' && counter('wins_dagger')>=200",
+        "counter_key": "wins_dagger",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "DAGGER_VICTOR_50",
+      "title": "Dagger Handed",
+      "description": "Win 50 battles while wielding a dagger.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Dagger' && counter('wins_dagger')>=50",
+        "counter_key": "wins_dagger",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_AIR_WINS_10",
+      "title": "Air Tempered",
+      "description": "Win 10 battles with a air-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "air"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Air' && counter('wins_element_air')>=10",
+        "counter_key": "wins_element_air",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_AIR_WINS_150",
+      "title": "Air Tempered",
+      "description": "Win 150 battles with a air-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "air"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Air' && counter('wins_element_air')>=150",
+        "counter_key": "wins_element_air",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_AIR_WINS_50",
+      "title": "Air Tempered",
+      "description": "Win 50 battles with a air-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "air"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Air' && counter('wins_element_air')>=50",
+        "counter_key": "wins_element_air",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_ARCANE_WINS_10",
+      "title": "Arcane Tempered",
+      "description": "Win 10 battles with a arcane-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "arcane"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Arcane' && counter('wins_element_arcane')>=10",
+        "counter_key": "wins_element_arcane",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_ARCANE_WINS_150",
+      "title": "Arcane Tempered",
+      "description": "Win 150 battles with a arcane-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "arcane"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Arcane' && counter('wins_element_arcane')>=150",
+        "counter_key": "wins_element_arcane",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_ARCANE_WINS_50",
+      "title": "Arcane Tempered",
+      "description": "Win 50 battles with a arcane-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "arcane"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Arcane' && counter('wins_element_arcane')>=50",
+        "counter_key": "wins_element_arcane",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_EARTH_WINS_10",
+      "title": "Earth Tempered",
+      "description": "Win 10 battles with a earth-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "earth"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Earth' && counter('wins_element_earth')>=10",
+        "counter_key": "wins_element_earth",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_EARTH_WINS_150",
+      "title": "Earth Tempered",
+      "description": "Win 150 battles with a earth-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "earth"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Earth' && counter('wins_element_earth')>=150",
+        "counter_key": "wins_element_earth",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_EARTH_WINS_50",
+      "title": "Earth Tempered",
+      "description": "Win 50 battles with a earth-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "earth"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Earth' && counter('wins_element_earth')>=50",
+        "counter_key": "wins_element_earth",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_FIRE_WINS_10",
+      "title": "Fire Tempered",
+      "description": "Win 10 battles with a fire-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "fire"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Fire' && counter('wins_element_fire')>=10",
+        "counter_key": "wins_element_fire",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_FIRE_WINS_150",
+      "title": "Fire Tempered",
+      "description": "Win 150 battles with a fire-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "fire"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Fire' && counter('wins_element_fire')>=150",
+        "counter_key": "wins_element_fire",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_FIRE_WINS_50",
+      "title": "Fire Tempered",
+      "description": "Win 50 battles with a fire-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "fire"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Fire' && counter('wins_element_fire')>=50",
+        "counter_key": "wins_element_fire",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_LIGHT_WINS_10",
+      "title": "Light Tempered",
+      "description": "Win 10 battles with a light-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "light"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Light' && counter('wins_element_light')>=10",
+        "counter_key": "wins_element_light",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_LIGHT_WINS_150",
+      "title": "Light Tempered",
+      "description": "Win 150 battles with a light-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "light"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Light' && counter('wins_element_light')>=150",
+        "counter_key": "wins_element_light",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_LIGHT_WINS_50",
+      "title": "Light Tempered",
+      "description": "Win 50 battles with a light-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "light"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Light' && counter('wins_element_light')>=50",
+        "counter_key": "wins_element_light",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_POISON_WINS_10",
+      "title": "Poison Tempered",
+      "description": "Win 10 battles with a poison-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "poison"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Poison' && counter('wins_element_poison')>=10",
+        "counter_key": "wins_element_poison",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_POISON_WINS_150",
+      "title": "Poison Tempered",
+      "description": "Win 150 battles with a poison-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "poison"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Poison' && counter('wins_element_poison')>=150",
+        "counter_key": "wins_element_poison",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_POISON_WINS_50",
+      "title": "Poison Tempered",
+      "description": "Win 50 battles with a poison-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "poison"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Poison' && counter('wins_element_poison')>=50",
+        "counter_key": "wins_element_poison",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_SHADOW_WINS_10",
+      "title": "Shadow Tempered",
+      "description": "Win 10 battles with a shadow-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "shadow"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Shadow' && counter('wins_element_shadow')>=10",
+        "counter_key": "wins_element_shadow",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_SHADOW_WINS_150",
+      "title": "Shadow Tempered",
+      "description": "Win 150 battles with a shadow-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "shadow"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Shadow' && counter('wins_element_shadow')>=150",
+        "counter_key": "wins_element_shadow",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_SHADOW_WINS_50",
+      "title": "Shadow Tempered",
+      "description": "Win 50 battles with a shadow-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "shadow"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Shadow' && counter('wins_element_shadow')>=50",
+        "counter_key": "wins_element_shadow",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_WATER_WINS_10",
+      "title": "Water Tempered",
+      "description": "Win 10 battles with a water-aligned weapon.",
+      "category": "Elements",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "water"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Water' && counter('wins_element_water')>=10",
+        "counter_key": "wins_element_water",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_WATER_WINS_150",
+      "title": "Water Tempered",
+      "description": "Win 150 battles with a water-aligned weapon.",
+      "category": "Elements",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "water"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Water' && counter('wins_element_water')>=150",
+        "counter_key": "wins_element_water",
+        "threshold": 150
+      },
+      "reward": {}
+    },
+    {
+      "id": "ELEMENT_WATER_WINS_50",
+      "title": "Water Tempered",
+      "description": "Win 50 battles with a water-aligned weapon.",
+      "category": "Elements",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "element",
+        "combat",
+        "water"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_element=='Water' && counter('wins_element_water')>=50",
+        "counter_key": "wins_element_water",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "ENGINE_NOTE_RANDOM_ENCOUNTERS",
+      "title": "Engine: Random Encounters",
+      "description": "Spawn ~hourly random encounters to keep the loop fresh.",
+      "category": "Engine",
+      "points": 0,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "engine",
+        "design"
+      ],
+      "trigger": {
+        "event": "engine",
+        "condition": "true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "ENGINE_NOTE_RATE_LIMITS",
+      "title": "Engine: Rate Limits",
+      "description": "Lock mood entries to once per 15 minutes to prevent exploit farming.",
+      "category": "Engine",
+      "points": 0,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "engine",
+        "design"
+      ],
+      "trigger": {
+        "event": "engine",
+        "condition": "true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ACCESSORY_BRACELET",
+      "title": "Bracelet Thing",
+      "description": "Equip your first bracelet.",
+      "category": "Accessories",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && accessory_type=='Bracelet' && counter('first_accessory_bracelet')==0",
+        "counter_key": "first_accessory_bracelet",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ACCESSORY_CHARM",
+      "title": "Charm Thing",
+      "description": "Equip your first charm.",
+      "category": "Accessories",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && accessory_type=='Charm' && counter('first_accessory_charm')==0",
+        "counter_key": "first_accessory_charm",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ACCESSORY_EARRING",
+      "title": "Earring Thing",
+      "description": "Equip your first earring.",
+      "category": "Accessories",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && accessory_type=='Earring' && counter('first_accessory_earring')==0",
+        "counter_key": "first_accessory_earring",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ACCESSORY_NECKLACE",
+      "title": "Necklace Thing",
+      "description": "Equip your first necklace.",
+      "category": "Accessories",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && accessory_type=='Necklace' && counter('first_accessory_necklace')==0",
+        "counter_key": "first_accessory_necklace",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ACCESSORY_RING",
+      "title": "Ring Thing",
+      "description": "Equip your first ring.",
+      "category": "Accessories",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && accessory_type=='Ring' && counter('first_accessory_ring')==0",
+        "counter_key": "first_accessory_ring",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ACCESSORY_TALISMAN",
+      "title": "Talisman Thing",
+      "description": "Equip your first talisman.",
+      "category": "Accessories",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "accessory"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && accessory_type=='Talisman' && counter('first_accessory_talisman')==0",
+        "counter_key": "first_accessory_talisman",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ARMOUR_CLOTH",
+      "title": "Cloth Curious",
+      "description": "Equip your first piece of cloth armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && armour_type=='Cloth' && counter('first_armour_cloth')==0",
+        "counter_key": "first_armour_cloth",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ARMOUR_LEATHER",
+      "title": "Leather Curious",
+      "description": "Equip your first piece of leather armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && armour_type=='Leather' && counter('first_armour_leather')==0",
+        "counter_key": "first_armour_leather",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ARMOUR_MAIL",
+      "title": "Mail Curious",
+      "description": "Equip your first piece of mail armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && armour_type=='Mail' && counter('first_armour_mail')==0",
+        "counter_key": "first_armour_mail",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ARMOUR_MYSTIC",
+      "title": "Mystic Curious",
+      "description": "Equip your first piece of mystic armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && armour_type=='Mystic' && counter('first_armour_mystic')==0",
+        "counter_key": "first_armour_mystic",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ARMOUR_PLATE",
+      "title": "Plate Curious",
+      "description": "Equip your first piece of plate armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && armour_type=='Plate' && counter('first_armour_plate')==0",
+        "counter_key": "first_armour_plate",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_ARMOUR_RELIC",
+      "title": "Relic Curious",
+      "description": "Equip your first piece of relic armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && armour_type=='Relic' && counter('first_armour_relic')==0",
+        "counter_key": "first_armour_relic",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_CHEST_EQUIP",
+      "title": "Chest Start",
+      "description": "Equip your first piece of chest armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && slot=='Chest' && counter('first_chest_equip')==0",
+        "counter_key": "first_chest_equip",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_CLOAK_EQUIP",
+      "title": "Cloak Start",
+      "description": "Equip your first piece of cloak armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && slot=='Cloak' && counter('first_cloak_equip')==0",
+        "counter_key": "first_cloak_equip",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_FEET_EQUIP",
+      "title": "Feet Start",
+      "description": "Equip your first piece of feet armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && slot=='Feet' && counter('first_feet_equip')==0",
+        "counter_key": "first_feet_equip",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_HANDS_EQUIP",
+      "title": "Hands Start",
+      "description": "Equip your first piece of hands armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && slot=='Hands' && counter('first_hands_equip')==0",
+        "counter_key": "first_hands_equip",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_HEAD_EQUIP",
+      "title": "Head Start",
+      "description": "Equip your first piece of head armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && slot=='Head' && counter('first_head_equip')==0",
+        "counter_key": "first_head_equip",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_LEGS_EQUIP",
+      "title": "Legs Start",
+      "description": "Equip your first piece of legs armour.",
+      "category": "Equipment",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "armour"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && slot=='Legs' && counter('first_legs_equip')==0",
+        "counter_key": "first_legs_equip",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_AXE",
+      "title": "Axe Starter",
+      "description": "Equip your first axe.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Axe' && counter('first_weapon_axe')==0",
+        "counter_key": "first_weapon_axe",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_BOW",
+      "title": "Bow Starter",
+      "description": "Equip your first bow.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Bow' && counter('first_weapon_bow')==0",
+        "counter_key": "first_weapon_bow",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_CROSSBOW",
+      "title": "Crossbow Starter",
+      "description": "Equip your first crossbow.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Crossbow' && counter('first_weapon_crossbow')==0",
+        "counter_key": "first_weapon_crossbow",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_DAGGER",
+      "title": "Dagger Starter",
+      "description": "Equip your first dagger.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Dagger' && counter('first_weapon_dagger')==0",
+        "counter_key": "first_weapon_dagger",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_HAMMER",
+      "title": "Hammer Starter",
+      "description": "Equip your first hammer.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Hammer' && counter('first_weapon_hammer')==0",
+        "counter_key": "first_weapon_hammer",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_MACE",
+      "title": "Mace Starter",
+      "description": "Equip your first mace.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Mace' && counter('first_weapon_mace')==0",
+        "counter_key": "first_weapon_mace",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_SPEAR",
+      "title": "Spear Starter",
+      "description": "Equip your first spear.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Spear' && counter('first_weapon_spear')==0",
+        "counter_key": "first_weapon_spear",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_STAFF",
+      "title": "Staff Starter",
+      "description": "Equip your first staff.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Staff' && counter('first_weapon_staff')==0",
+        "counter_key": "first_weapon_staff",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_SWORD",
+      "title": "Sword Starter",
+      "description": "Equip your first sword.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Sword' && counter('first_weapon_sword')==0",
+        "counter_key": "first_weapon_sword",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FIRST_WEAPON_WAND",
+      "title": "Wand Starter",
+      "description": "Equip your first wand.",
+      "category": "Weapons",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "first",
+        "weapon"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && weapon_type=='Wand' && counter('first_weapon_wand')==0",
+        "counter_key": "first_weapon_wand",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "FULL_SET_CLOTH",
+      "title": "Cloth Ensemble",
+      "description": "Fill all armour slots with cloth pieces at the same time.",
+      "category": "Equipment",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour",
+        "cloth"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && set_complete('Cloth')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "FULL_SET_LEATHER",
+      "title": "Leather Ensemble",
+      "description": "Fill all armour slots with leather pieces at the same time.",
+      "category": "Equipment",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour",
+        "leather"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && set_complete('Leather')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "FULL_SET_MAIL",
+      "title": "Mail Ensemble",
+      "description": "Fill all armour slots with mail pieces at the same time.",
+      "category": "Equipment",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour",
+        "mail"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && set_complete('Mail')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "FULL_SET_MYSTIC",
+      "title": "Mystic Ensemble",
+      "description": "Fill all armour slots with mystic pieces at the same time.",
+      "category": "Equipment",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour",
+        "mystic"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && set_complete('Mystic')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "FULL_SET_PLATE",
+      "title": "Plate Ensemble",
+      "description": "Fill all armour slots with plate pieces at the same time.",
+      "category": "Equipment",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour",
+        "plate"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && set_complete('Plate')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "FULL_SET_RELIC",
+      "title": "Relic Ensemble",
+      "description": "Fill all armour slots with relic pieces at the same time.",
+      "category": "Equipment",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "set",
+        "armour",
+        "relic"
+      ],
+      "trigger": {
+        "event": "equip",
+        "condition": "event=='equip' && set_complete('Relic')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "HAMMER_VICTOR_10",
+      "title": "Hammer Handed",
+      "description": "Win 10 battles while wielding a hammer.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Hammer' && counter('wins_hammer')>=10",
+        "counter_key": "wins_hammer",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "HAMMER_VICTOR_200",
+      "title": "Hammer Handed",
+      "description": "Win 200 battles while wielding a hammer.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Hammer' && counter('wins_hammer')>=200",
+        "counter_key": "wins_hammer",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "HAMMER_VICTOR_50",
+      "title": "Hammer Handed",
+      "description": "Win 50 battles while wielding a hammer.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Hammer' && counter('wins_hammer')>=50",
+        "counter_key": "wins_hammer",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_14",
+      "title": "Journal Habit (14)",
+      "description": "Maintain a journal streak for 14 days.",
+      "category": "Journal",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=14",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_180",
+      "title": "Journal Habit (180)",
+      "description": "Maintain a journal streak for 180 days.",
+      "category": "Journal",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=180",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_3",
+      "title": "Journal Habit (3)",
+      "description": "Maintain a journal streak for 3 days.",
+      "category": "Journal",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=3",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_30",
+      "title": "Journal Habit (30)",
+      "description": "Maintain a journal streak for 30 days.",
+      "category": "Journal",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=30",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_365",
+      "title": "Journal Habit (365)",
+      "description": "Maintain a journal streak for 365 days.",
+      "category": "Journal",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=365",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_60",
+      "title": "Journal Habit (60)",
+      "description": "Maintain a journal streak for 60 days.",
+      "category": "Journal",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=60",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_7",
+      "title": "Journal Habit (7)",
+      "description": "Maintain a journal streak for 7 days.",
+      "category": "Journal",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=7",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_STREAK_90",
+      "title": "Journal Habit (90)",
+      "description": "Maintain a journal streak for 90 days.",
+      "category": "Journal",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && streak('journal_streak')>=90",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_10",
+      "title": "Pages Piled (10)",
+      "description": "Write 10 journal entries in total.",
+      "category": "Journal",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=10",
+        "counter_key": "journal_total",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_100",
+      "title": "Pages Piled (100)",
+      "description": "Write 100 journal entries in total.",
+      "category": "Journal",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=100",
+        "counter_key": "journal_total",
+        "threshold": 100
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_1000",
+      "title": "Pages Piled (1000)",
+      "description": "Write 1000 journal entries in total.",
+      "category": "Journal",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=1000",
+        "counter_key": "journal_total",
+        "threshold": 1000
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_25",
+      "title": "Pages Piled (25)",
+      "description": "Write 25 journal entries in total.",
+      "category": "Journal",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=25",
+        "counter_key": "journal_total",
+        "threshold": 25
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_250",
+      "title": "Pages Piled (250)",
+      "description": "Write 250 journal entries in total.",
+      "category": "Journal",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=250",
+        "counter_key": "journal_total",
+        "threshold": 250
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_50",
+      "title": "Pages Piled (50)",
+      "description": "Write 50 journal entries in total.",
+      "category": "Journal",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=50",
+        "counter_key": "journal_total",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "JOURNAL_TOTAL_500",
+      "title": "Pages Piled (500)",
+      "description": "Write 500 journal entries in total.",
+      "category": "Journal",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "journal"
+      ],
+      "trigger": {
+        "event": "journal_entry",
+        "condition": "event=='journal_entry' && counter('journal_total')>=500",
+        "counter_key": "journal_total",
+        "threshold": 500
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_001",
+      "title": "Level 1",
+      "description": "Reach player level 1.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=1"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_002",
+      "title": "Level 2",
+      "description": "Reach player level 2.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=2"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_003",
+      "title": "Level 3",
+      "description": "Reach player level 3.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=3"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_004",
+      "title": "Level 4",
+      "description": "Reach player level 4.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=4"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_005",
+      "title": "Level 5",
+      "description": "Reach player level 5.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=5"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_006",
+      "title": "Level 6",
+      "description": "Reach player level 6.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=6"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_007",
+      "title": "Level 7",
+      "description": "Reach player level 7.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=7"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_008",
+      "title": "Level 8",
+      "description": "Reach player level 8.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=8"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_009",
+      "title": "Level 9",
+      "description": "Reach player level 9.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=9"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_010",
+      "title": "Level 10",
+      "description": "Reach player level 10.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=10"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_012",
+      "title": "Level 12",
+      "description": "Reach player level 12.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=12"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_015",
+      "title": "Level 15",
+      "description": "Reach player level 15.",
+      "category": "Progression",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=15"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_020",
+      "title": "Level 20",
+      "description": "Reach player level 20.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=20"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_025",
+      "title": "Level 25",
+      "description": "Reach player level 25.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=25"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_030",
+      "title": "Level 30",
+      "description": "Reach player level 30.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=30"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_035",
+      "title": "Level 35",
+      "description": "Reach player level 35.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=35"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_040",
+      "title": "Level 40",
+      "description": "Reach player level 40.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=40"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_045",
+      "title": "Level 45",
+      "description": "Reach player level 45.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=45"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_050",
+      "title": "Level 50",
+      "description": "Reach player level 50.",
+      "category": "Progression",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=50"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_060",
+      "title": "Level 60",
+      "description": "Reach player level 60.",
+      "category": "Progression",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=60"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_070",
+      "title": "Level 70",
+      "description": "Reach player level 70.",
+      "category": "Progression",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=70"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_080",
+      "title": "Level 80",
+      "description": "Reach player level 80.",
+      "category": "Progression",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=80"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_090",
+      "title": "Level 90",
+      "description": "Reach player level 90.",
+      "category": "Progression",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=90"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_100",
+      "title": "Level 100",
+      "description": "Reach player level 100.",
+      "category": "Progression",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=100"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_110",
+      "title": "Level 110",
+      "description": "Reach player level 110.",
+      "category": "Progression",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=110"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_120",
+      "title": "Level 120",
+      "description": "Reach player level 120.",
+      "category": "Progression",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=120"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_130",
+      "title": "Level 130",
+      "description": "Reach player level 130.",
+      "category": "Progression",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=130"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_140",
+      "title": "Level 140",
+      "description": "Reach player level 140.",
+      "category": "Progression",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=140"
+      },
+      "reward": {}
+    },
+    {
+      "id": "LEVEL_150",
+      "title": "Level 150",
+      "description": "Reach player level 150.",
+      "category": "Progression",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "level",
+        "progress"
+      ],
+      "trigger": {
+        "event": "level_up",
+        "condition": "event=='level_up' && level>=150"
+      },
+      "reward": {}
+    },
+    {
+      "id": "MACE_VICTOR_10",
+      "title": "Mace Handed",
+      "description": "Win 10 battles while wielding a mace.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Mace' && counter('wins_mace')>=10",
+        "counter_key": "wins_mace",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "MACE_VICTOR_200",
+      "title": "Mace Handed",
+      "description": "Win 200 battles while wielding a mace.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Mace' && counter('wins_mace')>=200",
+        "counter_key": "wins_mace",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "MACE_VICTOR_50",
+      "title": "Mace Handed",
+      "description": "Win 50 battles while wielding a mace.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Mace' && counter('wins_mace')>=50",
+        "counter_key": "wins_mace",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_14",
+      "title": "Medication Habit (14)",
+      "description": "Maintain a medication streak for 14 days.",
+      "category": "Medication",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=14",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_180",
+      "title": "Medication Habit (180)",
+      "description": "Maintain a medication streak for 180 days.",
+      "category": "Medication",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=180",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_3",
+      "title": "Medication Habit (3)",
+      "description": "Maintain a medication streak for 3 days.",
+      "category": "Medication",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=3",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_30",
+      "title": "Medication Habit (30)",
+      "description": "Maintain a medication streak for 30 days.",
+      "category": "Medication",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=30",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_365",
+      "title": "Medication Habit (365)",
+      "description": "Maintain a medication streak for 365 days.",
+      "category": "Medication",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=365",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_60",
+      "title": "Medication Habit (60)",
+      "description": "Maintain a medication streak for 60 days.",
+      "category": "Medication",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=60",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_7",
+      "title": "Medication Habit (7)",
+      "description": "Maintain a medication streak for 7 days.",
+      "category": "Medication",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=7",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MEDICATION_STREAK_90",
+      "title": "Medication Habit (90)",
+      "description": "Maintain a medication streak for 90 days.",
+      "category": "Medication",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && streak('med_streak')>=90",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_10",
+      "title": "Steady Hand (10)",
+      "description": "Log 10 medication doses.",
+      "category": "Medication",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=10",
+        "counter_key": "med_total",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_100",
+      "title": "Steady Hand (100)",
+      "description": "Log 100 medication doses.",
+      "category": "Medication",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=100",
+        "counter_key": "med_total",
+        "threshold": 100
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_1000",
+      "title": "Steady Hand (1000)",
+      "description": "Log 1000 medication doses.",
+      "category": "Medication",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=1000",
+        "counter_key": "med_total",
+        "threshold": 1000
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_25",
+      "title": "Steady Hand (25)",
+      "description": "Log 25 medication doses.",
+      "category": "Medication",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=25",
+        "counter_key": "med_total",
+        "threshold": 25
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_250",
+      "title": "Steady Hand (250)",
+      "description": "Log 250 medication doses.",
+      "category": "Medication",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=250",
+        "counter_key": "med_total",
+        "threshold": 250
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_50",
+      "title": "Steady Hand (50)",
+      "description": "Log 50 medication doses.",
+      "category": "Medication",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=50",
+        "counter_key": "med_total",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "MED_TOTAL_500",
+      "title": "Steady Hand (500)",
+      "description": "Log 500 medication doses.",
+      "category": "Medication",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "medication"
+      ],
+      "trigger": {
+        "event": "med_dose_logged",
+        "condition": "event=='med_dose_logged' && counter('med_total')>=500",
+        "counter_key": "med_total",
+        "threshold": 500
+      },
+      "reward": {}
+    },
+    {
+      "id": "MONSTER_SPECIES_SEEN_10",
+      "title": "Field Guide",
+      "description": "Encounter 10 unique monster species.",
+      "category": "Exploration",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "collection",
+        "monster"
+      ],
+      "trigger": {
+        "event": "battle_start",
+        "condition": "unique('monster_species_seen')>=10",
+        "counter_key": "monster_species_seen",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "MONSTER_SPECIES_SEEN_100",
+      "title": "Zoologist",
+      "description": "Encounter 100 unique monster species.",
+      "category": "Exploration",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "collection",
+        "monster"
+      ],
+      "trigger": {
+        "event": "battle_start",
+        "condition": "unique('monster_species_seen')>=100",
+        "counter_key": "monster_species_seen",
+        "threshold": 100
+      },
+      "reward": {}
+    },
+    {
+      "id": "MONSTER_SPECIES_SEEN_25",
+      "title": "Bestiary Binder",
+      "description": "Encounter 25 unique monster species.",
+      "category": "Exploration",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "collection",
+        "monster"
+      ],
+      "trigger": {
+        "event": "battle_start",
+        "condition": "unique('monster_species_seen')>=25",
+        "counter_key": "monster_species_seen",
+        "threshold": 25
+      },
+      "reward": {}
+    },
+    {
+      "id": "MONSTER_SPECIES_SEEN_50",
+      "title": "Menagerie",
+      "description": "Encounter 50 unique monster species.",
+      "category": "Exploration",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "collection",
+        "monster"
+      ],
+      "trigger": {
+        "event": "battle_start",
+        "condition": "unique('monster_species_seen')>=50",
+        "counter_key": "monster_species_seen",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_14",
+      "title": "Mood Habit (14)",
+      "description": "Maintain a mood streak for 14 days.",
+      "category": "Mood",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=14",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_180",
+      "title": "Mood Habit (180)",
+      "description": "Maintain a mood streak for 180 days.",
+      "category": "Mood",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=180",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_3",
+      "title": "Mood Habit (3)",
+      "description": "Maintain a mood streak for 3 days.",
+      "category": "Mood",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=3",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_30",
+      "title": "Mood Habit (30)",
+      "description": "Maintain a mood streak for 30 days.",
+      "category": "Mood",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=30",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_365",
+      "title": "Mood Habit (365)",
+      "description": "Maintain a mood streak for 365 days.",
+      "category": "Mood",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=365",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_60",
+      "title": "Mood Habit (60)",
+      "description": "Maintain a mood streak for 60 days.",
+      "category": "Mood",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=60",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_7",
+      "title": "Mood Habit (7)",
+      "description": "Maintain a mood streak for 7 days.",
+      "category": "Mood",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=7",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_STREAK_90",
+      "title": "Mood Habit (90)",
+      "description": "Maintain a mood streak for 90 days.",
+      "category": "Mood",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "wellbeing"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && streak('mood_streak')>=90",
+        "window_days": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_10",
+      "title": "Feelings Filed (10)",
+      "description": "Save 10 mood entries in total.",
+      "category": "Mood",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=10",
+        "counter_key": "mood_total",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_100",
+      "title": "Feelings Filed (100)",
+      "description": "Save 100 mood entries in total.",
+      "category": "Mood",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=100",
+        "counter_key": "mood_total",
+        "threshold": 100
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_1000",
+      "title": "Feelings Filed (1000)",
+      "description": "Save 1000 mood entries in total.",
+      "category": "Mood",
+      "points": 30,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=1000",
+        "counter_key": "mood_total",
+        "threshold": 1000
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_25",
+      "title": "Feelings Filed (25)",
+      "description": "Save 25 mood entries in total.",
+      "category": "Mood",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=25",
+        "counter_key": "mood_total",
+        "threshold": 25
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_250",
+      "title": "Feelings Filed (250)",
+      "description": "Save 250 mood entries in total.",
+      "category": "Mood",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=250",
+        "counter_key": "mood_total",
+        "threshold": 250
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_50",
+      "title": "Feelings Filed (50)",
+      "description": "Save 50 mood entries in total.",
+      "category": "Mood",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=50",
+        "counter_key": "mood_total",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "MOOD_TOTAL_500",
+      "title": "Feelings Filed (500)",
+      "description": "Save 500 mood entries in total.",
+      "category": "Mood",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "total",
+        "mood"
+      ],
+      "trigger": {
+        "event": "mood_save",
+        "condition": "event=='mood_save' && counter('mood_total')>=500",
+        "counter_key": "mood_total",
+        "threshold": 500
+      },
+      "reward": {}
+    },
+    {
+      "id": "MT_NIGHT_OWL",
+      "title": "After Hours",
+      "description": "Write a journal entry between 00:00–04:00.",
+      "category": "Journal",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "mindset",
+        "lifestyle"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='journal_entry' && hour>=0 && hour<4"
+      },
+      "reward": {}
+    },
+    {
+      "id": "MT_SENTIMENT_SWING",
+      "title": "Plot Twist",
+      "description": "Post two journal entries with opposite sentiments in one day.",
+      "category": "Journal",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "mindset",
+        "lifestyle"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "contrast_today('journal_entry','sentiment')==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "MT_SUNLIGHT_BUFF",
+      "title": "A Little Light",
+      "description": "Win a battle within 30 minutes of a positive mood entry.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "mindset",
+        "lifestyle"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='battle_end' && victory==true && last('mood_save').sentiment=='positive' && minutes_since('mood_save')<=30"
+      },
+      "reward": {}
+    },
+    {
+      "id": "MT_WALK_IT_OFF",
+      "title": "Fresh Air Fix",
+      "description": "Win a random encounter within 15 minutes of a walk-tagged journal.",
+      "category": "Exploration",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "mindset",
+        "lifestyle"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='battle_end' && victory==true && encounter_type=='random' && minutes_since_tag('journal_entry','walk')<=15"
+      },
+      "reward": {}
+    },
+    {
+      "id": "MT_WATER_BREAK",
+      "title": "Hydrate or Diedrate",
+      "description": "Log a mood entry tagged ‘self‑care’.",
+      "category": "Mood",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "mindset",
+        "lifestyle"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='mood_save' && has_tag('self_care')"
+      },
+      "reward": {}
+    },
+    {
+      "id": "NEG_EMPTY_PAGES",
+      "title": "Blank Week",
+      "description": "No journal entries for 7 days (resets on entry).",
+      "category": "Journal",
+      "points": 5,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "negative",
+        "playful"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "days_since('journal_entry')>=7"
+      },
+      "reward": {}
+    },
+    {
+      "id": "NEG_GLASS_CANNON",
+      "title": "Paper Armour",
+      "description": "Lose 3 battles in a row.",
+      "category": "Combat",
+      "points": 10,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "negative",
+        "playful"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "streak('losses')>=3"
+      },
+      "reward": {}
+    },
+    {
+      "id": "NEG_MOOD_GHOST",
+      "title": "Radio Silence",
+      "description": "No mood entries for 7 days (resets on entry).",
+      "category": "Mood",
+      "points": 5,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "negative",
+        "playful"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "days_since('mood_save')>=7"
+      },
+      "reward": {}
+    },
+    {
+      "id": "NEG_OVERPACKED",
+      "title": "Inventory Tetris",
+      "description": "Hit full inventory during loot gain.",
+      "category": "Inventory",
+      "points": 5,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "negative",
+        "playful"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='loot_gain' && inventory_full==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "NEG_RUN_AWAY",
+      "title": "Feet First",
+      "description": "Flee from a battle.",
+      "category": "Combat",
+      "points": 5,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "negative",
+        "playful"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='battle_end' && fled==true"
+      },
+      "reward": {}
+    },
+    {
+      "id": "NEG_SNOOZE_BUTTON",
+      "title": "Just Five More",
+      "description": "Skip a medication dose.",
+      "category": "Medication",
+      "points": 5,
+      "secret": true,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "negative",
+        "playful"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "event=='med_dose_logged' && outcome=='missed'"
+      },
+      "reward": {}
+    },
+    {
+      "id": "REP_DAILY_TRIFECTA",
+      "title": "Daily Trifecta",
+      "description": "On the same day: log mood, write a journal entry, and take your meds.",
+      "category": "Routine",
+      "points": 10,
+      "secret": false,
+      "repeatable": true,
+      "max_times": null,
+      "tags": [
+        "repeatable",
+        "daily"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "all_today(['mood_save','journal_entry','med_dose_logged'])"
+      },
+      "reward": {}
+    },
+    {
+      "id": "REP_WEEKLY_WELL",
+      "title": "Seven Is A Habit",
+      "description": "Complete the Daily Trifecta 7 days in a row.",
+      "category": "Routine",
+      "points": 20,
+      "secret": false,
+      "repeatable": true,
+      "max_times": null,
+      "tags": [
+        "repeatable",
+        "weekly"
+      ],
+      "trigger": {
+        "event": "*",
+        "condition": "streak('daily_trifecta')>=7"
+      },
+      "reward": {}
+    },
+    {
+      "id": "RE_RANDOM_ENCOUNTER_WINS_1",
+      "title": "Seize The Day",
+      "description": "Win 1 random encounters.",
+      "category": "Exploration",
+      "points": 5,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "encounter",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && encounter_type=='random' && counter('random_wins')>=1",
+        "counter_key": "random_wins",
+        "threshold": 1
+      },
+      "reward": {}
+    },
+    {
+      "id": "RE_RANDOM_ENCOUNTER_WINS_10",
+      "title": "Serendipity",
+      "description": "Win 10 random encounters.",
+      "category": "Exploration",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "encounter",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && encounter_type=='random' && counter('random_wins')>=10",
+        "counter_key": "random_wins",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "RE_RANDOM_ENCOUNTER_WINS_50",
+      "title": "Opportunist",
+      "description": "Win 50 random encounters.",
+      "category": "Exploration",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "encounter",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && encounter_type=='random' && counter('random_wins')>=50",
+        "counter_key": "random_wins",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "SPEAR_VICTOR_10",
+      "title": "Spear Handed",
+      "description": "Win 10 battles while wielding a spear.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Spear' && counter('wins_spear')>=10",
+        "counter_key": "wins_spear",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "SPEAR_VICTOR_200",
+      "title": "Spear Handed",
+      "description": "Win 200 battles while wielding a spear.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Spear' && counter('wins_spear')>=200",
+        "counter_key": "wins_spear",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "SPEAR_VICTOR_50",
+      "title": "Spear Handed",
+      "description": "Win 50 battles while wielding a spear.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Spear' && counter('wins_spear')>=50",
+        "counter_key": "wins_spear",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "STAFF_VICTOR_10",
+      "title": "Staff Handed",
+      "description": "Win 10 battles while wielding a staff.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Staff' && counter('wins_staff')>=10",
+        "counter_key": "wins_staff",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "STAFF_VICTOR_200",
+      "title": "Staff Handed",
+      "description": "Win 200 battles while wielding a staff.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Staff' && counter('wins_staff')>=200",
+        "counter_key": "wins_staff",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "STAFF_VICTOR_50",
+      "title": "Staff Handed",
+      "description": "Win 50 battles while wielding a staff.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Staff' && counter('wins_staff')>=50",
+        "counter_key": "wins_staff",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "SWORD_VICTOR_10",
+      "title": "Sword Handed",
+      "description": "Win 10 battles while wielding a sword.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Sword' && counter('wins_sword')>=10",
+        "counter_key": "wins_sword",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "SWORD_VICTOR_200",
+      "title": "Sword Handed",
+      "description": "Win 200 battles while wielding a sword.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Sword' && counter('wins_sword')>=200",
+        "counter_key": "wins_sword",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "SWORD_VICTOR_50",
+      "title": "Sword Handed",
+      "description": "Win 50 battles while wielding a sword.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Sword' && counter('wins_sword')>=50",
+        "counter_key": "wins_sword",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "WAND_VICTOR_10",
+      "title": "Wand Handed",
+      "description": "Win 10 battles while wielding a wand.",
+      "category": "Weapons",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Wand' && counter('wins_wand')>=10",
+        "counter_key": "wins_wand",
+        "threshold": 10
+      },
+      "reward": {}
+    },
+    {
+      "id": "WAND_VICTOR_200",
+      "title": "Wand Handed",
+      "description": "Win 200 battles while wielding a wand.",
+      "category": "Weapons",
+      "points": 35,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Wand' && counter('wins_wand')>=200",
+        "counter_key": "wins_wand",
+        "threshold": 200
+      },
+      "reward": {}
+    },
+    {
+      "id": "WAND_VICTOR_50",
+      "title": "Wand Handed",
+      "description": "Win 50 battles while wielding a wand.",
+      "category": "Weapons",
+      "points": 20,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "weapon",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && weapon_type=='Wand' && counter('wins_wand')>=50",
+        "counter_key": "wins_wand",
+        "threshold": 50
+      },
+      "reward": {}
+    },
+    {
+      "id": "WIN_STREAK_10",
+      "title": "On A Roll (10)",
+      "description": "Win 10 battles in a row.",
+      "category": "Combat",
+      "points": 15,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && streak('wins')>=10"
+      },
+      "reward": {}
+    },
+    {
+      "id": "WIN_STREAK_25",
+      "title": "On A Roll (25)",
+      "description": "Win 25 battles in a row.",
+      "category": "Combat",
+      "points": 25,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && streak('wins')>=25"
+      },
+      "reward": {}
+    },
+    {
+      "id": "WIN_STREAK_3",
+      "title": "On A Roll (3)",
+      "description": "Win 3 battles in a row.",
+      "category": "Combat",
+      "points": 10,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && streak('wins')>=3"
+      },
+      "reward": {}
+    },
+    {
+      "id": "WIN_STREAK_50",
+      "title": "On A Roll (50)",
+      "description": "Win 50 battles in a row.",
+      "category": "Combat",
+      "points": 40,
+      "secret": false,
+      "repeatable": false,
+      "max_times": null,
+      "tags": [
+        "streak",
+        "combat"
+      ],
+      "trigger": {
+        "event": "battle_end",
+        "condition": "event=='battle_end' && victory==true && streak('wins')>=50"
+      },
+      "reward": {}
+    }
+  ]
+}

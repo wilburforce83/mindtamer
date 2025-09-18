@@ -3,6 +3,7 @@ import '../../crafting/models.dart';
 import '../../crafting/inventory_service.dart';
 import '../../data/repos/equipment_repo.dart';
 import '../widgets/item_icon_badge.dart';
+import '../../services/achievement_service.dart';
 import '../widgets/item_stats_line.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -23,8 +24,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   void _load() {
+    final f = (widget.filter ?? '').toLowerCase();
     final slot = _parseSlot(widget.filter);
-    _items = (slot == null) ? CraftedInventoryService.all() : CraftedInventoryService.bySlot(slot);
+    if (f == 'neck' || f == 'ring') {
+      final all = CraftedInventoryService.all();
+      _items = all.where((e) => (e.def.equipSlot ?? '').toLowerCase() == f).toList();
+    } else {
+      _items = (slot == null) ? CraftedInventoryService.all() : CraftedInventoryService.bySlot(slot);
+    }
     setState((){});
   }
 
@@ -48,6 +55,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
       }
     }
     await repo.setItem(target, EquippedItem(id: it.id, name: it.displayName, rarity: it.rarity.name, element: it.element.name));
+    // Achievements
+    try { await AchievementService().recordEquip(it); } catch (_) {}
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Equipped ${it.displayName} to $target.')));
       Navigator.of(context).maybePop();

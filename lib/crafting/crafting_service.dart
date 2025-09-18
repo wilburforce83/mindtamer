@@ -25,12 +25,21 @@ class CraftingService {
       final pool = pref.isNotEmpty ? pref : assets.weaponDefs;
       pool.shuffle();
       def = pool.first;
-    } else if (r < 40 && (assets.accessoryDefs['neck']!.isNotEmpty || assets.accessoryDefs['ring']!.isNotEmpty)) {
-      // Accessory — pick ring or neck
-      final isRing = (r % 2 == 0);
-      final list = assets.accessoryDefs[isRing ? 'ring' : 'neck'] ?? const <ItemDef>[];
-      if (list.isNotEmpty) {
-        def = list.first;
+    } else if (r < 40) {
+      // Accessory — choose whichever pool has items; prefer ring if both non-empty randomly
+      final rings = assets.accessoryDefs['ring'] ?? const <ItemDef>[];
+      final necks = assets.accessoryDefs['neck'] ?? const <ItemDef>[];
+      List<ItemDef> pool = const <ItemDef>[];
+      if (rings.isNotEmpty && necks.isNotEmpty) {
+        pool = (r % 2 == 0) ? rings : necks;
+      } else if (rings.isNotEmpty) {
+        pool = rings;
+      } else if (necks.isNotEmpty) {
+        pool = necks;
+      }
+      if (pool.isNotEmpty) {
+        pool = List<ItemDef>.from(pool)..shuffle();
+        def = pool.first;
       } else {
         // fallback to armor
         final desiredSlot = _nextCraftSlot();

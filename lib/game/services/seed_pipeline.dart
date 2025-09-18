@@ -14,6 +14,8 @@ import '../models/resonant_echo.dart';
 import 'monster_image_service.dart';
 import '../models/seed_instance.dart';
 import '../models/summons_inventory.dart';
+import '../../crafting/inventory_service.dart';
+import '../../services/achievement_service.dart';
 
 abstract class SeedRouter {
   Future<void> onJournalSaved({
@@ -85,57 +87,59 @@ class SeedRouterImpl implements SeedRouter {
 
     final bundle = await LexiconLoader.load();
 
-    // Always create a monster encounter (derive monster variant using journal context)
-    final monsterSeed = _asMonsterFromContext(
-      seed,
-      bundle,
-      entryId: entryId,
-      title: title,
-      body: body,
-      tags: tags,
-    );
-    await _upsertSpecies(monsterSeed, tags);
-
-    // Attach source metadata to the snapshot
-    final monsterSnap = monsterSeed.toMap();
-    monsterSnap['sourceTitle'] = title;
-    monsterSnap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
-
-    // Monster → ticket (always)
-    await encounterService.createTicket(entryId: entryId, seed: monsterSeed, sourceTitle: title, sourceDate: DateTime.now().toUtc());
-    // Pre-resolve mapping for image continuity
-    try {
-      await MonsterImageService().resolveImagePath(
-        displayName: monsterSeed.displayName,
-        element: monsterSeed.element,
-        type: monsterSeed.type,
+    // Create 3 monster encounters (variants 0..2)
+    for (int i = 0; i < 3; i++) {
+      final monsterSeed = _asMonsterFromContextVariant(
+        seed,
+        bundle,
+        entryId: entryId,
+        title: title,
+        body: body,
+        tags: tags,
+        variant: i,
       );
-    } catch (_) {}
-    await jBox.put(entryId, JournalSeedMeta(
-      entryId: entryId,
-      seedHash: monsterSeed.hash,
-      seedVersion: monsterSeed.version,
-      seedSnapshot: monsterSnap,
-      seedRouting: 'monster',
-      title: title,
-    ));
-
-    // Low-chance sprite drop alongside the monster encounter
-    const dropRate = 0.15; // 15% baseline
-    final rng = _rngFrom('sprite_drop', entryId, seed.hash);
-    if (rng.nextDouble() <= dropRate) {
-      final spriteSeed = seed.kind == 'sprite' ? seed : _asSprite(seed, bundle);
-      await _upsertSpecies(spriteSeed, tags);
-      final snap = spriteSeed.toMap();
-      snap['sourceTitle'] = title;
-      snap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
-      await summonService.createSummonInstance(
-        speciesId: speciesIdFrom(spriteSeed),
-        seedSnapshot: snap,
-        seedHash: spriteSeed.hash,
-        stats: spriteSeed.stats,
-        attacks: spriteSeed.attacks,
-      );
+      await _upsertSpecies(monsterSeed, tags);
+      // Monster → ticket (always)
+      await encounterService.createTicket(entryId: entryId, seed: monsterSeed, sourceTitle: title, sourceDate: DateTime.now().toUtc());
+      // Pre-resolve mapping for image continuity
+      try {
+        await MonsterImageService().resolveImagePath(
+          displayName: monsterSeed.displayName,
+          element: monsterSeed.element,
+          type: monsterSeed.type,
+        );
+      } catch (_) {}
+      // Low-chance sprite drop alongside the monster encounter
+      const dropRate = 0.15; // 15% baseline
+      final rng = _rngFrom('sprite_drop_$i', entryId, seed.hash);
+      if (rng.nextDouble() <= dropRate) {
+        final spriteSeed = seed.kind == 'sprite' ? seed : _asSprite(seed, bundle);
+        await _upsertSpecies(spriteSeed, tags);
+        final snap = spriteSeed.toMap();
+        snap['sourceTitle'] = title;
+        snap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
+        await summonService.createSummonInstance(
+          speciesId: speciesIdFrom(spriteSeed),
+          seedSnapshot: snap,
+          seedHash: spriteSeed.hash,
+          stats: spriteSeed.stats,
+          attacks: spriteSeed.attacks,
+        );
+      }
+      // Store meta only once (prevents reprocessing), tie to first variant
+      if (i == 0) {
+        final monsterSnap = monsterSeed.toMap();
+        monsterSnap['sourceTitle'] = title;
+        monsterSnap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
+        await jBox.put(entryId, JournalSeedMeta(
+          entryId: entryId,
+          seedHash: monsterSeed.hash,
+          seedVersion: monsterSeed.version,
+          seedSnapshot: monsterSnap,
+          seedRouting: 'monster',
+          title: title,
+        ));
+      }
     }
   }
 
@@ -190,9 +194,6 @@ class EncounterServiceImpl implements EncounterService {
   @override
   Future<String> createTicket({required int entryId, required SeedResult seed, String? sourceTitle, DateTime? sourceDate}) async {
     final tBox = encounterTicketBox();
-    EncounterTicket? existing;
-    for (final t in tBox.values) { if (t.entryId == entryId && t.state == 'open') { existing = t; break; } }
-    if (existing != null) return existing.ticketId;
     final id = _uuid.v4();
     final snap = seed.toMap();
     if (sourceTitle != null && sourceTitle.isNotEmpty) snap['sourceTitle'] = sourceTitle;
@@ -298,7 +299,31 @@ class BattleServiceImpl implements BattleService {
       } catch (_) {}
     }
     await codex.onVictory(speciesId: updated.speciesId, displayName: displayName);
-    if (ticket != null) {
+    // Achievements: battle_end event
+    try {
+      // infer weapon from currently equipped
+      String? weaponKey;
+      try {
+        final eq = equipmentBox().get('slots') as Map?;
+        final w = (eq?['weapon'] as Map?)?.map((k, v) => MapEntry(k.toString(), v));
+        if (w != null) {
+          final crafted = CraftedInventoryService.getById((w['id'] ?? '').toString());
+          weaponKey = crafted?.def.key;
+        }
+      } catch (_) {}
+      await AchievementService().recordBattleEnd(
+        victory: result == 'win',
+        turns: turnCount,
+        isBoss: (ticket?.seedSnapshot['isBoss'] == true),
+        damageTaken: 0,
+        itemsUsedTotal: 0,
+        itemsUsedHeal: 0,
+        skillsUsedHeal: 0,
+        hpPct: 100,
+        weaponKey: weaponKey,
+      );
+    } catch (_) {}
+    if (ticket != null && (ticket.seedSnapshot['noEcho'] != true)) {
       final seed = SeedResultSerialize.fromMap(Map<String, dynamic>.from(ticket.seedSnapshot));
       await echo.maybeDropEcho(
         battleId: updated.battleId,
@@ -412,9 +437,10 @@ Random _rngFrom(String salt, int entryId, String seedHash) {
   return Random(acc);
 }
 
-SeedResult _asMonsterFromContext(SeedResult s, LexiconBundle bundle, {required int entryId, required String title, required String body, required List<String> tags}) {
-  // Use entryId to inject variety across similar entries while keeping weighting.
-  final rng = _rngFrom('monster_family', entryId, s.hash);
+
+SeedResult _asMonsterFromContextVariant(SeedResult s, LexiconBundle bundle, {required int entryId, required String title, required String body, required List<String> tags, int variant = 0}) {
+  // Use entryId + variant to inject variety across similar entries while keeping weighting.
+  final rng = _rngFrom('monster_family|v$variant', entryId, s.hash);
   final family = _pickFamily(title: title, body: body, tags: tags, baseWord: s.baseWord, element: s.element, rng: rng);
   // Base modifier from generator, with a 20% chance to swap to an element-appropriate synonym
   String mod = (s.secondaryWord.isNotEmpty) ? s.secondaryWord : _fallbackModForElement(s.element, rng);
