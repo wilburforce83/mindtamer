@@ -4,7 +4,8 @@ import 'presentation/screens/dashboard_screen.dart';
 import 'presentation/screens/character_hub_screen.dart';
 import 'presentation/screens/achievements_screen.dart';
 import 'presentation/screens/echoes_screen.dart';
-import 'presentation/screens/fusion_screen.dart';
+import 'presentation/screens/crafting_screen.dart';
+import 'presentation/screens/inventory_screen.dart';
 import 'presentation/screens/monster_codex_screen.dart';
 import 'presentation/screens/items_screen.dart';
 import 'ui/sprites/sprites_page.dart';
@@ -100,7 +101,14 @@ GoRouter buildRouter() {
       ),
       GoRoute(path: '/achievements', builder: (context, state) => const AchievementsScreen()),
       GoRoute(path: '/echoes', builder: (context, state) => const EchoesScreen()),
-      GoRoute(path: '/fusion', builder: (context, state) => const FusionScreen()),
+      GoRoute(path: '/crafting', builder: (context, state) => const CraftingScreen()),
+      GoRoute(path: '/inventory', builder: (context, state) {
+        final extra = state.extra;
+        String? filter;
+        if (extra is Map) { filter = extra['filter']?.toString(); }
+        if (extra is String) { filter = extra; }
+        return InventoryScreen(filter: filter);
+      }),
       GoRoute(path: '/codex', builder: (context, state) => const MonsterCodexScreen()),
       GoRoute(path: '/items', builder: (context, state) {
         final extra = state.extra;

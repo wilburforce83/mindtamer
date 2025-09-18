@@ -53,6 +53,46 @@ flutter:
     - assets/images/items/talismans/
     - assets/images/backgrounds/
     - assets/images/players/
+    - assets/images/weapons/
+    - assets/images/armor/
+    # Explicitly include armor class directories to ensure bundling during hot reload
+    - assets/images/armor/alchemist/
+    - assets/images/armor/alchemist/early/
+    - assets/images/armor/alchemist/mid/
+    - assets/images/armor/alchemist/late/
+    - assets/images/armor/artificer/
+    - assets/images/armor/artificer/early/
+    - assets/images/armor/artificer/mid/
+    - assets/images/armor/artificer/late/
+    - assets/images/armor/empath/
+    - assets/images/armor/empath/early/
+    - assets/images/armor/empath/mid/
+    - assets/images/armor/empath/late/
+    - assets/images/armor/oracle/
+    - assets/images/armor/oracle/early/
+    - assets/images/armor/oracle/mid/
+    - assets/images/armor/oracle/late/
+    - assets/images/armor/sage/
+    - assets/images/armor/sage/early/
+    - assets/images/armor/sage/mid/
+    - assets/images/armor/sage/late/
+    - assets/images/armor/seer/
+    - assets/images/armor/seer/early/
+    # Seer currently has early only
+    - assets/images/armor/sentinel/
+    - assets/images/armor/sentinel/early/
+    # Sentinel currently has early only
+    - assets/images/armor/shadow/
+    - assets/images/armor/shadow/early/
+    # Shadow currently has early only
+    - assets/images/armor/trickster/
+    - assets/images/armor/trickster/early/
+    # Trickster currently has early only
+    - assets/images/armor/warden/
+    - assets/images/armor/warden/early/
+    # Warden currently has early only
+    - assets/images/accessories/
+    - assets/images/crafting/
     - assets/images/monsters/
     - assets/data/
     - assets/lexicon/v1/

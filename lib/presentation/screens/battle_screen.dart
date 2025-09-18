@@ -387,7 +387,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       ),
     );
 
-    Color _colorForElement(String? e) {
+    Color colorForElement(String? e) {
       switch ((e ?? '').toLowerCase()) {
         case 'fire': return Colors.deepOrange;
         case 'water': return Colors.blueAccent;
@@ -400,7 +400,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       }
     }
 
-    String? _elementForSpriteName(String name) {
+    String? elementForSpriteName(String name) {
       try {
         final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
         final ids = [slots?['sprite1']?.toString(), slots?['sprite2']?.toString()];
@@ -433,9 +433,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       children: [
         for (int i = 0; i < state.sprites.length; i++)
           Builder(builder: (ctx) {
-            final elem = _elementForSpriteName(state.sprites[i]);
-            final bg = _colorForElement(elem).withValues(alpha: 0.85);
-            final fg = Colors.white;
+            final elem = elementForSpriteName(state.sprites[i]);
+            final bg = colorForElement(elem).withValues(alpha: 0.85);
+            const fg = Colors.white;
             final label = state.spriteCooldowns.elementAt(i) > 0 ? '${state.sprites[i]} (${state.spriteCooldowns[i]})' : state.sprites[i];
             return PixelButton(
               label: label,
@@ -459,7 +459,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       ),
     );
 
-    bool _hasHealingItem() {
+    bool hasHealingItem() {
       try {
         for (final it in InventoryService.inventory()) {
           final t = (it['type'] ?? '').toString();
@@ -473,7 +473,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       return false;
     }
 
-    final healAvailable = _hasHealingItem();
+    final healAvailable = hasHealingItem();
     final below25 = state.playerMaxHp > 0 && (state.playerHp / state.playerMaxHp) <= 0.25;
     final shouldPulse = healAvailable && below25 && (state.result == null);
     if (shouldPulse) {
@@ -482,7 +482,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       if (_pulseCtrl.isAnimating) _pulseCtrl.stop();
     }
 
-    Widget _quickHealButton() {
+    Widget quickHealButton() {
       final btn = PixelButton(
         label: 'Quick Heal',
         onPressed: healAvailable ? () => ref.read(battleProvider.notifier).quickHeal() : null,
@@ -505,7 +505,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       );
     }
 
-    Widget _runAwayButton() {
+    Widget runAwayButton() {
       return PixelButton(
         label: 'Run Away',
         onPressed: () async {
@@ -572,9 +572,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                   children: [
                     spritesWrap,
                     const SizedBox(height: 8),
-                    _quickHealButton(),
+                    quickHealButton(),
                     const SizedBox(height: 8),
-                    _runAwayButton(),
+                    runAwayButton(),
                   ],
                 ),
               ),

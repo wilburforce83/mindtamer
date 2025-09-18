@@ -1,0 +1,475 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2025-09-18",
+  "tier_range": { "min": 1, "max": 13 },
+  "rarity_cap": "legendary",
+
+  "naming_rules": {
+    "explanation": "Use `name_connector` to join set/owner to monster/title seeds. 'of' → \"Tinkers Rig of Twist Gargoyle\"; 'possessive' → \"Veilseer's Twist Gargoyle\".",
+    "connectors": { "of": "of", "possessive": "'s" }
+  },
+
+  "armor_sets": [
+    {
+      "class": "warden",
+      "era": "early",
+      "set_name": "Bulwark",
+      "name_connector": "possessive",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/warden/early/warden_bulwark_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/warden/early/warden_bulwark_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/warden/early/warden_bulwark_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/warden/early/warden_bulwark_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/warden/early/warden_bulwark_feet_32.png" }
+      ]
+    },
+    {
+      "class": "trickster",
+      "era": "early",
+      "set_name": "Streetshade",
+      "name_connector": "possessive",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/trickster/early/trickster_streetshade_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/trickster/early/trickster_streetshade_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/trickster/early/trickster_streetshade_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/trickster/early/trickster_streetshade_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/trickster/early/trickster_streetshade_feet_32.png" }
+      ]
+    },
+    {
+      "class": "sage",
+      "era": "early",
+      "set_name": "Arcanist Weave",
+      "name_connector": "of",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/sage/early/sage_arcanist_weave_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/sage/early/sage_arcanist_weave_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/sage/early/sage_arcanist_weave_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/sage/early/sage_arcanist_weave_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/sage/early/sage_arcanist_weave_feet_32.png" }
+      ]
+    },
+    {
+      "class": "seer",
+      "era": "early",
+      "set_name": "Veilseer",
+      "name_connector": "possessive",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/seer/early/seer_veilseer_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/seer/early/seer_veilseer_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/seer/early/seer_veilseer_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/seer/early/seer_veilseer_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/seer/early/seer_veilseer_feet_32.png" }
+      ]
+    },
+    {
+      "class": "sentinel",
+      "era": "early",
+      "set_name": "Wallguard",
+      "name_connector": "possessive",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/sentinel/early/sentinel_wallguard_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/sentinel/early/sentinel_wallguard_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/sentinel/early/sentinel_wallguard_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/sentinel/early/sentinel_wallguard_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/sentinel/early/sentinel_wallguard_feet_32.png" }
+      ]
+    },
+    {
+      "class": "oracle",
+      "era": "early",
+      "set_name": "Edict",
+      "name_connector": "of",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/oracle/early/oracle_edict_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/oracle/early/oracle_edict_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/oracle/early/oracle_edict_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/oracle/early/oracle_edict_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/oracle/early/oracle_edict_feet_32.png" }
+      ]
+    },
+    {
+      "class": "empath",
+      "era": "early",
+      "set_name": "Healer's Habit",
+      "name_connector": "of",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/empath/early/empath_healers_habit_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/empath/early/empath_healers_habit_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/empath/early/empath_healers_habit_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/empath/early/empath_healers_habit_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/empath/early/empath_healers_habit_feet_32.png" }
+      ]
+    },
+    {
+      "class": "alchemist",
+      "era": "early",
+      "set_name": "Workbench",
+      "name_connector": "of",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/alchemist/early/alchemist_workbench_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/alchemist/early/alchemist_workbench_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/alchemist/early/alchemist_workbench_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/alchemist/early/alchemist_workbench_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/alchemist/early/alchemist_workbench_feet_32.png" }
+      ]
+    },
+    {
+      "class": "artificer",
+      "era": "early",
+      "set_name": "Tinkers Rig",
+      "name_connector": "of",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/artificer/early/artificer_tinkers_rig_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/artificer/early/artificer_tinkers_rig_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/artificer/early/artificer_tinkers_rig_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/artificer/early/artificer_tinkers_rig_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/artificer/early/artificer_tinkers_rig_feet_32.png" }
+      ]
+    },
+    {
+      "class": "shadow",
+      "era": "early",
+      "set_name": "Duskstalk",
+      "name_connector": "possessive",
+      "pieces": [
+        { "slot": "head",  "image_path": "assets/images/armor/shadow/early/shadow_duskstalk_head_32.png" },
+        { "slot": "chest", "image_path": "assets/images/armor/shadow/early/shadow_duskstalk_chest_32.png" },
+        { "slot": "hands", "image_path": "assets/images/armor/shadow/early/shadow_duskstalk_hands_32.png" },
+        { "slot": "legs",  "image_path": "assets/images/armor/shadow/early/shadow_duskstalk_legs_32.png" },
+        { "slot": "feet",  "image_path": "assets/images/armor/shadow/early/shadow_duskstalk_feet_32.png" }
+      ]
+    },
+
+    
+    { "class": "warden", "era": "mid", "set_name": "Keepwatch", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/warden/mid/warden_keepwatch_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/warden/mid/warden_keepwatch_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/warden/mid/warden_keepwatch_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/warden/mid/warden_keepwatch_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/warden/mid/warden_keepwatch_feet_32.png" }
+      ]
+    },
+    { "class": "warden", "era": "late", "set_name": "Bastion", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/warden/late/warden_bastion_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/warden/late/warden_bastion_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/warden/late/warden_bastion_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/warden/late/warden_bastion_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/warden/late/warden_bastion_feet_32.png" }
+      ]
+    },
+
+    { "class": "trickster", "era": "mid", "set_name": "Jester's Guile", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/trickster/mid/trickster_jesters_guile_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/trickster/mid/trickster_jesters_guile_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/trickster/mid/trickster_jesters_guile_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/trickster/mid/trickster_jesters_guile_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/trickster/mid/trickster_jesters_guile_feet_32.png" }
+      ]
+    },
+    { "class": "trickster", "era": "late", "set_name": "Viperstep", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/trickster/late/trickster_viperstep_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/trickster/late/trickster_viperstep_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/trickster/late/trickster_viperstep_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/trickster/late/trickster_viperstep_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/trickster/late/trickster_viperstep_feet_32.png" }
+      ]
+    },
+
+    { "class": "sage", "era": "mid", "set_name": "Glyphsong", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/sage/mid/sage_glyphsong_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/sage/mid/sage_glyphsong_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/sage/mid/sage_glyphsong_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/sage/mid/sage_glyphsong_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/sage/mid/sage_glyphsong_feet_32.png" }
+      ]
+    },
+    { "class": "sage", "era": "late", "set_name": "Starweft", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/sage/late/sage_starweft_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/sage/late/sage_starweft_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/sage/late/sage_starweft_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/sage/late/sage_starweft_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/sage/late/sage_starweft_feet_32.png" }
+      ]
+    },
+
+    { "class": "seer", "era": "mid", "set_name": "Loom of Fate", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/seer/mid/seer_loom_of_fate_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/seer/mid/seer_loom_of_fate_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/seer/mid/seer_loom_of_fate_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/seer/mid/seer_loom_of_fate_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/seer/mid/seer_loom_of_fate_feet_32.png" }
+      ]
+    },
+    { "class": "seer", "era": "late", "set_name": "Oracle's Loom", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/seer/late/seer_oracles_loom_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/seer/late/seer_oracles_loom_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/seer/late/seer_oracles_loom_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/seer/late/seer_oracles_loom_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/seer/late/seer_oracles_loom_feet_32.png" }
+      ]
+    },
+
+    { "class": "sentinel", "era": "mid", "set_name": "Watchtower", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/sentinel/mid/sentinel_watchtower_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/sentinel/mid/sentinel_watchtower_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/sentinel/mid/sentinel_watchtower_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/sentinel/mid/sentinel_watchtower_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/sentinel/mid/sentinel_watchtower_feet_32.png" }
+      ]
+    },
+    { "class": "sentinel", "era": "late", "set_name": "Fortitude", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/sentinel/late/sentinel_fortitude_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/sentinel/late/sentinel_fortitude_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/sentinel/late/sentinel_fortitude_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/sentinel/late/sentinel_fortitude_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/sentinel/late/sentinel_fortitude_feet_32.png" }
+      ]
+    },
+
+    { "class": "oracle", "era": "mid", "set_name": "Tribunal", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/oracle/mid/oracle_tribunal_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/oracle/mid/oracle_tribunal_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/oracle/mid/oracle_tribunal_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/oracle/mid/oracle_tribunal_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/oracle/mid/oracle_tribunal_feet_32.png" }
+      ]
+    },
+    { "class": "oracle", "era": "late", "set_name": "Radiant Decree", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/oracle/late/oracle_radiant_decree_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/oracle/late/oracle_radiant_decree_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/oracle/late/oracle_radiant_decree_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/oracle/late/oracle_radiant_decree_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/oracle/late/oracle_radiant_decree_feet_32.png" }
+      ]
+    },
+
+    { "class": "empath", "era": "mid", "set_name": "Mercywrap", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/empath/mid/empath_mercywrap_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/empath/mid/empath_mercywrap_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/empath/mid/empath_mercywrap_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/empath/mid/empath_mercywrap_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/empath/mid/empath_mercywrap_feet_32.png" }
+      ]
+    },
+    { "class": "empath", "era": "late", "set_name": "Seraphra", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/empath/late/empath_seraphra_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/empath/late/empath_seraphra_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/empath/late/empath_seraphra_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/empath/late/empath_seraphra_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/empath/late/empath_seraphra_feet_32.png" }
+      ]
+    },
+
+    { "class": "artificer", "era": "mid", "set_name": "Gearwright", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/artificer/mid/artificer_gearwright_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/artificer/mid/artificer_gearwright_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/artificer/mid/artificer_gearwright_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/artificer/mid/artificer_gearwright_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/artificer/mid/artificer_gearwright_feet_32.png" }
+      ]
+    },
+    { "class": "artificer", "era": "late", "set_name": "Aetherframe", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/artificer/late/artificer_aetherframe_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/artificer/late/artificer_aetherframe_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/artificer/late/artificer_aetherframe_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/artificer/late/artificer_aetherframe_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/artificer/late/artificer_aetherframe_feet_32.png" }
+      ]
+    },
+
+    { "class": "shadow", "era": "mid", "set_name": "Nightwisp", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/shadow/mid/shadow_nightwisp_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/shadow/mid/shadow_nightwisp_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/shadow/mid/shadow_nightwisp_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/shadow/mid/shadow_nightwisp_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/shadow/mid/shadow_nightwisp_feet_32.png" }
+      ]
+    },
+    { "class": "shadow", "era": "late", "set_name": "Umbral Muse", "name_connector": "possessive", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/shadow/late/shadow_umbral_muse_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/shadow/late/shadow_umbral_muse_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/shadow/late/shadow_umbral_muse_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/shadow/late/shadow_umbral_muse_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/shadow/late/shadow_umbral_muse_feet_32.png" }
+      ]
+    },
+
+    { "class": "alchemist", "era": "mid", "set_name": "Retortcoat", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/alchemist/mid/alchemist_retortcoat_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/alchemist/mid/alchemist_retortcoat_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/alchemist/mid/alchemist_retortcoat_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/alchemist/mid/alchemist_retortcoat_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/alchemist/mid/alchemist_retortcoat_feet_32.png" }
+      ]
+    },
+    { "class": "alchemist", "era": "late", "set_name": "Philosopher", "name_connector": "of", "planned": true,
+      "pieces": [
+        { "slot": "head",  "image_path_pattern": "assets/images/armor/alchemist/late/alchemist_philosopher_head_32.png" },
+        { "slot": "chest", "image_path_pattern": "assets/images/armor/alchemist/late/alchemist_philosopher_chest_32.png" },
+        { "slot": "hands", "image_path_pattern": "assets/images/armor/alchemist/late/alchemist_philosopher_hands_32.png" },
+        { "slot": "legs",  "image_path_pattern": "assets/images/armor/alchemist/late/alchemist_philosopher_legs_32.png" },
+        { "slot": "feet",  "image_path_pattern": "assets/images/armor/alchemist/late/alchemist_philosopher_feet_32.png" }
+      ]
+    }
+  ],
+
+  "weapons": [
+   
+    { "class": "warden", "name": "Bulwark Longsword", "name_connector": "of", "image_path": "assets/images/weapons/warden/bulwark_longsword_32.png" },
+    { "class": "warden", "name": "Tower Shield",       "name_connector": "of", "image_path": "assets/images/weapons/warden/tower_shield_32.png" },
+    { "class": "warden", "name": "Wardhammer",         "name_connector": "of", "image_path": "assets/images/weapons/warden/wardhammer_32.png" },
+    { "class": "warden", "name": "Banner Poleaxe",     "name_connector": "of", "image_path": "assets/images/weapons/warden/banner_poleaxe_32.png" },
+    { "class": "warden", "name": "Guardian Mace",      "name_connector": "of", "image_path": "assets/images/weapons/warden/guardian_mace_32.png" },
+    { "class": "warden", "name": "Vigil Pike",         "name_connector": "of", "image_path": "assets/images/weapons/warden/vigil_pike_32.png" },
+    { "class": "warden", "name": "Bastion Gladius",    "name_connector": "of", "image_path": "assets/images/weapons/warden/bastion_gladius_32.png" },
+    { "class": "warden", "name": "Oathbuckler",        "name_connector": "of", "image_path": "assets/images/weapons/warden/oathbuckler_32.png" },
+
+  
+    { "class": "trickster", "name": "Flicker Dagger",  "name_connector": "of", "image_path": "assets/images/weapons/trickster/flicker_dagger_32.png" },
+    { "class": "trickster", "name": "Hookblade",       "name_connector": "of", "image_path": "assets/images/weapons/trickster/hookblade_32.png" },
+    { "class": "trickster", "name": "Throwing Knives", "name_connector": "of", "image_path": "assets/images/weapons/trickster/throwing_knives_32.png" },
+    { "class": "trickster", "name": "Wire Garrote",    "name_connector": "of", "image_path": "assets/images/weapons/trickster/wire_garrote_32.png" },
+    { "class": "trickster", "name": "Blackjack",       "name_connector": "of", "image_path": "assets/images/weapons/trickster/blackjack_32.png" },
+    { "class": "trickster", "name": "Twin Sai",        "name_connector": "of", "image_path": "assets/images/weapons/trickster/twin_sai_32.png" },
+    { "class": "trickster", "name": "Needle Rapier",   "name_connector": "of", "image_path": "assets/images/weapons/trickster/needle_rapier_32.png" },
+    { "class": "trickster", "name": "Smoke Vial",      "name_connector": "of", "image_path": "assets/images/weapons/trickster/smoke_vial_32.png" },
+
+
+    { "class": "sage", "name": "Sagewood Staff",   "name_connector": "of", "image_path": "assets/images/weapons/sage/sagewood_staff_32.png" },
+    { "class": "sage", "name": "Arcane Tome",      "name_connector": "of", "image_path": "assets/images/weapons/sage/arcane_tome_32.png" },
+    { "class": "sage", "name": "Crystal Wand",     "name_connector": "of", "image_path": "assets/images/weapons/sage/crystal_wand_32.png" },
+    { "class": "sage", "name": "Rune Scepter",     "name_connector": "of", "image_path": "assets/images/weapons/sage/rune_scepter_32.png" },
+    { "class": "sage", "name": "Comet Rod",        "name_connector": "of", "image_path": "assets/images/weapons/sage/comet_rod_32.png" },
+    { "class": "sage", "name": "Glyph Tablet",     "name_connector": "of", "image_path": "assets/images/weapons/sage/glyph_tablet_32.png" },
+    { "class": "sage", "name": "Orb Focus",        "name_connector": "of", "image_path": "assets/images/weapons/sage/orb_focus_32.png" },
+    { "class": "sage", "name": "Quill Grimoire",   "name_connector": "of", "image_path": "assets/images/weapons/sage/quill_grimoire_32.png" },
+
+    { "class": "sentinel", "name": "Halberd of Watch", "name_connector": "of", "image_path": "assets/images/weapons/sentinel/halberd_of_watch_32.png" },
+    { "class": "sentinel", "name": "Bastard Sword",    "name_connector": "of", "image_path": "assets/images/weapons/sentinel/bastard_sword_32.png" },
+    { "class": "sentinel", "name": "Partizan",         "name_connector": "of", "image_path": "assets/images/weapons/sentinel/partizan_32.png" },
+    { "class": "sentinel", "name": "Glaive Banner",    "name_connector": "of", "image_path": "assets/images/weapons/sentinel/glaive_banner_32.png" },
+    { "class": "sentinel", "name": "Flail Star",       "name_connector": "of", "image_path": "assets/images/weapons/sentinel/flail_star_32.png" },
+    { "class": "sentinel", "name": "Kite Shield",      "name_connector": "of", "image_path": "assets/images/weapons/sentinel/kite_shield_32.png" },
+    { "class": "sentinel", "name": "Ward Spear",       "name_connector": "of", "image_path": "assets/images/weapons/sentinel/ward_spear_32.png" },
+    { "class": "sentinel", "name": "Claymore",         "name_connector": "of", "image_path": "assets/images/weapons/sentinel/claymore_32.png" },
+
+
+    { "class": "seer", "name": "Seeing Orb",     "name_connector": "of", "image_path": "assets/images/weapons/seer/seeing_orb_32.png" },
+    { "class": "seer", "name": "Fate Deck",      "name_connector": "of", "image_path": "assets/images/weapons/seer/fate_deck_32.png" },
+    { "class": "seer", "name": "Diviner's Rod",  "name_connector": "of", "image_path": "assets/images/weapons/seer/diviner_s_rod_32.png" },
+    { "class": "seer", "name": "Hourglass Staff","name_connector": "of", "image_path": "assets/images/weapons/seer/hourglass_staff_32.png" },
+    { "class": "seer", "name": "Moon Dial",      "name_connector": "of", "image_path": "assets/images/weapons/seer/moon_dial_32.png" },
+    { "class": "seer", "name": "Chant Bell",     "name_connector": "of", "image_path": "assets/images/weapons/seer/chant_bell_32.png" },
+    { "class": "seer", "name": "Hex Tome",       "name_connector": "of", "image_path": "assets/images/weapons/seer/hex_tome_32.png" },
+    { "class": "seer", "name": "Thread Spindle", "name_connector": "of", "image_path": "assets/images/weapons/seer/thread_spindle_32.png" },
+
+    
+    { "class": "artificer", "name": "Spring Crossbow",  "name_connector": "of", "image_path": "assets/images/weapons/artificer/spring_crossbow_32.png" },
+    { "class": "artificer", "name": "Spark Pistol",     "name_connector": "of", "image_path": "assets/images/weapons/artificer/spark_pistol_32.png" },
+    { "class": "artificer", "name": "Tesla Rod",        "name_connector": "of", "image_path": "assets/images/weapons/artificer/tesla_rod_32.png" },
+    { "class": "artificer", "name": "Bomb Satchel",     "name_connector": "of", "image_path": "assets/images/weapons/artificer/bomb_satchel_32.png" },
+    { "class": "artificer", "name": "Wrench Axe",       "name_connector": "of", "image_path": "assets/images/weapons/artificer/wrench_axe_32.png" },
+    { "class": "artificer", "name": "Gear Mace",        "name_connector": "of", "image_path": "assets/images/weapons/artificer/gear_mace_32.png" },
+    { "class": "artificer", "name": "Aether Rifle",     "name_connector": "of", "image_path": "assets/images/weapons/artificer/aether_rifle_32.png" },
+    { "class": "artificer", "name": "Magnet Gauntlet",  "name_connector": "of", "image_path": "assets/images/weapons/artificer/magnet_gauntlet_32.png" },
+
+
+    { "class": "empath", "name": "Prayer Staff",    "name_connector": "of", "image_path": "assets/images/weapons/empath/prayer_staff_32.png" },
+    { "class": "empath", "name": "Rosary Flail",    "name_connector": "of", "image_path": "assets/images/weapons/empath/rosary_flail_32.png" },
+    { "class": "empath", "name": "Sanctuary Tome",  "name_connector": "of", "image_path": "assets/images/weapons/empath/sanctuary_tome_32.png" },
+    { "class": "empath", "name": "Incense Burner",  "name_connector": "of", "image_path": "assets/images/weapons/empath/incense_burner_32.png" },
+    { "class": "empath", "name": "Ward Fan",        "name_connector": "of", "image_path": "assets/images/weapons/empath/ward_fan_32.png" },
+    { "class": "empath", "name": "Blessing Bell",   "name_connector": "of", "image_path": "assets/images/weapons/empath/blessing_bell_32.png" },
+    { "class": "empath", "name": "Chalice",         "name_connector": "of", "image_path": "assets/images/weapons/empath/chalice_32.png" },
+    { "class": "empath", "name": "Shepherd's Crook","name_connector": "of", "image_path": "assets/images/weapons/empath/shepherd_s_crook_32.png" },
+
+
+    { "class": "oracle", "name": "Verdict Scepter", "name_connector": "of", "image_path": "assets/images/weapons/oracle/verdict_scepter_32.png" },
+    { "class": "oracle", "name": "Sun Flail",       "name_connector": "of", "image_path": "assets/images/weapons/oracle/sun_flail_32.png" },
+    { "class": "oracle", "name": "Gavel Mace",      "name_connector": "of", "image_path": "assets/images/weapons/oracle/gavel_mace_32.png" },
+    { "class": "oracle", "name": "Law Tablet",      "name_connector": "of", "image_path": "assets/images/weapons/oracle/law_tablet_32.png" },
+    { "class": "oracle", "name": "Radiant Rod",     "name_connector": "of", "image_path": "assets/images/weapons/oracle/radiant_rod_32.png" },
+    { "class": "oracle", "name": "Balance Blade",   "name_connector": "of", "image_path": "assets/images/weapons/oracle/balance_blade_32.png" },
+    { "class": "oracle", "name": "Edict Tome",      "name_connector": "of", "image_path": "assets/images/weapons/oracle/edict_tome_32.png" },
+    { "class": "oracle", "name": "Herald's Horn",   "name_connector": "of", "image_path": "assets/images/weapons/oracle/herald_s_horn_32.png" },
+
+
+    { "class": "shadow", "name": "Night Katars",   "name_connector": "of", "image_path": "assets/images/weapons/shadow/night_katars_32.png" },
+    { "class": "shadow", "name": "Crescent Scythe","name_connector": "of", "image_path": "assets/images/weapons/shadow/crescent_scythe_32.png" },
+    { "class": "shadow", "name": "Smoke Blade",    "name_connector": "of", "image_path": "assets/images/weapons/shadow/smoke_blade_32.png" },
+    { "class": "shadow", "name": "Needle Fan",     "name_connector": "of", "image_path": "assets/images/weapons/shadow/needle_fan_32.png" },
+    { "class": "shadow", "name": "Caltrop Pouch",  "name_connector": "of", "image_path": "assets/images/weapons/shadow/caltrop_pouch_32.png" },
+    { "class": "shadow", "name": "Chain Sickle",   "name_connector": "of", "image_path": "assets/images/weapons/shadow/chain_sickle_32.png" },
+    { "class": "shadow", "name": "Widow Fang",     "name_connector": "of", "image_path": "assets/images/weapons/shadow/widow_fang_32.png" },
+    { "class": "shadow", "name": "Shade Tome",     "name_connector": "of", "image_path": "assets/images/weapons/shadow/shade_tome_32.png" },
+
+
+    { "class": "alchemist", "name": "Alchemic Blade",     "name_connector": "of", "image_path": "assets/images/weapons/alchemist/alchemic_blade_32.png" },
+    { "class": "alchemist", "name": "Flask Slinger",      "name_connector": "of", "image_path": "assets/images/weapons/alchemist/flask_slinger_32.png" },
+    { "class": "alchemist", "name": "Retort Staff",       "name_connector": "of", "image_path": "assets/images/weapons/alchemist/retort_staff_32.png" },
+    { "class": "alchemist", "name": "Bomb Lance",         "name_connector": "of", "image_path": "assets/images/weapons/alchemist/bomb_lance_32.png" },
+    { "class": "alchemist", "name": "Ember Phial Wand",   "name_connector": "of", "image_path": "assets/images/weapons/alchemist/ember_phial_wand_32.png" },
+    { "class": "alchemist", "name": "Pestle Mace",        "name_connector": "of", "image_path": "assets/images/weapons/alchemist/pestle_mace_32.png" },
+    { "class": "alchemist", "name": "Catalyst Rod",       "name_connector": "of", "image_path": "assets/images/weapons/alchemist/catalyst_rod_32.png" },
+    { "class": "alchemist", "name": "Distiller Crossbow", "name_connector": "of", "image_path": "assets/images/weapons/alchemist/distiller_crossbow_32.png" }
+  ],
+
+  "accessories": {
+    "necklaces": [
+      { "name": "Sunburst Medallion", "name_connector": "of", "image_path": "assets/images/accessories/necklaces/sunburst_medallion_32.png" },
+      { "name": "Moontear Pendant",   "name_connector": "of", "image_path": "assets/images/accessories/necklaces/moontear_pendant_32.png" },
+      { "name": "Lion Crest",         "name_connector": "of", "image_path": "assets/images/accessories/necklaces/lion_crest_32.png" },
+      { "name": "Leaf Charm",         "name_connector": "of", "image_path": "assets/images/accessories/necklaces/leaf_charm_32.png" },
+      { "name": "Gear Locket",        "name_connector": "of", "image_path": "assets/images/accessories/necklaces/gear_locket_32.png" },
+      { "name": "Spirit Beads",       "name_connector": "of", "image_path": "assets/images/accessories/necklaces/spirit_beads_32.png" },
+      { "name": "Star Prism",         "name_connector": "of", "image_path": "assets/images/accessories/necklaces/star_prism_32.png" },
+      { "name": "Hex Sigil",          "name_connector": "of", "image_path": "assets/images/accessories/necklaces/hex_sigil_32.png" },
+      { "name": "Feather Tether",     "name_connector": "of", "image_path": "assets/images/accessories/necklaces/feather_tether_32.png" },
+      { "name": "Wyrm Fang",          "name_connector": "of", "image_path": "assets/images/accessories/necklaces/wyrm_fang_32.png" },
+      { "name": "Anchor Chain",       "name_connector": "of", "image_path": "assets/images/accessories/necklaces/anchor_chain_32.png" },
+      { "name": "Heart Reliquary",    "name_connector": "of", "image_path": "assets/images/accessories/necklaces/heart_reliquary_32.png" }
+    ],
+    "rings": [
+      { "name": "Iron Band",        "name_connector": "of", "image_path": "assets/images/accessories/rings/iron_band_32.png" },
+      { "name": "Steel Knot",       "name_connector": "of", "image_path": "assets/images/accessories/rings/steel_knot_32.png" },
+      { "name": "Bronze Signet",    "name_connector": "of", "image_path": "assets/images/accessories/rings/bronze_signet_32.png" },
+      { "name": "Silver Leaf",      "name_connector": "of", "image_path": "assets/images/accessories/rings/silver_leaf_32.png" },
+      { "name": "Gold Circlet",     "name_connector": "of", "image_path": "assets/images/accessories/rings/gold_circlet_32.png" },
+      { "name": "Ruby Heart",       "name_connector": "of", "image_path": "assets/images/accessories/rings/ruby_heart_32.png" },
+      { "name": "Sapphire Tear",    "name_connector": "of", "image_path": "assets/images/accessories/rings/sapphire_tear_32.png" },
+      { "name": "Emerald Square",   "name_connector": "of", "image_path": "assets/images/accessories/rings/emerald_square_32.png" },
+      { "name": "Amethyst Oval",    "name_connector": "of", "image_path": "assets/images/accessories/rings/amethyst_oval_32.png" },
+      { "name": "Topaz Sun",        "name_connector": "of", "image_path": "assets/images/accessories/rings/topaz_sun_32.png" },
+      { "name": "Onyx Seal",        "name_connector": "of", "image_path": "assets/images/accessories/rings/onyx_seal_32.png" },
+      { "name": "Moonstone Halo",   "name_connector": "of", "image_path": "assets/images/accessories/rings/moonstone_halo_32.png" },
+      { "name": "Gear Ring",        "name_connector": "of", "image_path": "assets/images/accessories/rings/gear_ring_32.png" },
+      { "name": "Feather Wrap",     "name_connector": "of", "image_path": "assets/images/accessories/rings/feather_wrap_32.png" },
+      { "name": "Wyrm Scale",       "name_connector": "of", "image_path": "assets/images/accessories/rings/wyrm_scale_32.png" },
+      { "name": "Runic Band",       "name_connector": "of", "image_path": "assets/images/accessories/rings/runic_band_32.png" },
+      { "name": "Twin Bands",       "name_connector": "of", "image_path": "assets/images/accessories/rings/twin_bands_32.png" },
+      { "name": "Signet of Light",  "name_connector": "of", "image_path": "assets/images/accessories/rings/signet_of_light_32.png" },
+      { "name": "Signet of Shadow", "name_connector": "of", "image_path": "assets/images/accessories/rings/signet_of_shadow_32.png" },
+      { "name": "Prism Band",       "name_connector": "of", "image_path": "assets/images/accessories/rings/prism_band_32.png" }
+    ]
+  }
+}

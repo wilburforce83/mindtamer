@@ -11,6 +11,7 @@ import '../../models/sprite_attack.dart';
 import '../../game/services/monster_image_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/item_catalog.dart';
+import '../../crafting/inventory_service.dart';
 import '../../services/drop_table.dart';
 
   class BattleState {
@@ -170,9 +171,12 @@ class BattleNotifier extends StateNotifier<BattleState> {
       } catch (_) {}
     }
 
-    final maxHp = baseHp + _classHpPerk(classKey) + _hpLevelBonus(level) + spriteHpBonus;
-    final atk = baseAtk + mods[1] + _atkLevelBonus(level);
-    final def = baseDef + mods[2] + _defLevelBonus(level);
+    // Aggregate equipment stats (base and enchant mods)
+    final eq = _sumEquipmentStats();
+    // Apply to battle stats
+    final maxHp = baseHp + _classHpPerk(classKey) + _hpLevelBonus(level) + spriteHpBonus + (eq['hp'] ?? 0) + (eq['mod_hp'] ?? 0);
+    final atk = baseAtk + mods[1] + _atkLevelBonus(level) + (eq['atk'] ?? 0) + (eq['mod_atk'] ?? 0);
+    final def = baseDef + mods[2] + _defLevelBonus(level) + (eq['def'] ?? 0) + (eq['mod_def'] ?? 0);
     int clampedHp = curHp;
     if (clampedHp < 1) {
       clampedHp = 1;
@@ -260,6 +264,29 @@ class BattleNotifier extends StateNotifier<BattleState> {
       playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
       enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
     );
+  }
+
+  // Sum equipped item stats; returns both base keys and mod_* keys summed
+  Map<String, int> _sumEquipmentStats() {
+    final out = <String, int>{
+      'hp': 0, 'atk': 0, 'def': 0,
+      'mod_hp': 0, 'mod_atk': 0, 'mod_def': 0,
+    };
+    try {
+      final slots = (equipmentBox().get('slots') as Map?) ?? const {};
+      for (final v in slots.values) {
+        if (v is! Map) continue;
+        final id = (v['id'] ?? '').toString();
+        final crafted = CraftedInventoryService.getById(id);
+        if (crafted == null) continue;
+        crafted.stats.forEach((k, val) {
+          if (!out.containsKey(k)) return;
+          final n = val.round();
+          out[k] = (out[k] ?? 0) + n;
+        });
+      }
+    } catch (_) {}
+    return out;
   }
 
   List<int> _classMods(String classKey) {

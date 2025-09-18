@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/repos/equipment_repo.dart';
 import '../../core/pixel_assets.dart';
+import '../../crafting/inventory_service.dart';
+import 'item_icon_badge.dart';
 
 class GearSlot extends StatelessWidget {
   final String slotId; // head, weapon, etc.
@@ -39,10 +41,28 @@ class GearSlot extends StatelessWidget {
           borderRadius: BorderRadius.zero,
         ),
         child: hasItem
-            ? Icon(Icons.check, size: size * 0.5) // placeholder for future 64x64 item art
+            ? _equippedVisual(context)
             : _emptyVisual(slotId, size, context),
       ),
     );
+  }
+
+  Widget _equippedVisual(BuildContext context) {
+    final e = item;
+    if (e == null) return const SizedBox.shrink();
+    final crafted = CraftedInventoryService.getById(e.id);
+    if (crafted != null) {
+      return ItemIconBadge(
+        iconPath: crafted.def.iconPath,
+        rarity: crafted.rarity,
+        element: crafted.element,
+        tier: crafted.tier,
+        size: size * 0.82,
+        framed: false, // no internal frame; border is on the slot
+      );
+    }
+    // Fallback minimal mark if we don't know the crafted item
+    return Icon(Icons.check, size: size * 0.5, color: Theme.of(context).colorScheme.onSurfaceVariant);
   }
 
   Widget _emptyVisual(String slotId, double size, BuildContext context) {

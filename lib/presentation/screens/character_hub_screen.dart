@@ -19,6 +19,9 @@ import '../../game/models/seed_instance.dart';
 import 'dart:async';
 import '../../theme/colors.dart';
 import '../../game/services/player_image_service.dart';
+import '../../crafting/inventory_service.dart';
+import '../widgets/item_icon_badge.dart';
+import '../widgets/item_stats_line.dart';
 
 class CharacterHubScreen extends StatefulWidget {
   const CharacterHubScreen({super.key});
@@ -35,6 +38,8 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   SeedInstance? _inst1;
   SeedInstance? _inst2;
   StreamSubscription? _equipSub;
+  StreamSubscription? _profileSub;
+  StreamSubscription? _metaSub;
   ui.Image? _playerImage;
   String? _playerAssetPath; // raw asset fallback
 
@@ -47,10 +52,18 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     _loadEquippedSprites();
     _refreshPlayerImage();
     // Refresh when equipment/sprite slots change
-    _equipSub = equipmentBox().watch().listen((event) {
+    _equipSub = equipmentBox().watch().listen((event) async {
       if (!mounted) return;
-      _loadEquippedSprites();
-      _refreshPlayerImage();
+      await vm.load();
+      await _loadEquippedSprites();
+      await _refreshPlayerImage();
+    });
+    // Also react to profile changes (HP/XP/class) and meta (name, gender)
+    _profileSub = profileBox().watch().listen((_) { if (mounted) setState((){}); });
+    _metaSub = playerMetaBox().watch().listen((_) async {
+      if (!mounted) return;
+      await _refreshPlayerImage();
+      setState((){});
     });
   }
 
@@ -149,6 +162,55 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     if (mounted) setState(() => _selecting = false);
   }
 
+  void _onSlotTap(BuildContext context, String slotId, EquippedItem? item) {
+    if (item == null) {
+      // Directly open inventory for this slot
+      String filter = slotId;
+      if (slotId == 'ringLeft' || slotId == 'ringRight') filter = 'hands';
+      if (slotId == 'neck') filter = 'head';
+      context.push('/inventory', extra: {'filter': filter});
+      return;
+    }
+    _showItemSheet(context, slotId, item);
+  }
+
+  void _showItemSheet(BuildContext context, String slotId, EquippedItem item) {
+    final crafted = CraftedInventoryService.getById(item.id);
+    showModalBottomSheet(context: context, builder: (_) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: crafted == null
+              ? Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text(item.name, style: Theme.of(context).textTheme.titleMedium),
+                  TextButton(onPressed: (){ Navigator.pop(context); _onSlotTap(context, slotId, null); }, child: const Text('Change'))
+                ])
+              : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    ItemIconBadge(iconPath: crafted.def.iconPath, rarity: crafted.rarity, element: crafted.element, tier: crafted.tier, size: 32),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(crafted.displayName, style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis)),
+                    TextButton(onPressed: (){ Navigator.pop(context); _onSlotTap(context, slotId, null); }, child: const Text('Change')),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text('Slot: ${crafted.def.slot.name}  Tier ${crafted.tier}  Rarity: ${crafted.rarity.name}', style: Theme.of(context).textTheme.labelSmall),
+                  if (crafted.stats.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Stats: ', style: Theme.of(context).textTheme.labelSmall),
+                      Expanded(child: ItemStatsLine(stats: crafted.stats, element: crafted.element, style: Theme.of(context).textTheme.labelSmall)),
+                    ]),
+                  ],
+                  const SizedBox(height: 8),
+                  if (crafted.dnaJournalTitles.isNotEmpty)
+                    _SeedTitlesPreview(titles: crafted.dnaJournalTitles),
+                  const SizedBox(height: 8),
+                ]),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<CharacterHubVM>().state;
@@ -214,47 +276,47 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                                 Positioned(
                                   top: vPos(0, 4),
                                   left: (w / 2) - boxSize - 8,
-                                  child: GearSlot(slotId: 'head', item: state.gear['head'], onTap: () => context.push('/items', extra: {'slot': 'head'}), size: boxSize),
+                                  child: GearSlot(slotId: 'head', item: state.gear['head'], onTap: () => context.push('/inventory', extra: {'filter': 'head'}), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(0, 4),
                                   left: (w / 2) + 8,
-                                  child: GearSlot(slotId: 'neck', item: state.gear['neck'], onTap: () => context.push('/items', extra: {'slot': 'neck'}), size: boxSize),
+                                  child: GearSlot(slotId: 'neck', item: state.gear['neck'], onTap: () => context.push('/inventory', extra: {'filter': 'head'}), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(0, 4),
                                   left: sideInset,
-                                  child: GearSlot(slotId: 'chest', item: state.gear['chest'], onTap: () => context.push('/items', extra: {'slot': 'chest'}), size: boxSize),
+                                  child: GearSlot(slotId: 'chest', item: state.gear['chest'], onTap: () => _onSlotTap(context, 'chest', state.gear['chest']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(1, 4),
                                   left: sideInset,
-                                  child: GearSlot(slotId: 'hands', item: state.gear['hands'], onTap: () => context.push('/items', extra: {'slot': 'hands'}), size: boxSize),
+                                  child: GearSlot(slotId: 'hands', item: state.gear['hands'], onTap: () => _onSlotTap(context, 'hands', state.gear['hands']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(2, 4),
                                   left: sideInset,
-                                  child: GearSlot(slotId: 'legs', item: state.gear['legs'], onTap: () => context.push('/items', extra: {'slot': 'legs'}), size: boxSize),
+                                  child: GearSlot(slotId: 'legs', item: state.gear['legs'], onTap: () => _onSlotTap(context, 'legs', state.gear['legs']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(3, 4),
                                   left: sideInset,
-                                  child: GearSlot(slotId: 'feet', item: state.gear['feet'], onTap: () => context.push('/items', extra: {'slot': 'feet'}), size: boxSize),
+                                  child: GearSlot(slotId: 'feet', item: state.gear['feet'], onTap: () => _onSlotTap(context, 'feet', state.gear['feet']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(0, 4),
                                   right: sideInset,
-                                  child: GearSlot(slotId: 'ringLeft', item: state.gear['ringLeft'], onTap: () => context.push('/items', extra: {'slot': 'ringLeft'}), size: boxSize),
+                                  child: GearSlot(slotId: 'ringLeft', item: state.gear['ringLeft'], onTap: () => _onSlotTap(context, 'ringLeft', state.gear['ringLeft']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(1, 4),
                                   right: sideInset,
-                                  child: GearSlot(slotId: 'ringRight', item: state.gear['ringRight'], onTap: () => context.push('/items', extra: {'slot': 'ringRight'}), size: boxSize),
+                                  child: GearSlot(slotId: 'ringRight', item: state.gear['ringRight'], onTap: () => _onSlotTap(context, 'ringRight', state.gear['ringRight']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(2, 4),
                                   right: sideInset,
-                                  child: GearSlot(slotId: 'weapon', item: state.gear['weapon'], onTap: () => context.push('/items', extra: {'slot': 'weapon'}), size: boxSize),
+                                  child: GearSlot(slotId: 'weapon', item: state.gear['weapon'], onTap: () => _onSlotTap(context, 'weapon', state.gear['weapon']), size: boxSize),
                                 ),
                                 Positioned(
                                   top: vPos(3, 4),
@@ -272,13 +334,19 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                                             context.push('/echoes');
                                             break;
                                           case _HubMenuAction.items:
-                                            context.push('/items');
+                                            context.push('/inventory');
+                                            break;
+                                          case _HubMenuAction.weapons:
+                                            context.push('/inventory', extra: {'filter': 'weapon'});
+                                            break;
+                                          case _HubMenuAction.armor:
+                                            context.push('/inventory');
                                             break;
                                           case _HubMenuAction.codex:
                                             context.push('/codex');
                                             break;
-                                          case _HubMenuAction.fusion:
-                                            context.push('/fusion');
+                                          case _HubMenuAction.crafting:
+                                            context.push('/crafting');
                                             break;
                                           case _HubMenuAction.achievements:
                                             context.push('/achievements');
@@ -288,8 +356,10 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                                       itemBuilder: (context) => const [
                                         PopupMenuItem(value: _HubMenuAction.echoes, child: _MenuItemRow(icon: Icons.graphic_eq, label: 'Echoes')),
                                         PopupMenuItem(value: _HubMenuAction.items, child: _MenuItemRow(icon: Icons.backpack, label: 'Items')),
+                                        PopupMenuItem(value: _HubMenuAction.weapons, child: _MenuItemRow(icon: Icons.gavel, label: 'Weapons')),
+                                        PopupMenuItem(value: _HubMenuAction.armor, child: _MenuItemRow(icon: Icons.shield, label: 'Armor')),
                                         PopupMenuItem(value: _HubMenuAction.codex, child: _MenuItemRow(icon: Icons.auto_stories, label: 'Codex')),
-                                        PopupMenuItem(value: _HubMenuAction.fusion, child: _MenuItemRow(icon: Icons.all_inclusive, label: 'Fusion')),
+                                        PopupMenuItem(value: _HubMenuAction.crafting, child: _MenuItemRow(icon: Icons.handyman, label: 'Crafting')),
                                         PopupMenuItem(value: _HubMenuAction.achievements, child: _MenuItemRow(icon: Icons.emoji_events, label: 'Achievements')),
                                       ],
                                       child: Container(
@@ -379,6 +449,8 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   @override
   void dispose() {
     _equipSub?.cancel();
+    _profileSub?.cancel();
+    _metaSub?.cancel();
     super.dispose();
   }
 }
@@ -492,6 +564,51 @@ class _StatsAndAttacks extends StatelessWidget {
     return base;
   }
 
+  // Sum base equipment stats (non-mod_ keys) from equipped gear
+  Map<String, int> _gearBase() {
+    const keys = ['hp', 'atk', 'spd', 'spirit', 'def'];
+    final out = {for (final k in keys) k: 0};
+    try {
+      final raw = equipmentBox().get('slots') as Map? ?? const {};
+      for (final v in raw.values) {
+        if (v is! Map) continue;
+        final id = (v['id'] ?? '').toString();
+        final crafted = CraftedInventoryService.getById(id);
+        if (crafted == null) continue;
+        crafted.stats.forEach((k, val) {
+          if (k.startsWith('mod_')) return;
+          if (!out.containsKey(k)) return;
+          final n = val.round();
+          out[k] = (out[k] ?? 0) + n;
+        });
+      }
+    } catch (_) {}
+    return out;
+  }
+
+  // Sum enchantment (mod_) stats from equipped gear
+  Map<String, int> _gearMods() {
+    const keys = ['hp', 'atk', 'spd', 'spirit', 'def'];
+    final out = {for (final k in keys) k: 0};
+    try {
+      final raw = equipmentBox().get('slots') as Map? ?? const {};
+      for (final v in raw.values) {
+        if (v is! Map) continue;
+        final id = (v['id'] ?? '').toString();
+        final crafted = CraftedInventoryService.getById(id);
+        if (crafted == null) continue;
+        crafted.stats.forEach((k, val) {
+          if (!k.startsWith('mod_')) return;
+          final stat = k.substring(4);
+          if (!out.containsKey(stat)) return;
+          final n = val.round();
+          out[stat] = (out[stat] ?? 0) + n;
+        });
+      }
+    } catch (_) {}
+    return out;
+  }
+
   Map<String, int> _classPerk(String cls) {
     switch (cls) {
       case 'Warden':
@@ -534,6 +651,8 @@ class _StatsAndAttacks extends StatelessWidget {
     
 
     final spriteStats = _sumStats();
+    // Ensure DEF exists in sprite stats as 0
+    final spriteAll = {...spriteStats, 'def': 0};
     final baseStats = _classPerk(classKey);
     // Apply level-based scaling: +3 HP per level, +1 ATK every 2 levels, +1 SPD every 3, +1 SPIRIT every 3
     final lv = (level - 1).clamp(0, 999);
@@ -543,7 +662,9 @@ class _StatsAndAttacks extends StatelessWidget {
       'spd': (baseStats['spd'] ?? 0) + (lv ~/ 3),
       'spirit': (baseStats['spirit'] ?? 0) + (lv ~/ 3),
     };
-    const keys = ['hp', 'atk', 'spd', 'spirit'];
+    final gearBase = _gearBase();
+    final gearMods = _gearMods();
+    const keys = ['hp', 'atk', 'spd', 'spirit', 'def'];
     // Match mood window label size (titleMedium * 0.6)
     final base = Theme.of(context).textTheme.titleMedium;
     final baseSize = base?.fontSize ?? 14;
@@ -592,13 +713,15 @@ class _StatsAndAttacks extends StatelessWidget {
               children: [
                 SizedBox(width: 70, child: Text(k.toUpperCase(), style: small)),
                 Builder(builder: (context) {
-                  final v = scaled[k] ?? 0;
+                  final v = (scaled[k] ?? 0) + (gearBase[k] ?? 0);
                   final style = v > 0 ? small.copyWith(color: classColor(classKey)) : small;
                   return Text('$v', style: style);
                 }),
                 const SizedBox(width: 8),
-                Text('+${spriteStats[k] ?? 0}',
+                Text('+${spriteAll[k] ?? 0}',
                     style: small.copyWith(color: Colors.green[700])),
+                const SizedBox(width: 8),
+                Text('+${gearMods[k] ?? 0}', style: small.copyWith(color: Colors.purple[700])),
                 const SizedBox(width: 8),
                 Text('-0', style: small.copyWith(color: Colors.red[700])),
               ],
@@ -638,7 +761,35 @@ class _StatsAndAttacks extends StatelessWidget {
   }
 }
 
-enum _HubMenuAction { echoes, items, codex, fusion, achievements }
+class _SeedTitlesPreview extends StatefulWidget {
+  final List<String> titles;
+  const _SeedTitlesPreview({required this.titles});
+  @override
+  State<_SeedTitlesPreview> createState() => _SeedTitlesPreviewState();
+}
+
+class _SeedTitlesPreviewState extends State<_SeedTitlesPreview> {
+  bool _expanded = false;
+  @override
+  Widget build(BuildContext context) {
+    final show = _expanded ? widget.titles : widget.titles.take(3).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Echo Titles', style: Theme.of(context).textTheme.labelMedium),
+      const SizedBox(height: 4),
+      ...show.map((t) => Text('• $t', style: Theme.of(context).textTheme.labelSmall)),
+      if (widget.titles.length > 3)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            child: Text(_expanded ? 'See less' : 'See more'),
+          ),
+        )
+    ]);
+  }
+}
+
+enum _HubMenuAction { echoes, items, weapons, armor, codex, crafting, achievements }
 
 class _MenuItemRow extends StatelessWidget {
   final IconData icon;

@@ -13,6 +13,7 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   late List<Map<String, dynamic>> _inventory;
+  Map<String, dynamic>? _preview;
 
   @override
   void initState() {
@@ -109,72 +110,67 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Items')),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Quick slots removed
-            const Text('Inventory'),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _inventory.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, i) {
-                  final it = _inventory[i];
-                  final type = it['type'] as String;
-                  final isHealing = _isHealing(type);
-                  final asset = ItemCatalog.assetOf(type);
-                  final hasAsset = asset != null && PixelAssets.has(asset);
-                  final label = ItemEffects.label(type);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        if (hasAsset)
-                          Image.asset(
-                            asset,
-                            width: 20,
-                            height: 20,
-                            filterQuality: FilterQuality.none,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.inventory_2_outlined, size: 18),
-                          )
-                        else
-                          const Icon(Icons.inventory_2_outlined, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(label, style: Theme.of(context).textTheme.labelSmall, overflow: TextOverflow.ellipsis),
-                              Text('x${it['qty']}', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.8))),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Wrap(spacing: 6, children: [
-                          if (isHealing)
-                            OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                visualDensity: VisualDensity.compact,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                minimumSize: const Size(0, 0),
-                              ),
-                              onPressed: (it['qty'] as int) > 0 ? () => _useItem(it) : null,
-                              child: const Text('Use', style: TextStyle(fontSize: 11)),
-                            ),
-                        ]),
-                      ],
-                    ),
-                  );
-                },
-              ),
+      body: Column(children: [
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(12),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1,
             ),
-          ],
+            itemCount: _inventory.length,
+            itemBuilder: (_, i) {
+              final it = _inventory[i];
+              final type = it['type'] as String;
+              final asset = ItemCatalog.assetOf(type);
+              final hasAsset = asset != null && PixelAssets.has(asset);
+              return InkWell(
+                onTap: () => setState(() => _preview = it),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.2),
+                  ),
+                  alignment: Alignment.center,
+                  child: hasAsset
+                      ? Image.asset(asset, width: 40, height: 40, filterQuality: FilterQuality.none, errorBuilder: (_, __, ___) => const Icon(Icons.inventory_2_outlined, size: 24))
+                      : const Icon(Icons.inventory_2_outlined, size: 24),
+                ),
+              );
+            },
+          ),
         ),
-      ),
+        _ItemDetailsPanel(item: _preview, onUse: _preview == null ? null : () => _useItem(_preview!)),
+      ]),
+    );
+  }
+}
+
+class _ItemDetailsPanel extends StatelessWidget {
+  final Map<String, dynamic>? item;
+  final VoidCallback? onUse;
+  const _ItemDetailsPanel({required this.item, this.onUse});
+  @override
+  Widget build(BuildContext context) {
+    if (item == null) return const SizedBox.shrink();
+    final type = item!['type']?.toString() ?? '';
+    final label = ItemEffects.label(type);
+    final qty = item!['qty'] ?? 0;
+    final small = Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 11);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(label, style: Theme.of(context).textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text('Qty: $qty', style: small),
+        ])),
+        FilledButton(onPressed: onUse, child: const Text('Use')),
+      ]),
     );
   }
 }
