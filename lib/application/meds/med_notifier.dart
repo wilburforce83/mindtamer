@@ -89,13 +89,18 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   }
   Future<void> _reschedule() async {
     final plans = _repo.plans().where((p)=>p.active).toList();
+    final settings = settingsBox().values.isNotEmpty ? settingsBox().values.first : Settings(id: 'default');
+    if (!(settings.medRemindersEnabled)) {
+      await NotificationService.clearMedReminders();
+      return;
+    }
     final map = <String, List<String>>{}; // time -> med names
     for (final p in plans) {
       for (final t in p.scheduleTimes) {
         map.putIfAbsent(t, ()=>[]).add(p.name);
       }
     }
-    await NotificationService.scheduleDailyConsolidatedReminders(map);
+    await NotificationService.scheduleDailyPreReminders(map, offset: const Duration(minutes: 15));
   }
 
   Future<void> _checkRefillAlerts() async {

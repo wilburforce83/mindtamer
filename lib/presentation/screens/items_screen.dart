@@ -171,7 +171,7 @@ class _ItemDetailsPanel extends StatelessWidget {
           Text('Qty: $qty', style: small),
           if (def != null) ...[
             const SizedBox(height: 2),
-            Text('Type: ' + _prettyCategory(def.category), style: small),
+          Text('Type: ${_prettyCategory(def.category)}', style: small),
             ...(() {
               final effects = _effectTexts(def);
               if (effects.isEmpty) return <Widget>[];
@@ -179,7 +179,7 @@ class _ItemDetailsPanel extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text('Effects', style: Theme.of(context).textTheme.labelMedium),
                 const SizedBox(height: 2),
-                ...effects.map((t) => Text('• ' + t, style: small)),
+                ...effects.map((t) => Text('• $t', style: small)),
               ];
             })(),
           ],
@@ -238,7 +238,13 @@ class _ItemDetailsPanel extends StatelessWidget {
           text = 'Regen +${mag ?? 1} for ${dur ?? 1} turns$tgt';
           break;
         default:
-          text = k.toUpperCase() + (mag != null ? ' ${mag > 0 ? '+' : ''}$mag' : '') + (dur != null ? ' for $dur turns' : '') + tgt;
+          String magStr = '';
+          if (mag != null) {
+            final sign = mag > 0 ? '+' : '';
+            magStr = ' $sign$mag';
+          }
+          final durStr = (dur != null) ? ' for $dur turns' : '';
+          text = '${k.toUpperCase()}$magStr$durStr$tgt';
       }
       lines.add(text);
     }

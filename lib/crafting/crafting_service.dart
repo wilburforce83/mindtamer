@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 import 'models.dart';
+import 'craft_debug.dart';
 import 'asset_index_service.dart';
 import 'gear_catalog_service.dart';
 import 'crafting_rules_service.dart';
@@ -11,20 +12,32 @@ class CraftingService {
   final _uuid = const Uuid();
 
   Future<CraftedItem> craftArmorFromEchoes(Echo a, Echo b, {required String playerClass}) async {
+    // Ensure all indices/rules are ready before routing
+    await assets.init();
     await GearCatalogService().init();
     await CraftingRulesService().init();
     final rarity = (a.rarity.index >= b.rarity.index) ? a.rarity : b.rarity;
     final element = (a.rarity.index > b.rarity.index) ? a.element : b.element;
-    // Decide outcome type: armor (~60%), weapon (~28%), accessory (~12%)
+    // Decide outcome type: armor 60%, weapon 25%, accessory 15%
     final r = DateTime.now().microsecondsSinceEpoch % 100;
+    String route = 'armor';
     ItemDef def;
     int tier = 1;
-    if (r < 28 && assets.weaponDefs.isNotEmpty) {
+    if (r < 25) {
       // Weapon — prefer classAffinity
-      final pref = assets.weaponDefs.where((d) => (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase()).toList();
-      final pool = pref.isNotEmpty ? pref : assets.weaponDefs;
-      pool.shuffle();
-      def = pool.first;
+      if (assets.weaponDefs.isNotEmpty) {
+        final pref = assets.weaponDefs.where((d) => (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase()).toList();
+        final pool = pref.isNotEmpty ? pref : assets.weaponDefs;
+        pool.shuffle();
+        def = pool.first;
+      } else {
+        // Fallback single weapon per class
+        final cls = playerClass.toLowerCase();
+        final fallbackPath = 'assets/images/weapons/$cls/${_fallbackWeaponFile(cls)}';
+        final key = fallbackPath.split('/').last.replaceAll('_32.png','');
+        def = ItemDef(key: key, iconPath: fallbackPath, slot: SlotId.weapon, classAffinity: playerClass);
+      }
+      route = 'weapon';
     } else if (r < 40) {
       // Accessory — choose whichever pool has items; prefer ring if both non-empty randomly
       final rings = assets.accessoryDefs['ring'] ?? const <ItemDef>[];
@@ -40,11 +53,21 @@ class CraftingService {
       if (pool.isNotEmpty) {
         pool = List<ItemDef>.from(pool)..shuffle();
         def = pool.first;
+        route = 'accessory';
       } else {
-        // fallback to armor
-        final desiredSlot = _nextCraftSlot();
-        final stage = _stageForTier(1);
-        def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ?? pickClassWeightedArmorDef(playerClass);
+        // fallback accessory (ring) when pools empty; if even that fails, fallback to armor
+        final file = _fallbackRingFile();
+        if (file != null) {
+          final path = 'assets/images/accessories/rings/$file';
+          final key = file.replaceAll('_32.png','');
+          def = ItemDef(key: key, iconPath: path, slot: SlotId.hands, classAffinity: null, equipSlot: 'ring');
+          route = 'accessory';
+        } else {
+          final desiredSlot = _nextCraftSlot();
+          final stage = _stageForTier(1);
+          def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ?? pickClassWeightedArmorDef(playerClass);
+          route = 'armor';
+        }
       }
     } else {
       // Armor — rotate slot and pick class+stage art
@@ -58,9 +81,16 @@ class CraftingService {
       } else {
         def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ?? pickClassWeightedArmorDef(playerClass);
       }
+      route = 'armor';
     }
+    // Record debug RNG and route selection
+    try { CraftDebug.record(roll: r, route: route); } catch (_) {}
     final titles = [...a.journalTitles, ...b.journalTitles];
-    final name = _catalogName(playerClass, tier, element, titles, def: def);
+    final isAccessory = (def.equipSlot != null && def.equipSlot!.isNotEmpty);
+    final isWeapon = def.slot == SlotId.weapon;
+    final name = (isWeapon || isAccessory)
+        ? _nameFromFileAndTitles(element, titles, def: def)
+        : _catalogName(playerClass, tier, element, titles, def: def);
     final stats = _buildStats(
       slot: def.slot,
       tier: tier,
@@ -82,6 +112,52 @@ class CraftingService {
       stats: stats,
       classAffinity: def.classAffinity,
     );
+  }
+
+  String _nameFromFileAndTitles(ElementType el, List<String> titles, {required ItemDef def}) {
+    // Build base from the file key for non-armor (weapon/accessory).
+    final base = _displayBaseFromKey(def.key, classAffinity: def.classAffinity);
+    final words = _twoWordsFromTitles(titles);
+    final w1 = words.isNotEmpty ? words[0] : _adjFor(el);
+    final w2 = words.length >= 2 ? words[1] : _epithetFor(el);
+    return '$base of $w1 $w2';
+  }
+
+  String _displayBaseFromKey(String key, {String? classAffinity}) {
+    // Normalize underscores to words, special-case `_s_` → “'s ”
+    final parts = key.split('_').where((t) => t.isNotEmpty).toList();
+    if (parts.isEmpty) return _capWords(key);
+    final out = <String>[];
+    for (int i = 0; i < parts.length; i++) {
+      final tok = parts[i];
+      if (tok == 's' && out.isNotEmpty) {
+        // attach possessive to previous token
+        out[out.length - 1] = "${out.last}'s";
+      } else {
+        out.add(_cap(tok));
+      }
+    }
+    return out.join(' ');
+  }
+
+  String _fallbackWeaponFile(String cls) {
+    switch (cls) {
+      case 'alchemist': return 'retort_staff_32.png';
+      case 'artificer': return 'gear_mace_32.png';
+      case 'empath': return 'prayer_staff_32.png';
+      case 'oracle': return 'verdict_scepter_32.png';
+      case 'sage': return 'sagewood_staff_32.png';
+      case 'seer': return 'diviner_s_rod_32.png';
+      case 'sentinel': return 'bastion_gladius_32.png';
+      case 'shadow': return 'night_katars_32.png';
+      case 'trickster': return 'flicker_dagger_32.png';
+      case 'warden': return 'bulwark_longsword_32.png';
+      default: return 'sagewood_staff_32.png';
+    }
+  }
+
+  String? _fallbackRingFile() {
+    return 'iron_band_32.png';
   }
 
   Future<CraftedItem> upgradeWithEcho(CraftedItem it, Echo e, {required String playerClass}) async {

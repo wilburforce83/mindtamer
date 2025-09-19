@@ -155,7 +155,7 @@ class _InventoryDetailsPanel extends StatelessWidget {
           IconButton(onPressed: onClose, icon: const Icon(Icons.close)),
         ]),
         const SizedBox(height: 4),
-        Text('Slot: ${item!.def.slot.name}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}', style: small),
+        Text('Slot: ${_slotLabel(item!.def)}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}', style: small),
         if ((item!.classAffinity ?? item!.def.classAffinity) != null)
           Padding(
             padding: const EdgeInsets.only(top: 2),
@@ -171,13 +171,13 @@ class _InventoryDetailsPanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text('Effects', style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: 2),
-          ..._effectTexts(item!.stats).map((t) => Text('• ' + t, style: small)),
+          ..._effectTexts(item!.stats).map((t) => Text('• $t', style: small)),
         ],
         if (item!.dnaJournalTitles.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text('Echo Titles', style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: 2),
-          ...item!.dnaJournalTitles.map((t) => Text('• ' + t, style: small)),
+          ...item!.dnaJournalTitles.map((t) => Text('• $t', style: small)),
         ],
         const SizedBox(height: 6),
         Align(alignment: Alignment.centerRight, child: FilledButton(onPressed: onEquip, child: const Text('Equip'))),
@@ -221,5 +221,19 @@ class _InventoryDetailsPanel extends StatelessWidget {
       lines.add('${k.toUpperCase()} $sign$iv');
     });
     return lines;
+  }
+
+  String _slotLabel(ItemDef def) {
+    final eq = (def.equipSlot ?? '').toLowerCase();
+    if (eq == 'ring') return 'Ring';
+    if (eq == 'neck') return 'Necklace';
+    switch (def.slot) {
+      case SlotId.head: return 'Head';
+      case SlotId.chest: return 'Chest';
+      case SlotId.hands: return 'Hands';
+      case SlotId.legs: return 'Legs';
+      case SlotId.feet: return 'Feet';
+      case SlotId.weapon: return 'Weapon';
+    }
   }
 }

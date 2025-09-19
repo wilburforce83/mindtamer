@@ -54,6 +54,19 @@ flutter:
     - assets/images/backgrounds/
     - assets/images/players/
     - assets/images/weapons/
+    - assets/images/weapons/alchemist/
+    - assets/images/weapons/artificer/
+    - assets/images/weapons/empath/
+    - assets/images/weapons/oracle/
+    - assets/images/weapons/sage/
+    - assets/images/weapons/seer/
+    - assets/images/weapons/sentinel/
+    - assets/images/weapons/shadow/
+    - assets/images/weapons/trickster/
+    - assets/images/weapons/warden/
+    # Explicit accessory subfolders to avoid any hot reload manifest hiccups
+    - assets/images/accessories/necklaces/
+    - assets/images/accessories/rings/
     - assets/images/armor/
     # Explicitly include armor class directories to ensure bundling during hot reload
     - assets/images/armor/alchemist/

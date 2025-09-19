@@ -15,6 +15,10 @@ class Settings {
   @HiveField(7) bool debugMode; // when true, show debug modals (e.g., seeds)
   @HiveField(8) bool autoGrantEchoOnWinDebug;
   @HiveField(9) bool returnTicketOnLossDebug;
+  // Notifications
+  @HiveField(10) bool medRemindersEnabled;
+  @HiveField(11) bool moodRemindersEnabled;
+  @HiveField(12) bool journalRemindersEnabled;
   Settings({
     required this.id,
     this.pinHash,
@@ -26,5 +30,8 @@ class Settings {
     this.debugMode = false,
     this.autoGrantEchoOnWinDebug = false,
     this.returnTicketOnLossDebug = false,
+    this.medRemindersEnabled = true,
+    this.moodRemindersEnabled = true,
+    this.journalRemindersEnabled = true,
   });
 }

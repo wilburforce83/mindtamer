@@ -13,8 +13,10 @@ class AssetIndexService {
   bool _inited = false;
 
   Future<void> init() async {
-    if (_inited) return;
-    _inited = true;
+    // If already initialized with non-empty pools, skip. Otherwise retry.
+    if (_inited && (weaponDefs.isNotEmpty || accessoryDefs.values.any((l) => l.isNotEmpty) || armorDefs.values.any((l) => l.isNotEmpty))) {
+      return;
+    }
     try {
       final jsonStr = await rootBundle.loadString('AssetManifest.json');
       final Map<String, dynamic> manifest = json.decode(jsonStr);
@@ -66,13 +68,65 @@ class AssetIndexService {
           }
         }
       }
+      // Fallbacks if manifest parsing yields empty pools (e.g., during hot restart hiccups)
+      if (weapons.isEmpty) {
+        const classes = [
+          'alchemist','artificer','empath','oracle','sage','seer','sentinel','shadow','trickster','warden'
+        ];
+        const sampleByClass = {
+          'alchemist': ['alchemic_blade_32.png','retort_staff_32.png'],
+          'artificer': ['gear_mace_32.png','aether_rifle_32.png'],
+          'empath': ['prayer_staff_32.png','rosary_flail_32.png'],
+          'oracle': ['verdict_scepter_32.png','edict_tome_32.png'],
+          'sage': ['sagewood_staff_32.png','crystal_wand_32.png'],
+          'seer': ['diviner_s_rod_32.png','hex_tome_32.png'],
+          'sentinel': ['bastion_gladius_32.png','flail_star_32.png'],
+          'shadow': ['night_katars_32.png','crescent_scythe_32.png'],
+          'trickster': ['flicker_dagger_32.png','twin_sai_32.png'],
+          'warden': ['bulwark_longsword_32.png','tower_shield_32.png'],
+        };
+        for (final cls in classes) {
+          final list = (sampleByClass[cls] ?? const <String>[]);
+          for (final file in list) {
+            final path = 'assets/images/weapons/$cls/$file';
+            final key = file.replaceAll('_32.png','');
+            weapons.add(ItemDef(key: key, iconPath: path, slot: SlotId.weapon, classAffinity: cls));
+          }
+        }
+      }
+
+      if ((accessories['ring']?.isEmpty ?? true)) {
+        const ringFiles = [
+          'iron_band_32.png','silver_leaf_32.png','gear_ring_32.png','ruby_heart_32.png'
+        ];
+        for (final file in ringFiles) {
+          final path = 'assets/images/accessories/rings/$file';
+          final key = file.replaceAll('_32.png','');
+          final def = ItemDef(key: key, iconPath: path, slot: SlotId.hands, classAffinity: null, equipSlot: 'ring');
+          (accessories['ring'] ??= <ItemDef>[]).add(def);
+        }
+      }
+      if ((accessories['neck']?.isEmpty ?? true)) {
+        const neckFiles = [
+          'gear_locket_32.png','anchor_chain_32.png','star_prism_32.png','sunburst_medallion_32.png'
+        ];
+        for (final file in neckFiles) {
+          final path = 'assets/images/accessories/necklaces/$file';
+          final key = file.replaceAll('_32.png','');
+          final def = ItemDef(key: key, iconPath: path, slot: SlotId.head, classAffinity: null, equipSlot: 'neck');
+          (accessories['neck'] ??= <ItemDef>[]).add(def);
+        }
+      }
+
       weaponDefs = weapons;
       armorDefs = armor;
       accessoryDefs = accessories;
+      _inited = true;
     } catch (_) {
       weaponDefs = const [];
       armorDefs = { for (var s in SlotId.values) s: const <ItemDef>[] };
       accessoryDefs = const {'neck': [], 'ring': []};
+      _inited = false; // allow retry on next call
     }
   }
 }

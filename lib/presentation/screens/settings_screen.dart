@@ -3,6 +3,8 @@ import '../widgets/game_scaffold.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/hive/boxes.dart';
 import '../../data/models/settings.dart';
+import '../../core/notifications.dart';
+import '../../data/models/med_plan.dart';
 import 'package:mindtamer/features/settings/journal/journal_settings_section.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -17,6 +19,7 @@ class SettingsScreen extends ConsumerWidget {
         valueListenable: box.listenable(),
         builder: (context, _, __) {
           final settings = box.values.isNotEmpty ? box.values.first : Settings(id: 'default');
+          _ensureDefaults(box, settings);
           if (box.values.isEmpty) {
             // Persist default to ensure stable subsequent reads
             box.put(settings.id, settings);
@@ -26,14 +29,54 @@ class SettingsScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(12),
             children: [
-          const Text('• Local-only data (no servers)'),
-          const SizedBox(height: 12),
-          const Text('• Export your data any time (CSV + ZIP)'),
-          const SizedBox(height: 12),
-          const Text('• Safety: Not a medical device; supportive companion only.'),
+          const SizedBox(height: 8),
+          const Text('Notifications'),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            title: const Text('Medication reminders (15 min early)'),
+            value: settings.medRemindersEnabled,
+            onChanged: (v) async {
+              settings.medRemindersEnabled = v;
+              await box.put(settings.id, settings);
+              if (v) {
+                final plans = medPlanBox().values.where((p) => p.active).cast<MedPlan>().toList();
+                final map = <String, List<String>>{};
+                for (final p in plans) {
+                  for (final t in p.scheduleTimes) { map.putIfAbsent(t, ()=>[]).add(p.name); }
+                }
+                await NotificationService.scheduleDailyPreReminders(map, offset: const Duration(minutes: 15));
+              } else {
+                await NotificationService.clearMedReminders();
+              }
+            },
+          ),
+          SwitchListTile(
+            title: const Text('Mood reminders (10:00 & 18:00)'),
+            value: settings.moodRemindersEnabled,
+            onChanged: (v) async {
+              settings.moodRemindersEnabled = v;
+              await box.put(settings.id, settings);
+              await NotificationService.scheduleMoodJournalReminders(
+                moodEnabled: settings.moodRemindersEnabled,
+                journalEnabled: settings.journalRemindersEnabled,
+              );
+            },
+          ),
+          SwitchListTile(
+            title: const Text('Journal reminders (10:00 & 18:00)'),
+            value: settings.journalRemindersEnabled,
+            onChanged: (v) async {
+              settings.journalRemindersEnabled = v;
+              await box.put(settings.id, settings);
+              await NotificationService.scheduleMoodJournalReminders(
+                moodEnabled: settings.moodRemindersEnabled,
+                journalEnabled: settings.journalRemindersEnabled,
+              );
+            },
+          ),
           const SizedBox(height: 16),
           const Divider(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           const Text('Medication Settings'),
           const SizedBox(height: 12),
           TextField(
@@ -59,43 +102,6 @@ class SettingsScreen extends ConsumerWidget {
               await box.put(settings.id, settings);
             },
           ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 12),
-          // Developer / Debug section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(child: Text('Debug Mode (show generation modals)')),
-              Switch(
-                value: settings.debugMode,
-                onChanged: (v) async {
-                  settings.debugMode = v;
-                  await box.put(settings.id, settings);
-                },
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(child: Text('Auto-grant echo on win (debug)')),
-              Switch(
-                value: settings.autoGrantEchoOnWinDebug,
-                onChanged: (v) async { settings.autoGrantEchoOnWinDebug = v; await box.put(settings.id, settings); },
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(child: Text('Return ticket on loss instead of consuming (debug)')),
-              Switch(
-                value: settings.returnTicketOnLossDebug,
-                onChanged: (v) async { settings.returnTicketOnLossDebug = v; await box.put(settings.id, settings); },
-              ),
-            ],
-          ),
           const SizedBox(height: 12),
           const Divider(),
           const SizedBox(height: 12),
@@ -105,5 +111,16 @@ class SettingsScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+}
+
+void _ensureDefaults(Box box, Settings s) {
+  bool changed = false;
+  // Access inside try/catch in case older objects have nulls for new non-nullable fields
+  try { final _ = s.medRemindersEnabled; } catch (_) { s.medRemindersEnabled = true; changed = true; }
+  try { final _ = s.moodRemindersEnabled; } catch (_) { s.moodRemindersEnabled = true; changed = true; }
+  try { final _ = s.journalRemindersEnabled; } catch (_) { s.journalRemindersEnabled = true; changed = true; }
+  if (changed) {
+    try { box.put(s.id, s); } catch (_) {}
   }
 }

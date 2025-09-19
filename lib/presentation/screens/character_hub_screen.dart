@@ -20,6 +20,7 @@ import 'dart:async';
 import '../../theme/colors.dart';
 import '../../game/services/player_image_service.dart';
 import '../../crafting/inventory_service.dart';
+import '../../crafting/models.dart';
 import '../widgets/item_icon_badge.dart';
 import '../widgets/item_stats_line.dart';
 
@@ -280,7 +281,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                     const SizedBox(height: 6),
                     if (crafted != null) ...[
                       Text(
-                          'Slot: ${crafted.def.slot.name}  Tier ${crafted.tier}  Rarity: ${crafted.rarity.name}',
+                          'Slot: ${_prettySlot(crafted.def)}  Tier ${crafted.tier}  Rarity: ${crafted.rarity.name}',
                           style: Theme.of(context).textTheme.labelSmall),
                       if ((crafted.classAffinity ?? crafted.def.classAffinity) != null)
                         Padding(
@@ -313,7 +314,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                             style:
                                 Theme.of(context).textTheme.labelMedium),
                         const SizedBox(height: 2),
-                        ..._effectTexts(crafted.stats).map((t) => Text('• ' + t,
+                        ..._effectTexts(crafted.stats).map((t) => Text('• $t',
                             style: Theme.of(context).textTheme.labelSmall)),
                       ],
                       const SizedBox(height: 8),
@@ -389,6 +390,26 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
         return 'Weapon';
       default:
         return slotId;
+    }
+  }
+
+  String _prettySlot(ItemDef def) {
+    final eq = (def.equipSlot ?? '').toLowerCase();
+    if (eq == 'ring') return 'Ring';
+    if (eq == 'neck') return 'Necklace';
+    switch (def.slot) {
+      case SlotId.head:
+        return 'Head';
+      case SlotId.chest:
+        return 'Chest';
+      case SlotId.hands:
+        return 'Hands';
+      case SlotId.legs:
+        return 'Legs';
+      case SlotId.feet:
+        return 'Feet';
+      case SlotId.weapon:
+        return 'Weapon';
     }
   }
 

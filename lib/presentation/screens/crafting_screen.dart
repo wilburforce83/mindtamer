@@ -228,7 +228,7 @@ class _CraftingScreenState extends State<CraftingScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    PixelButton(label: 'Forge Now', onPressed: canForge ? _forge : null, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6))
+                    PixelButton(label: 'Forge Now', onPressed: canForge ? _forge : null, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
                   ],
                 );
               }),
@@ -344,7 +344,7 @@ class _ResultDialog extends StatelessWidget {
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(item.displayName),
         const SizedBox(height: 4),
-        Text('Slot: ${item.def.slot.name}  Tier ${item.tier}'),
+        Text('Slot: ${_prettySlotLabel(item.def)}  Tier ${item.tier}'),
         Text('Rarity: ${item.rarity.name}  Element: ${item.element.name}'),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Stats: ', style: TextStyle(fontSize: 12)),
@@ -402,6 +402,20 @@ class _ForgeSideSlot extends StatelessWidget {
   }
 }
 
+String _prettySlotLabel(ItemDef def) {
+  final eq = (def.equipSlot ?? '').toLowerCase();
+  if (eq == 'ring') return 'Ring';
+  if (eq == 'neck') return 'Necklace';
+  switch (def.slot) {
+    case SlotId.head: return 'Head';
+    case SlotId.chest: return 'Chest';
+    case SlotId.hands: return 'Hands';
+    case SlotId.legs: return 'Legs';
+    case SlotId.feet: return 'Feet';
+    case SlotId.weapon: return 'Weapon';
+  }
+}
+
 class _CraftDetailsPanel extends StatelessWidget {
   final Echo? echo; final CraftedItem? item; final VoidCallback? onAddA; final VoidCallback? onAddB; final VoidCallback? onAddItemA; final VoidCallback? onAddItemB;
   const _CraftDetailsPanel({required this.echo, required this.item, this.onAddA, this.onAddB, this.onAddItemA, this.onAddItemB});
@@ -436,7 +450,7 @@ class _CraftDetailsPanel extends StatelessWidget {
         if (item != null) ...[
           Text(item!.displayName, style: small),
           const SizedBox(height: 2),
-          Text('Slot: ${item!.def.slot.name}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}', style: small),
+          Text('Slot: ${_prettySlotLabel(item!.def)}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}', style: small),
           const SizedBox(height: 2),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Stats: ', style: small),

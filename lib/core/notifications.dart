@@ -100,6 +100,119 @@ class NotificationService {
     }
   }
 
+  static Future<void> scheduleDailyPreReminders(Map<String, List<String>> timeToMeds, {Duration offset = const Duration(minutes: 15)}) async {
+    await init();
+    await clearMedReminders();
+    final offMin = offset.inMinutes;
+    for (final entry in timeToMeds.entries) {
+      // Parse due time, back off by offset minutes modulo 24h
+      final parts = entry.key.split(':');
+      var h = int.tryParse(parts[0]) ?? 0;
+      var m = int.tryParse(parts[1]) ?? 0;
+      var total = (h * 60 + m - offMin) % (24 * 60);
+      if (total < 0) total += 24 * 60;
+      final preH = total ~/ 60;
+      final preM = total % 60;
+      final id = _idForTime('${preH.toString().padLeft(2, '0')}:${preM.toString().padLeft(2, '0')}');
+      final now = tz.TZDateTime.now(tz.local);
+      var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, preH, preM);
+      if (scheduled.isBefore(now)) scheduled = scheduled.add(const Duration(days: 1));
+      final meds = entry.value.join(', ');
+      try {
+        await _plugin.zonedSchedule(
+          id,
+          'Pills due soon',
+          meds.isEmpty ? 'Medication reminder' : meds,
+          scheduled,
+          const NotificationDetails(
+            android: AndroidNotificationDetails('meds_channel', 'Medication Reminders', importance: Importance.max, priority: Priority.high),
+            iOS: DarwinNotificationDetails(),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      } on Exception {
+        await _plugin.zonedSchedule(
+          id,
+          'Pills due soon',
+          meds.isEmpty ? 'Medication reminder' : meds,
+          scheduled,
+          const NotificationDetails(
+            android: AndroidNotificationDetails('meds_channel', 'Medication Reminders', importance: Importance.max, priority: Priority.high),
+            iOS: DarwinNotificationDetails(),
+          ),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
+    }
+  }
+
+  static Future<void> clearMoodReminders() async {
+    await _plugin.cancel(21010);
+    await _plugin.cancel(21018);
+  }
+
+  static Future<void> clearJournalReminders() async {
+    await _plugin.cancel(22010);
+    await _plugin.cancel(22018);
+  }
+
+  static Future<void> scheduleMoodJournalReminders({required bool moodEnabled, required bool journalEnabled}) async {
+    await init();
+    // Mood at 10:00 and 18:00
+    if (!moodEnabled) {
+      await clearMoodReminders();
+    } else {
+      await _scheduleDaily(id: 21010, hh: 10, mm: 0, title: 'Mood check-in', body: 'Log how you feel today.');
+      await _scheduleDaily(id: 21018, hh: 18, mm: 0, title: 'Mood check-in', body: 'How are you feeling this evening?');
+    }
+    // Journal at 10:00 and 18:00
+    if (!journalEnabled) {
+      await clearJournalReminders();
+    } else {
+      await _scheduleDaily(id: 22010, hh: 10, mm: 0, title: 'Journal prompt', body: 'Capture a quick note.');
+      await _scheduleDaily(id: 22018, hh: 18, mm: 0, title: 'Journal prompt', body: 'Reflect on your day.');
+    }
+  }
+
+  static Future<void> _scheduleDaily({required int id, required int hh, required int mm, required String title, required String body}) async {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hh, mm);
+    if (scheduled.isBefore(now)) scheduled = scheduled.add(const Duration(days: 1));
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        const NotificationDetails(
+          android: AndroidNotificationDetails('reminders_channel', 'Daily Reminders', importance: Importance.max, priority: Priority.high),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } on Exception {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        const NotificationDetails(
+          android: AndroidNotificationDetails('reminders_channel', 'Daily Reminders', importance: Importance.max, priority: Priority.high),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
+  }
+
   static Future<void> showNow(int id, String title, String body) async {
     await init();
     await _plugin.show(
