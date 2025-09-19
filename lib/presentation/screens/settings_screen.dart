@@ -77,6 +77,36 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 12),
+          const Text('Gameplay'),
+          const SizedBox(height: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Battle difficulty'),
+              const SizedBox(height: 6),
+              DropdownButton<String>(
+                value: (settings.difficulty.isEmpty ? 'normal' : settings.difficulty),
+                items: const [
+                  DropdownMenuItem(value: 'relaxed', child: Text('Relaxed')),
+                  DropdownMenuItem(value: 'normal', child: Text('Balanced')),
+                  DropdownMenuItem(value: 'challenging', child: Text('Challenging')),
+                ],
+                onChanged: (v) async {
+                  if (v == null) return;
+                  // Avoid using context after await
+                  final messenger = ScaffoldMessenger.of(context);
+                  settings.difficulty = v;
+                  messenger.showSnackBar(const SnackBar(content: Text('Difficulty will apply to new battles.')));
+                  await box.put(settings.id, settings);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 12),
           const Text('Medication Settings'),
           const SizedBox(height: 12),
           TextField(
@@ -123,4 +153,6 @@ void _ensureDefaults(Box box, Settings s) {
   if (changed) {
     try { box.put(s.id, s); } catch (_) {}
   }
+  // Difficulty default
+  try { final _ = s.difficulty; } catch (_) { s.difficulty = 'normal'; try { box.put(s.id, s); } catch (_) {} }
 }

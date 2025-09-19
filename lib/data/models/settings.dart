@@ -19,6 +19,8 @@ class Settings {
   @HiveField(10) bool medRemindersEnabled;
   @HiveField(11) bool moodRemindersEnabled;
   @HiveField(12) bool journalRemindersEnabled;
+  // Gameplay
+  @HiveField(13) String difficulty; // relaxed | normal | challenging
   Settings({
     required this.id,
     this.pinHash,
@@ -33,5 +35,6 @@ class Settings {
     this.medRemindersEnabled = true,
     this.moodRemindersEnabled = true,
     this.journalRemindersEnabled = true,
+    this.difficulty = 'normal',
   });
 }

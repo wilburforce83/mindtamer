@@ -13,6 +13,7 @@ import '../../services/inventory_service.dart';
 import '../../services/item_catalog.dart';
 import '../../crafting/inventory_service.dart';
 import '../../services/drop_table.dart';
+import '../../data/models/settings.dart';
 
   class BattleState {
   final String? battleId;
@@ -229,8 +230,12 @@ class BattleNotifier extends StateNotifier<BattleState> {
         } catch (_) {}
       }
     }
-    const int eHp = 50; const int eAtk = 3; const int eDef = 0; // slightly easier enemy
-    _enemy = Combatant(name: enemyName, stats: BattleStats(maxHp: eHp, hp: eHp, atk: eAtk, def: eDef), skills: _enemySkills());
+    final scaled = _scaledEnemyStats(battleId: battleId, player: _player.stats, level: level);
+    _enemy = Combatant(
+      name: enemyName,
+      stats: BattleStats(maxHp: scaled['hp']!, hp: scaled['hp']!, atk: scaled['atk']!, def: scaled['def']!),
+      skills: _enemySkills(),
+    );
     _engine = BattleEngine(player: _player, enemy: _enemy);
 
     // Background from asset manifest (random pick)
@@ -264,6 +269,73 @@ class BattleNotifier extends StateNotifier<BattleState> {
       playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
       enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
     );
+  }
+
+  // Balance enemy vs player by targeting rough turns-to-kill both ways.
+  // Deterministic per battleId so it feels consistent if retried.
+  Map<String, int> _scaledEnemyStats({required String battleId, required BattleStats player, required int level}) {
+    int seed = battleId.hashCode & 0x7fffffff;
+    if (seed == 0) seed = 1;
+    int rand(int min, int max) { // inclusive
+      seed = (1664525 * seed + 1013904223) & 0x7fffffff;
+      final r = seed % (max - min + 1);
+      return min + r;
+    }
+    final pHp = player.maxHp.clamp(1, 9999);
+    final pAtk = player.atk.clamp(0, 999);
+    final pDef = player.def.clamp(0, 99);
+
+    // Difficulty tuning — use previous Relaxed as Hard baseline,
+    // then make Balanced and Relaxed 20% easier each step.
+    String diff = 'normal';
+    try {
+      final s = settingsBox().values.isNotEmpty ? settingsBox().values.first : Settings(id: 'default');
+      diff = (s.difficulty.isEmpty ? 'normal' : s.difficulty);
+    } catch (_) {}
+
+    // Hard baseline (old Relaxed):
+    double defFracBase = 0.22; // fraction of player's ATK
+    double ttkPBase = 4; // player turns to defeat enemy
+    double ttkPMin = 3, ttkPMax = 5;
+    double ttkEBase = 9; // enemy turns to defeat player
+    double ttkEMin = 8, ttkEMax = 12;
+
+    // Apply 20% easier steps for Balanced then Relaxed
+    double defFrac, bTtkP, bTtkPMin, bTtkPMax, bTtkE, bTtkEMin, bTtkEMax;
+    if (diff == 'challenging') {
+      defFrac = defFracBase;
+      bTtkP = ttkPBase; bTtkPMin = ttkPMin; bTtkPMax = ttkPMax;
+      bTtkE = ttkEBase; bTtkEMin = ttkEMin; bTtkEMax = ttkEMax;
+    } else if (diff == 'normal') {
+      defFrac = defFracBase * 0.8;
+      bTtkP = ttkPBase * 0.8; bTtkPMin = ttkPMin * 0.8; bTtkPMax = ttkPMax * 0.8;
+      bTtkE = ttkEBase * 1.2; bTtkEMin = ttkEMin * 1.2; bTtkEMax = ttkEMax * 1.2;
+    } else { // relaxed
+      defFrac = defFracBase * 0.64;
+      bTtkP = ttkPBase * 0.64; bTtkPMin = ttkPMin * 0.64; bTtkPMax = ttkPMax * 0.64;
+      bTtkE = ttkEBase * 1.44; bTtkEMin = ttkEMin * 1.44; bTtkEMax = ttkEMax * 1.44;
+    }
+
+    int eDef = (pAtk * defFrac).round();
+    eDef += (level ~/ 10);
+    eDef = eDef.clamp(0, 24);
+
+    // Player damage per turn against enemy using basic skill baseline (6)
+    int dptPlayer = (6 + pAtk - eDef);
+    dptPlayer = dptPlayer.clamp(2, 40);
+
+    final targetTtkP = (bTtkP + rand(-1, 1)).round().clamp(bTtkPMin.round().clamp(1, 99), bTtkPMax.round().clamp(2, 99));
+    int eHp = (dptPlayer * targetTtkP * 1.08).round();
+    eHp += (level * 2);
+    eHp = eHp.clamp(30, 9999);
+
+    final targetTtkE = (bTtkE + rand(-1, 2)).round().clamp(bTtkEMin.round().clamp(1, 99), bTtkEMax.round().clamp(2, 99));
+    // Enemy basic power baseline is 3. Solve: dmg = base(3) + eAtk - pDef ≈ pHp/target
+    int eAtk = ((pHp / targetTtkE) - 3 + pDef).round();
+    // Smoothness and bounds — allow high values to overcome high player DEF
+    eAtk = eAtk.clamp(2, 200);
+
+    return {'hp': eHp, 'atk': eAtk, 'def': eDef};
   }
 
   // Sum equipped item stats; returns both base keys and mod_* keys summed
@@ -368,13 +440,15 @@ class BattleNotifier extends StateNotifier<BattleState> {
 
     // Instant heal
     if (def.healInstant != null && def.healInstant! > 0) {
-      _player.stats.hp = (_player.stats.hp + def.healInstant!).clamp(0, _player.stats.maxHp);
-      logs.add('You used ${def.name} (+${def.healInstant}HP).');
+      final amt = def.scaledInstantHealFor(_player.stats.maxHp) ?? 0;
+      _player.stats.hp = (_player.stats.hp + amt).clamp(0, _player.stats.maxHp);
+      logs.add('You used ${def.name} (+$amt HP).');
     }
     // Regen
     if (def.regenPerTurn != null && def.regenTurns != null) {
-      _engine.applyStatus(_player, 'regen', def.regenPerTurn!, def.regenTurns!);
-      logs.add('You gained Regen ${def.regenPerTurn}/T for ${def.regenTurns}T.');
+      final perT = def.scaledRegenPerTurnFor(_player.stats.maxHp) ?? def.regenPerTurn!;
+      _engine.applyStatus(_player, 'regen', perT, def.regenTurns!);
+      logs.add('You gained Regen $perT/T for ${def.regenTurns}T.');
     }
     // Buff / Debuff
     if (def.buffKey != null && def.buffMagnitude != null && def.buffDuration != null) {
@@ -463,12 +537,14 @@ class BattleNotifier extends StateNotifier<BattleState> {
     bool targetsEnemy = false;
 
     if (def.healInstant != null && def.healInstant! > 0) {
-      _player.stats.hp = (_player.stats.hp + def.healInstant!).clamp(0, _player.stats.maxHp);
-      logs.add('You used ${def.name} (+${def.healInstant}HP).');
+      final amt = def.scaledInstantHealFor(_player.stats.maxHp) ?? 0;
+      _player.stats.hp = (_player.stats.hp + amt).clamp(0, _player.stats.maxHp);
+      logs.add('You used ${def.name} (+$amt HP).');
     }
     if (def.regenPerTurn != null && def.regenTurns != null) {
-      _engine.applyStatus(_player, 'regen', def.regenPerTurn!, def.regenTurns!);
-      logs.add('You gained Regen ${def.regenPerTurn}/T for ${def.regenTurns}T.');
+      final perT = def.scaledRegenPerTurnFor(_player.stats.maxHp) ?? def.regenPerTurn!;
+      _engine.applyStatus(_player, 'regen', perT, def.regenTurns!);
+      logs.add('You gained Regen $perT/T for ${def.regenTurns}T.');
     }
     if (def.buffKey != null && def.buffMagnitude != null && def.buffDuration != null) {
       final target = def.buffTargetsEnemy ? _enemy : _player;

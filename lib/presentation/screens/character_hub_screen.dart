@@ -1114,7 +1114,8 @@ class _StatsAndAttacks extends StatelessWidget {
               children: [
                 SizedBox(width: 70, child: Text(k.toUpperCase(), style: small)),
                 Builder(builder: (context) {
-                  final v = (scaled[k] ?? 0) + (gearBase[k] ?? 0);
+                  // Show base (class+level) value only here
+                  final v = (scaled[k] ?? 0);
                   final style = v > 0
                       ? small.copyWith(color: classColor(classKey))
                       : small;
@@ -1123,6 +1124,9 @@ class _StatsAndAttacks extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text('+${spriteAll[k] ?? 0}',
                     style: small.copyWith(color: Colors.green[700])),
+                const SizedBox(width: 8),
+                Text('+${gearBase[k] ?? 0}',
+                    style: small.copyWith(color: Colors.blue[700])),
                 const SizedBox(width: 8),
                 Text('+${gearMods[k] ?? 0}',
                     style: small.copyWith(color: Colors.purple[700])),

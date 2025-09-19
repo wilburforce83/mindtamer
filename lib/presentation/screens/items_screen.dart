@@ -36,10 +36,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
     return def.fullHealOutOfBattle || (def.outOfBattleHealAmount() != null);
   }
 
-  int _healAmount(String type) {
+  int _healAmountForMaxHp(String type, int maxHp) {
     final def = ItemCatalog.defOf(type);
     if (def == null) return 0;
-    return def.outOfBattleHealAmount() ?? 0;
+    return def.outOfBattleHealAmountFor(maxHp) ?? 0;
   }
 
   Future<void> _useItem(Map<String, dynamic> item) async {
@@ -47,7 +47,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final type = item['type']?.toString() ?? '';
     if (!_isHealing(type)) return;
     final def = ItemCatalog.defOf(type);
-    final amt = _healAmount(type);
     // Compute current and max HP similar to battle init
     try {
       final meta = playerMetaBox();
@@ -87,6 +86,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
         }
       } catch (_) {}
       final maxHp = baseHp + classHp + hpLv + spriteHp;
+      final amt = _healAmountForMaxHp(type, maxHp);
       final newHp = (def?.fullHealOutOfBattle == true) ? maxHp : (hp + amt).clamp(0, maxHp);
       await meta.put('hp', newHp);
       // Consume from inventory
@@ -159,6 +159,7 @@ class _ItemDetailsPanel extends StatelessWidget {
     final label = ItemEffects.label(type);
     final def = ItemCatalog.defOf(type);
     final qty = item!['qty'] ?? 0;
+    final maxHp = _playerMaxHp();
     final small = Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 11);
     return Container(
       width: double.infinity,
@@ -171,9 +172,9 @@ class _ItemDetailsPanel extends StatelessWidget {
           Text('Qty: $qty', style: small),
           if (def != null) ...[
             const SizedBox(height: 2),
-          Text('Type: ${_prettyCategory(def.category)}', style: small),
+            Text('Type: ${_prettyCategory(def.category)}', style: small),
             ...(() {
-              final effects = _effectTexts(def);
+              final effects = _effectTexts(def, playerMaxHp: maxHp);
               if (effects.isEmpty) return <Widget>[];
               return <Widget>[
                 const SizedBox(height: 6),
@@ -194,15 +195,55 @@ class _ItemDetailsPanel extends StatelessWidget {
     return c[0].toUpperCase() + c.substring(1);
   }
 
-  List<String> _effectTexts(ItemDef def) {
+  int _playerMaxHp() {
+    // Duplicate quick calc similar to out-of-battle use
+    const baseHp = 60;
+    int classHp = 12;
+    int level = 1;
+    try {
+      final vals = profileBox().values;
+      if (vals.isNotEmpty) {
+        final cls = vals.first.classKey; level = vals.first.level;
+        switch (cls) {
+          case 'Warden': classHp = 20; break;
+          case 'Trickster': classHp = 10; break;
+          case 'Sage': classHp = 12; break;
+          case 'Sentinel': classHp = 16; break;
+          case 'Seer': classHp = 12; break;
+          case 'Artificer': classHp = 14; break;
+          case 'Empath': classHp = 14; break;
+          case 'Oracle': classHp = 12; break;
+          case 'Shadow': classHp = 13; break;
+          case 'Alchemist': classHp = 15; break;
+          default: classHp = 12; break;
+        }
+      }
+    } catch (_) {}
+    final hpLv = ((level - 1).clamp(0, 999)) * 3;
+    int spriteHp = 0;
+    try {
+      final raw = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? const <String, String?>{};
+      for (final sid in ['sprite1','sprite2']) {
+        final sidv = raw[sid];
+        if (sidv == null || sidv.isEmpty) continue;
+        try { final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == sidv); spriteHp += (inst.stats['hp'] ?? 0); } catch (_) {}
+      }
+    } catch (_) {}
+    return baseHp + classHp + hpLv + spriteHp;
+  }
+
+  List<String> _effectTexts(ItemDef def, {required int playerMaxHp}) {
     final lines = <String>[];
     // Healing
     if (def.healInstant != null && def.healInstant! > 0) {
-      lines.add('Heals ${def.healInstant} HP instantly');
+      final amt = def.outOfBattleHealAmountFor(playerMaxHp) ?? 0;
+      final pct = ((amt / playerMaxHp) * 100).round();
+      lines.add('Heals $amt HP instantly (~$pct%)');
     }
     if (def.regenPerTurn != null && def.regenTurns != null && def.regenPerTurn! > 0 && def.regenTurns! > 0) {
-      final total = def.regenPerTurn! * def.regenTurns!;
-      lines.add('Regenerates ${def.regenPerTurn} HP/turn for ${def.regenTurns} turns (total $total)');
+      final perTurn = def.scaledRegenPerTurnFor(playerMaxHp) ?? def.regenPerTurn!;
+      final total = perTurn * def.regenTurns!;
+      lines.add('Regenerates $perTurn HP/turn for ${def.regenTurns} turns (total $total)');
     }
     // Buffs / Debuffs / Status
     if (def.buffKey != null) {

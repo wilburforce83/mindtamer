@@ -48,6 +48,40 @@ class ItemDef {
     }
     return null;
   }
+
+  /// Baseline used in legacy tuning (base player HP ≈ 60).
+  static const int _legacyBaseHp = 60;
+
+  /// Scaled total healing for out-of-battle usage based on player's max HP.
+  /// Potions and food are treated proportionally to max HP using legacy base of 60.
+  int? outOfBattleHealAmountFor(int playerMaxHp) {
+    if (fullHealOutOfBattle) return null;
+    if (healInstant != null) {
+      // Scale instant heal to a percentage of the player's max HP.
+      final scaled = ((healInstant!.toDouble() / _legacyBaseHp) * playerMaxHp).round();
+      return scaled.clamp(1, playerMaxHp);
+    }
+    if (regenPerTurn != null && regenTurns != null) {
+      final perTurn = ((regenPerTurn!.toDouble() / _legacyBaseHp) * playerMaxHp).round().clamp(1, playerMaxHp);
+      final total = (perTurn * regenTurns!).clamp(1, playerMaxHp);
+      return total;
+    }
+    return null;
+  }
+
+  /// Scaled per-turn regen suitable for in-battle application.
+  int? scaledRegenPerTurnFor(int playerMaxHp) {
+    if (regenPerTurn == null) return null;
+    final v = ((regenPerTurn!.toDouble() / _legacyBaseHp) * playerMaxHp).round();
+    return v.clamp(1, playerMaxHp);
+  }
+
+  /// Scaled instant heal (in-battle) based on player's max HP.
+  int? scaledInstantHealFor(int playerMaxHp) {
+    if (healInstant == null) return null;
+    final v = ((healInstant!.toDouble() / _legacyBaseHp) * playerMaxHp).round();
+    return v.clamp(1, playerMaxHp);
+  }
 }
 
 class ItemCatalog {

@@ -17,10 +17,11 @@ class SettingsAdapter extends TypeAdapter<Settings>{
       medRemindersEnabled: (f[10] as bool?) ?? true,
       moodRemindersEnabled: (f[11] as bool?) ?? true,
       journalRemindersEnabled: (f[12] as bool?) ?? true,
+      difficulty: (f[13] as String?) ?? 'normal',
     );
   }
   @override void write(BinaryWriter w, Settings o){
-    w..writeByte(13)
+    w..writeByte(14)
      ..writeByte(0)..write(o.id)
      ..writeByte(1)..write(o.pinHash)
      ..writeByte(2)..write(o.exportDir)
@@ -33,6 +34,7 @@ class SettingsAdapter extends TypeAdapter<Settings>{
      ..writeByte(9)..write(o.returnTicketOnLossDebug)
      ..writeByte(10)..write(o.medRemindersEnabled)
      ..writeByte(11)..write(o.moodRemindersEnabled)
-     ..writeByte(12)..write(o.journalRemindersEnabled);
+     ..writeByte(12)..write(o.journalRemindersEnabled)
+     ..writeByte(13)..write(o.difficulty);
   }
 }
