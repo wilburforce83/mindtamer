@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/pixel_assets.dart';
+import '../../data/hive/boxes.dart';
+import '../../game/services/player_image_service.dart';
+import 'dart:ui' as ui;
 import 'pixel_back_button.dart';
 
 class GameScaffold extends StatelessWidget {
@@ -51,8 +54,8 @@ class GameScaffold extends StatelessWidget {
               items: [
                 for (final t in _tabs)
                   BottomNavigationBarItem(
-                    icon: _png(t.asset),
-                    activeIcon: _png(t.asset),
+                    icon: t.route == '/character' ? const _PlayerTabIcon() : _png(t.asset),
+                    activeIcon: t.route == '/character' ? const _PlayerTabIcon() : _png(t.asset),
                     label: t.label,
                   ),
               ],
@@ -91,6 +94,52 @@ Widget _png(String assetPath) {
       },
     ),
   );
+}
+
+class _PlayerTabIcon extends StatefulWidget {
+  const _PlayerTabIcon();
+  @override
+  State<_PlayerTabIcon> createState() => _PlayerTabIconState();
+}
+
+class _PlayerTabIconState extends State<_PlayerTabIcon> {
+  ui.Image? _img;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final svc = PlayerImageService();
+    final img = await svc.renderCurrentPlayer();
+    if (!mounted) return;
+    setState(() { _img = img; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_img != null) {
+      return SizedBox(width: 56, height: 56, child: RawImage(image: _img, filterQuality: FilterQuality.none, fit: BoxFit.contain));
+    }
+    // Fallback to asset path while loading
+    String cls = 'Sage';
+    String gender = 'm';
+    try {
+      final vals = profileBox().values;
+      if (vals.isNotEmpty) cls = vals.first.classKey;
+      final m = playerMetaBox();
+      final g = m.get('gender')?.toString();
+      if (g != null && g.isNotEmpty) gender = g;
+    } catch (_) {}
+    final path = PlayerImageService.assetPathFor(cls, gender);
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Image.asset(path, fit: BoxFit.contain, filterQuality: FilterQuality.none, errorBuilder: (_, __, ___) => _png(PixelAssets.tabHome)),
+    );
+  }
 }
 
 int _indexForLocation(String location) {

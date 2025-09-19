@@ -59,11 +59,13 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
       await _refreshPlayerImage();
     });
     // Also react to profile changes (HP/XP/class) and meta (name, gender)
-    _profileSub = profileBox().watch().listen((_) { if (mounted) setState((){}); });
+    _profileSub = profileBox().watch().listen((_) {
+      if (mounted) setState(() {});
+    });
     _metaSub = playerMetaBox().watch().listen((_) async {
       if (!mounted) return;
       await _refreshPlayerImage();
-      setState((){});
+      setState(() {});
     });
   }
 
@@ -124,7 +126,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
       path ??= PlayerImageService.assetPathFor(cls, gender);
     } catch (_) {}
     if (!mounted) return;
-    setState((){
+    setState(() {
       _playerImage = img;
       _playerAssetPath = path;
     });
@@ -164,36 +166,65 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
 
   void _showSpriteSheet(BuildContext context, int slot) {
     final inst = slot == 1 ? _inst1 : _inst2;
-    showModalBottomSheet(context: context, builder: (_) {
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Sprite $slot', style: Theme.of(context).textTheme.titleMedium),
-              TextButton(onPressed: () async { Navigator.pop(context); await _pickSprite(slot); }, child: const Text('Change')),
-            ]),
-            const SizedBox(height: 8),
-            if (inst != null) ...[
-              SizedBox(height: 80, child: Align(alignment: Alignment.centerLeft, child: RawImage(image: slot==1? _spriteImg1 : _spriteImg2, filterQuality: FilterQuality.none))),
-              const SizedBox(height: 6),
-              Text('Stats', style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: 2),
-              Text('HP ${inst.stats['hp'] ?? 0}  ATK ${inst.stats['atk'] ?? 0}  SPD ${inst.stats['spd'] ?? 0}  SPIRIT ${inst.stats['spirit'] ?? 0}', style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: 6),
-              if (inst.attacks.isNotEmpty)
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Attacks', style: Theme.of(context).textTheme.labelSmall),
-                  const SizedBox(height: 2),
-                  ...inst.attacks.map((a) => Text('• ${a['name'] ?? 'Attack'} (Pwr: ${a['power'] ?? '?'} )', style: Theme.of(context).textTheme.labelSmall)),
-                ]),
-            ] else ...[
-              const Text('No sprite assigned.'),
-            ],
-          ]),
-        ),
-      );
-    });
+    showModalBottomSheet(
+        context: context,
+        builder: (_) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Sprite $slot',
+                              style: Theme.of(context).textTheme.titleMedium),
+                          TextButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await _pickSprite(slot);
+                              },
+                              child: const Text('Change')),
+                        ]),
+                    const SizedBox(height: 8),
+                    if (inst != null) ...[
+                      SizedBox(
+                          height: 80,
+                          child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: RawImage(
+                                  image: slot == 1 ? _spriteImg1 : _spriteImg2,
+                                  filterQuality: FilterQuality.none))),
+                      const SizedBox(height: 6),
+                      Text('Stats',
+                          style: Theme.of(context).textTheme.labelSmall),
+                      const SizedBox(height: 2),
+                      Text(
+                          'HP ${inst.stats['hp'] ?? 0}  ATK ${inst.stats['atk'] ?? 0}  SPD ${inst.stats['spd'] ?? 0}  SPIRIT ${inst.stats['spirit'] ?? 0}',
+                          style: Theme.of(context).textTheme.labelSmall),
+                      const SizedBox(height: 6),
+                      if (inst.attacks.isNotEmpty)
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Attacks',
+                                  style:
+                                      Theme.of(context).textTheme.labelSmall),
+                              const SizedBox(height: 2),
+                              ...inst.attacks.map((a) => Text(
+                                  '• ${a['name'] ?? 'Attack'} (Pwr: ${a['power'] ?? '?'} )',
+                                  style:
+                                      Theme.of(context).textTheme.labelSmall)),
+                            ]),
+                    ] else ...[
+                      const Text('No sprite assigned.'),
+                    ],
+                  ]),
+            ),
+          );
+        });
   }
 
   void _onSlotTap(BuildContext context, String slotId, EquippedItem? item) {
@@ -210,60 +241,154 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
 
   void _showItemSheet(BuildContext context, String slotId, EquippedItem item) {
     final crafted = CraftedInventoryService.getById(item.id);
-    showModalBottomSheet(context: context, builder: (_) {
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Header: icon (if available) + slot title + Change
-            Row(children: [
-              if (crafted != null) ...[
-                ItemIconBadge(iconPath: crafted.def.iconPath, rarity: crafted.rarity, element: crafted.element, tier: crafted.tier, size: 32),
-                const SizedBox(width: 8),
-              ],
-              Expanded(child: Text(_slotTitle(slotId), style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis)),
-              TextButton(onPressed: (){ Navigator.pop(context); _onSlotTap(context, slotId, null); }, child: const Text('Change')),
-            ]),
-            const SizedBox(height: 8),
-            // Body top line: item name (wrapped, no icon here)
-            Text(crafted?.displayName ?? item.name, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            if (crafted != null) ...[
-              Text('Slot: ${crafted.def.slot.name}  Tier ${crafted.tier}  Rarity: ${crafted.rarity.name}', style: Theme.of(context).textTheme.labelSmall),
-              if (crafted.stats.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Stats: ', style: Theme.of(context).textTheme.labelSmall),
-                  Expanded(child: ItemStatsLine(stats: crafted.stats, element: crafted.element, style: Theme.of(context).textTheme.labelSmall)),
-                ]),
-              ],
-              const SizedBox(height: 8),
-              if (crafted.dnaJournalTitles.isNotEmpty)
-                _SeedTitlesPreview(titles: crafted.dnaJournalTitles),
-              const SizedBox(height: 8),
-            ] else ...[
-              // No crafted details: only slot line
-              Text('Slot: ${_slotTitle(slotId)}', style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: 8),
-            ],
-          ]),
-        ),
-      );
+    showModalBottomSheet(
+        context: context,
+        builder: (_) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header: icon (if available) + slot title + Change
+                    Row(children: [
+                      if (crafted != null) ...[
+                        ItemIconBadge(
+                            iconPath: crafted.def.iconPath,
+                            rarity: crafted.rarity,
+                            element: crafted.element,
+                            tier: crafted.tier,
+                            size: 32),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                          child: Text(_slotTitle(slotId),
+                              style: Theme.of(context).textTheme.titleMedium,
+                              softWrap: true)),
+                      TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _onSlotTap(context, slotId, null);
+                          },
+                          child: const Text('Change')),
+                    ]),
+                    const SizedBox(height: 8),
+                    // Body top line: item name (wrapped, no icon here)
+                    Text(crafted?.displayName ?? item.name,
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 6),
+                    if (crafted != null) ...[
+                      Text(
+                          'Slot: ${crafted.def.slot.name}  Tier ${crafted.tier}  Rarity: ${crafted.rarity.name}',
+                          style: Theme.of(context).textTheme.labelSmall),
+                      if ((crafted.classAffinity ?? crafted.def.classAffinity) != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            'Class Affinity: ${(crafted.classAffinity ?? crafted.def.classAffinity)!}',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                        ),
+                      if (crafted.stats.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Stats: ',
+                                  style:
+                                      Theme.of(context).textTheme.labelSmall),
+                              Expanded(
+                                  child: ItemStatsLine(
+                                      stats: crafted.stats,
+                                      element: crafted.element,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall)),
+                            ]),
+                      ],
+                      if (crafted.stats.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text('Effects',
+                            style:
+                                Theme.of(context).textTheme.labelMedium),
+                        const SizedBox(height: 2),
+                        ..._effectTexts(crafted.stats).map((t) => Text('• ' + t,
+                            style: Theme.of(context).textTheme.labelSmall)),
+                      ],
+                      const SizedBox(height: 8),
+                      if (crafted.dnaJournalTitles.isNotEmpty)
+                        _SeedTitlesPreview(titles: crafted.dnaJournalTitles),
+                      const SizedBox(height: 8),
+                    ] else ...[
+                      // No crafted details: only slot line
+                      Text('Slot: ${_slotTitle(slotId)}',
+                          style: Theme.of(context).textTheme.labelSmall),
+                      const SizedBox(height: 8),
+                    ],
+                  ]),
+            ),
+          );
+        });
+  }
+
+  List<String> _effectTexts(Map<String, num> stats) {
+    final lines = <String>[];
+    const baseOrder = ['def', 'atk', 'hp', 'spd', 'spirit'];
+    for (final k in baseOrder) {
+      final v = stats[k];
+      if (v != null && v != 0) {
+        final iv = v.round();
+        final sign = iv > 0 ? '+' : '';
+        lines.add('${k.toUpperCase()} $sign$iv');
+      }
+    }
+    final mods = <String, int>{};
+    stats.forEach((k, v) {
+      if (k.startsWith('mod_')) {
+        final stat = k.substring(4);
+        mods[stat] = (mods[stat] ?? 0) + v.round();
+      }
     });
+    for (final entry in mods.entries) {
+      final k = entry.key.toUpperCase();
+      final v = entry.value;
+      if (v == 0) continue;
+      final sign = v > 0 ? '+' : '';
+      lines.add('$k $sign$v');
+    }
+    stats.forEach((k, v) {
+      if (baseOrder.contains(k) || k.startsWith('mod_')) return;
+      final iv = v.round();
+      if (iv == 0) return;
+      final sign = iv > 0 ? '+' : '';
+      lines.add('${k.toUpperCase()} $sign$iv');
+    });
+    return lines;
   }
 
   String _slotTitle(String slotId) {
     switch (slotId) {
-      case 'head': return 'Head';
-      case 'chest': return 'Chest';
-      case 'hands': return 'Hands';
-      case 'legs': return 'Legs';
-      case 'feet': return 'Feet';
-      case 'neck': return 'Neck';
-      case 'ringLeft': return 'Ring (Left)';
-      case 'ringRight': return 'Ring (Right)';
-      case 'weapon': return 'Weapon';
-      default: return slotId;
+      case 'head':
+        return 'Head';
+      case 'chest':
+        return 'Chest';
+      case 'hands':
+        return 'Hands';
+      case 'legs':
+        return 'Legs';
+      case 'feet':
+        return 'Feet';
+      case 'neck':
+        return 'Neck';
+      case 'ringLeft':
+        return 'Ring (Left)';
+      case 'ringRight':
+        return 'Ring (Right)';
+      case 'weapon':
+        return 'Weapon';
+      default:
+        return slotId;
     }
   }
 
@@ -281,221 +406,375 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     return GameScaffold(
       title: titleName,
       centerTitle: true,
-      body: RefreshIndicator(
-        onRefresh: vm.refreshTickets,
-        child: LayoutBuilder(
-          builder: (ctx, constraints) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _HubBars(),
-                      LayoutBuilder(
-                        builder: (ctx, c) {
-                          final w = c.maxWidth;
-                          final viewH = MediaQuery.of(context).size.height;
-                          final double h = viewH * 0.35; // character + slots area
-                          final sideInset = w * 0.08;
-                          final double boxSize = w < 420 ? 56.0 : 64.0;
-                          const charWFactor = 0.42;
-                          double charSize = w * charWFactor;
-                          final maxCharByHeight = h - (2 * boxSize) - 8;
-                          if (maxCharByHeight > 0 && maxCharByHeight < charSize) {
-                            charSize = maxCharByHeight;
-                          }
-                          double vPos(int i, int count) => (h - boxSize) * (count <= 1 ? 0.0 : i / (count - 1));
-                          return SizedBox(
-                            height: h,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: charSize,
-                                  height: charSize,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                                    borderRadius: BorderRadius.zero,
+      body: Stack(children: [
+        // Background image with dark overlay
+        Positioned.fill(
+            child: Image.asset('assets/images/splash_bg.png',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.none,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+        Positioned.fill(
+            child: Container(color: Colors.black.withValues(alpha: 0.8))),
+        RefreshIndicator(
+          onRefresh: vm.refreshTickets,
+          child: LayoutBuilder(
+            builder: (ctx, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _HubBars(),
+                        LayoutBuilder(
+                          builder: (ctx, c) {
+                            final w = c.maxWidth;
+                            final viewH = MediaQuery.of(context).size.height;
+                            final double h =
+                                viewH * 0.35; // character + slots area
+                            final sideInset = w * 0.08;
+                            final double boxSize = w < 420 ? 56.0 : 64.0;
+                            const charWFactor = 0.42;
+                            double charSize = w * charWFactor;
+                            final maxCharByHeight = h - (2 * boxSize) - 8;
+                            if (maxCharByHeight > 0 &&
+                                maxCharByHeight < charSize) {
+                              charSize = maxCharByHeight;
+                            }
+                            double vPos(int i, int count) =>
+                                (h - boxSize) *
+                                (count <= 1 ? 0.0 : i / (count - 1));
+                            return SizedBox(
+                              height: h,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: charSize,
+                                    height: charSize,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outlineVariant),
+                                      borderRadius: BorderRadius.zero,
+                                    ),
+                                    child: _playerImage != null
+                                        ? RawImage(
+                                            image: _playerImage,
+                                            filterQuality: FilterQuality.none,
+                                            fit: BoxFit.contain,
+                                            width: charSize,
+                                            height: charSize)
+                                        : (_playerAssetPath != null
+                                            ? Image.asset(_playerAssetPath!,
+                                                filterQuality:
+                                                    FilterQuality.none,
+                                                fit: BoxFit.contain,
+                                                width: charSize,
+                                                height: charSize,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Text('Character',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleMedium))
+                                            : Text('Character',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium)),
                                   ),
-                                  child: _playerImage != null
-                                      ? RawImage(image: _playerImage, filterQuality: FilterQuality.none, fit: BoxFit.contain, width: charSize, height: charSize)
-                                      : (_playerAssetPath != null
-                                          ? Image.asset(_playerAssetPath!, filterQuality: FilterQuality.none, fit: BoxFit.contain, width: charSize, height: charSize, errorBuilder: (_, __, ___) => Text('Character', style: Theme.of(context).textTheme.titleMedium))
-                                          : Text('Character', style: Theme.of(context).textTheme.titleMedium)),
-                                ),
-                                Positioned(
-                                  top: vPos(0, 4),
-                                  left: (w / 2) - boxSize - 8,
-                                  child: GearSlot(slotId: 'head', item: state.gear['head'], onTap: () => _onSlotTap(context, 'head', state.gear['head']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(0, 4),
-                                  left: (w / 2) + 8,
-                                  child: GearSlot(slotId: 'neck', item: state.gear['neck'], onTap: () => _onSlotTap(context, 'neck', state.gear['neck']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(0, 4),
-                                  left: sideInset,
-                                  child: GearSlot(slotId: 'chest', item: state.gear['chest'], onTap: () => _onSlotTap(context, 'chest', state.gear['chest']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(1, 4),
-                                  left: sideInset,
-                                  child: GearSlot(slotId: 'hands', item: state.gear['hands'], onTap: () => _onSlotTap(context, 'hands', state.gear['hands']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(2, 4),
-                                  left: sideInset,
-                                  child: GearSlot(slotId: 'legs', item: state.gear['legs'], onTap: () => _onSlotTap(context, 'legs', state.gear['legs']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(3, 4),
-                                  left: sideInset,
-                                  child: GearSlot(slotId: 'feet', item: state.gear['feet'], onTap: () => _onSlotTap(context, 'feet', state.gear['feet']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(0, 4),
-                                  right: sideInset,
-                                  child: GearSlot(slotId: 'ringLeft', item: state.gear['ringLeft'], onTap: () => _onSlotTap(context, 'ringLeft', state.gear['ringLeft']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(1, 4),
-                                  right: sideInset,
-                                  child: GearSlot(slotId: 'ringRight', item: state.gear['ringRight'], onTap: () => _onSlotTap(context, 'ringRight', state.gear['ringRight']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(2, 4),
-                                  right: sideInset,
-                                  child: GearSlot(slotId: 'weapon', item: state.gear['weapon'], onTap: () => _onSlotTap(context, 'weapon', state.gear['weapon']), size: boxSize),
-                                ),
-                                Positioned(
-                                  top: vPos(3, 4),
-                                  right: sideInset,
-                                  child: SizedBox(
-                                    width: boxSize,
-                                    height: boxSize,
-                                    child: PopupMenuButton<_HubMenuAction>(
-                                      tooltip: 'Menu',
-                                      padding: EdgeInsets.zero,
-                                      position: PopupMenuPosition.under,
-                                      onSelected: (v) {
-                                        switch (v) {
-                                          case _HubMenuAction.echoes:
-                                            context.push('/echoes');
-                                            break;
-                                          case _HubMenuAction.items:
-                                            context.push('/items');
-                                            break;
-                                          case _HubMenuAction.weapons:
-                                            // deprecated menu entry: route to items
-                                            context.push('/items');
-                                            break;
-                                          case _HubMenuAction.armor:
-                                            // deprecated menu entry: route to items
-                                            context.push('/items');
-                                            break;
-                                          case _HubMenuAction.codex:
-                                            context.push('/codex');
-                                            break;
-                                          case _HubMenuAction.crafting:
-                                            context.push('/crafting');
-                                            break;
-                                          case _HubMenuAction.achievements:
-                                            context.push('/achievements');
-                                            break;
-                                        }
-                                      },
-                                      itemBuilder: (context) => const [
-                                        PopupMenuItem(value: _HubMenuAction.items, child: _MenuItemRow(icon: Icons.backpack, label: 'Items')),
-                                        PopupMenuItem(value: _HubMenuAction.codex, child: _MenuItemRow(icon: Icons.auto_stories, label: 'Codex')),
-                                        PopupMenuItem(value: _HubMenuAction.crafting, child: _MenuItemRow(icon: Icons.handyman, label: 'Crafting')),
-                                        PopupMenuItem(value: _HubMenuAction.achievements, child: _MenuItemRow(icon: Icons.emoji_events, label: 'Achievements')),
-                                      ],
-                                      child: Container(
-                                        width: boxSize,
-                                        height: boxSize,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
-                                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.2),
-                                          borderRadius: BorderRadius.zero,
+                                  Positioned(
+                                    top: vPos(0, 4),
+                                    left: (w / 2) - boxSize - 8,
+                                    child: GearSlot(
+                                        slotId: 'head',
+                                        item: state.gear['head'],
+                                        onTap: () => _onSlotTap(context, 'head',
+                                            state.gear['head']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(0, 4),
+                                    left: (w / 2) + 8,
+                                    child: GearSlot(
+                                        slotId: 'neck',
+                                        item: state.gear['neck'],
+                                        onTap: () => _onSlotTap(context, 'neck',
+                                            state.gear['neck']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(0, 4),
+                                    left: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'chest',
+                                        item: state.gear['chest'],
+                                        onTap: () => _onSlotTap(context,
+                                            'chest', state.gear['chest']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(1, 4),
+                                    left: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'hands',
+                                        item: state.gear['hands'],
+                                        onTap: () => _onSlotTap(context,
+                                            'hands', state.gear['hands']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(2, 4),
+                                    left: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'legs',
+                                        item: state.gear['legs'],
+                                        onTap: () => _onSlotTap(context, 'legs',
+                                            state.gear['legs']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(3, 4),
+                                    left: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'feet',
+                                        item: state.gear['feet'],
+                                        onTap: () => _onSlotTap(context, 'feet',
+                                            state.gear['feet']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(0, 4),
+                                    right: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'ringLeft',
+                                        item: state.gear['ringLeft'],
+                                        onTap: () => _onSlotTap(context,
+                                            'ringLeft', state.gear['ringLeft']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(1, 4),
+                                    right: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'ringRight',
+                                        item: state.gear['ringRight'],
+                                        onTap: () => _onSlotTap(
+                                            context,
+                                            'ringRight',
+                                            state.gear['ringRight']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(2, 4),
+                                    right: sideInset,
+                                    child: GearSlot(
+                                        slotId: 'weapon',
+                                        item: state.gear['weapon'],
+                                        onTap: () => _onSlotTap(context,
+                                            'weapon', state.gear['weapon']),
+                                        size: boxSize),
+                                  ),
+                                  Positioned(
+                                    top: vPos(3, 4),
+                                    right: sideInset,
+                                    child: SizedBox(
+                                      width: boxSize,
+                                      height: boxSize,
+                                      child: PopupMenuButton<_HubMenuAction>(
+                                        tooltip: 'Menu',
+                                        padding: EdgeInsets.zero,
+                                        position: PopupMenuPosition.under,
+                                        onSelected: (v) {
+                                          switch (v) {
+                                            case _HubMenuAction.echoes:
+                                              context.push('/echoes');
+                                              break;
+                                            case _HubMenuAction.items:
+                                              context.push('/items');
+                                              break;
+                                            case _HubMenuAction.weapons:
+                                              // deprecated menu entry: route to items
+                                              context.push('/items');
+                                              break;
+                                            case _HubMenuAction.armor:
+                                              // deprecated menu entry: route to items
+                                              context.push('/items');
+                                              break;
+                                            case _HubMenuAction.codex:
+                                              context.push('/codex');
+                                              break;
+                                            case _HubMenuAction.crafting:
+                                              context.push('/crafting');
+                                              break;
+                                            case _HubMenuAction.achievements:
+                                              context.push('/achievements');
+                                              break;
+                                          }
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem(
+                                              value: _HubMenuAction.items,
+                                              child: _MenuItemRow(
+                                                  icon: Icons.backpack,
+                                                  label: 'Items')),
+                                          PopupMenuItem(
+                                              value: _HubMenuAction.codex,
+                                              child: _MenuItemRow(
+                                                  icon: Icons.auto_stories,
+                                                  label: 'Codex')),
+                                          PopupMenuItem(
+                                              value: _HubMenuAction.crafting,
+                                              child: _MenuItemRow(
+                                                  icon: Icons.handyman,
+                                                  label: 'Crafting')),
+                                          PopupMenuItem(
+                                              value:
+                                                  _HubMenuAction.achievements,
+                                              child: _MenuItemRow(
+                                                  icon: Icons.emoji_events,
+                                                  label: 'Achievements')),
+                                        ],
+                                        child: Container(
+                                          width: boxSize,
+                                          height: boxSize,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.25),
+                                            border: Border.all(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .outlineVariant,
+                                                width: 1.2),
+                                            borderRadius: BorderRadius.zero,
+                                          ),
+                                          child: Icon(Icons.menu,
+                                              size: boxSize * 0.5,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .outline),
                                         ),
-                                        child: Icon(Icons.menu, size: boxSize * 0.5, color: Theme.of(context).colorScheme.outline),
                                       ),
                                     ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: h - boxSize,
-                                  left: (w / 2) - boxSize - 8,
-                                  child: SizedBox(
-                                    width: boxSize,
-                                    height: boxSize,
-                                    child: Stack(alignment: Alignment.center, children: [
-                                      GearSlot(slotId: 'sprite1', item: null, onTap: () => _showSpriteSheet(context, 1), size: boxSize),
-                                      if (_spriteImg1 != null)
-                                        IgnorePointer(ignoring: true, child: RawImage(image: _spriteImg1, filterQuality: FilterQuality.none, width: boxSize * 0.8, height: boxSize * 0.8)),
-                                    ]),
+                                  Positioned(
+                                    top: h - boxSize,
+                                    left: (w / 2) - boxSize - 8,
+                                    child: SizedBox(
+                                      width: boxSize,
+                                      height: boxSize,
+                                      child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            GearSlot(
+                                                slotId: 'sprite1',
+                                                item: null,
+                                                onTap: () => _showSpriteSheet(
+                                                    context, 1),
+                                                size: boxSize),
+                                            if (_spriteImg1 != null)
+                                              IgnorePointer(
+                                                  ignoring: true,
+                                                  child: RawImage(
+                                                      image: _spriteImg1,
+                                                      filterQuality:
+                                                          FilterQuality.none,
+                                                      width: boxSize * 0.8,
+                                                      height: boxSize * 0.8)),
+                                          ]),
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: h - boxSize,
-                                  left: (w / 2) + 8,
-                                  child: SizedBox(
-                                    width: boxSize,
-                                    height: boxSize,
-                                    child: Stack(alignment: Alignment.center, children: [
-                                      GearSlot(slotId: 'sprite2', item: null, onTap: () => _showSpriteSheet(context, 2), size: boxSize),
-                                      if (_spriteImg2 != null)
-                                        IgnorePointer(ignoring: true, child: RawImage(image: _spriteImg2, filterQuality: FilterQuality.none, width: boxSize * 0.8, height: boxSize * 0.8)),
-                                    ]),
+                                  Positioned(
+                                    top: h - boxSize,
+                                    left: (w / 2) + 8,
+                                    child: SizedBox(
+                                      width: boxSize,
+                                      height: boxSize,
+                                      child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            GearSlot(
+                                                slotId: 'sprite2',
+                                                item: null,
+                                                onTap: () => _showSpriteSheet(
+                                                    context, 2),
+                                                size: boxSize),
+                                            if (_spriteImg2 != null)
+                                              IgnorePointer(
+                                                  ignoring: true,
+                                                  child: RawImage(
+                                                      image: _spriteImg2,
+                                                      filterQuality:
+                                                          FilterQuality.none,
+                                                      width: boxSize * 0.8,
+                                                      height: boxSize * 0.8)),
+                                          ]),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      _StatsAndAttacks(inst1: _inst1, inst2: _inst2),
-                      FilledButton(
-                        style: FilledButton.styleFrom(shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
-                        onPressed: state.openTickets > 0
-                            ? () async {
-                                final encounters = context.read<EncountersRepo>();
-                                final id = await encounters.getFirstOpenTicketId();
-                                if (id == null) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No open encounters.')));
-                                  return;
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        _StatsAndAttacks(inst1: _inst1, inst2: _inst2),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero)),
+                          onPressed: state.openTickets > 0
+                              ? () async {
+                                  final encounters =
+                                      context.read<EncountersRepo>();
+                                  final id =
+                                      await encounters.getFirstOpenTicketId();
+                                  if (id == null) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content:
+                                                Text('No open encounters.')));
+                                    return;
+                                  }
+                                  try {
+                                    final battleId = await BattleServiceImpl(
+                                            codex: CodexServiceImpl(),
+                                            echo: EchoServiceImpl())
+                                        .start(id);
+                                    if (!context.mounted) return;
+                                    await context.push('/battle',
+                                        extra: {'battleId': battleId});
+                                    if (!context.mounted) return;
+                                    await vm.refreshTickets();
+                                  } catch (_) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content:
+                                                Text('Battle flow not ready')));
+                                  }
                                 }
-                                try {
-                                  final battleId = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(id);
-                                  if (!context.mounted) return;
-                                  await context.push('/battle', extra: {'battleId': battleId});
-                                  if (!context.mounted) return;
-                                  await vm.refreshTickets();
-                                } catch (_) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Battle flow not ready')));
-                                }
-                              }
-                            : null,
-                        child: Text(state.openTickets > 0 ? 'Battle Now' : 'No Battles Available'),
-                      ),
-                    ],
+                              : null,
+                          child: Text(state.openTickets > 0
+                              ? 'Battle Now'
+                              : 'No Battles Available'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
-      ),
+      ]),
     );
   }
 
@@ -535,65 +814,110 @@ class CharacterHubScope extends StatelessWidget {
 class _HubBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    int hp = 60; int maxHp = 60;
-    try { hp = (playerMetaBox().get('hp') as int?) ?? 60; } catch (_) {}
+    int hp = 60;
+    int maxHp = 60;
+    try {
+      hp = (playerMetaBox().get('hp') as int?) ?? 60;
+    } catch (_) {}
     // Compute dynamic max HP: base + class mod + level bonus + sprite bonuses
     const baseHp = 60;
     String classKey = 'Sage';
     int level = 1;
     try {
       final vals = profileBox().values;
-      if (vals.isNotEmpty) { level = vals.first.level; classKey = vals.first.classKey; }
+      if (vals.isNotEmpty) {
+        level = vals.first.level;
+        classKey = vals.first.classKey;
+      }
     } catch (_) {}
     int classMod = 0;
     switch (classKey) {
-      case 'Warden': classMod = 8; break;
-      case 'Sentinel': classMod = 5; break;
-      case 'Empath': classMod = 5; break;
-      default: classMod = 0; break;
+      case 'Warden':
+        classMod = 8;
+        break;
+      case 'Sentinel':
+        classMod = 5;
+        break;
+      case 'Empath':
+        classMod = 5;
+        break;
+      default:
+        classMod = 0;
+        break;
     }
     final hpLv = ((level - 1).clamp(0, 999)) * 3;
     // Sprite HP from equipped slots
     int spriteHp = 0;
     try {
-      final raw = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? const <String, String?>{};
-      for (final sid in ['sprite1','sprite2']) {
+      final raw = (equipmentBox().get('sprite_slots') as Map?)
+              ?.map((k, v) => MapEntry(k.toString(), v?.toString())) ??
+          const <String, String?>{};
+      for (final sid in ['sprite1', 'sprite2']) {
         final id = raw[sid];
         if (id == null || id.isEmpty) continue;
-        try { final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id); spriteHp += (inst.stats['hp'] ?? 0); } catch (_) {}
+        try {
+          final inst =
+              seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
+          spriteHp += (inst.stats['hp'] ?? 0);
+        } catch (_) {}
       }
     } catch (_) {}
     maxHp = baseHp + classMod + hpLv + spriteHp;
-    if (hp > maxHp) { hp = maxHp; }
+    if (hp > maxHp) {
+      hp = maxHp;
+    }
     int xp = 0;
     try {
       final vals = profileBox().values;
-      if (vals.isNotEmpty) { level = vals.first.level; xp = vals.first.xp; }
+      if (vals.isNotEmpty) {
+        level = vals.first.level;
+        xp = vals.first.xp;
+      }
     } catch (_) {}
     final nextXp = level * 20; // small scale
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _HubStatBar(label: 'HP', current: hp, max: maxHp, color: Colors.redAccent),
+        _HubStatBar(
+            label: 'HP', current: hp, max: maxHp, color: Colors.redAccent),
         const SizedBox(height: 6),
-        _HubStatBar(label: 'XP L$level', current: xp, max: nextXp, color: Colors.blueAccent),
+        _HubStatBar(
+            label: 'XP L$level',
+            current: xp,
+            max: nextXp,
+            color: Colors.blueAccent),
       ],
     );
   }
 }
 
 class _HubStatBar extends StatelessWidget {
-  final String label; final int current; final int max; final Color color;
-  const _HubStatBar({required this.label, required this.current, required this.max, required this.color});
+  final String label;
+  final int current;
+  final int max;
+  final Color color;
+  const _HubStatBar(
+      {required this.label,
+      required this.current,
+      required this.max,
+      required this.color});
   @override
   Widget build(BuildContext context) {
     final pct = max > 0 ? (current / max).clamp(0.0, 1.0) : 0.0;
     return SizedBox(
       height: 18,
-      child: Stack(children:[
-        Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant))),
-        FractionallySizedBox(widthFactor: pct, child: Container(color: color.withValues(alpha: 0.85))),
-        Positioned.fill(child: Center(child: Text('$label: $current/$max', style: Theme.of(context).textTheme.labelSmall))),
+      child: Stack(children: [
+        Container(
+            decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant))),
+        FractionallySizedBox(
+            widthFactor: pct,
+            child: Container(color: color.withValues(alpha: 0.85))),
+        Positioned.fill(
+            child: Center(
+                child: Text('$label: $current/$max',
+                    style: Theme.of(context).textTheme.labelSmall))),
       ]),
     );
   }
@@ -703,7 +1027,6 @@ class _StatsAndAttacks extends StatelessWidget {
         classKey = vals.first.classKey;
       }
     } catch (_) {}
-    
 
     final spriteStats = _sumStats();
     // Ensure DEF exists in sprite stats as 0
@@ -752,6 +1075,7 @@ class _StatsAndAttacks extends StatelessWidget {
           return Theme.of(context).colorScheme.primary;
       }
     }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -759,7 +1083,8 @@ class _StatsAndAttacks extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Player identity rows
-        Text('Class: $classKey (Lvl $level)', style: small.copyWith(color: classColor(classKey))),
+        Text('Class: $classKey (Lvl $level)',
+            style: small.copyWith(color: classColor(classKey))),
         const SizedBox(height: 8),
         for (final k in keys)
           Padding(
@@ -769,14 +1094,17 @@ class _StatsAndAttacks extends StatelessWidget {
                 SizedBox(width: 70, child: Text(k.toUpperCase(), style: small)),
                 Builder(builder: (context) {
                   final v = (scaled[k] ?? 0) + (gearBase[k] ?? 0);
-                  final style = v > 0 ? small.copyWith(color: classColor(classKey)) : small;
+                  final style = v > 0
+                      ? small.copyWith(color: classColor(classKey))
+                      : small;
                   return Text('$v', style: style);
                 }),
                 const SizedBox(width: 8),
                 Text('+${spriteAll[k] ?? 0}',
                     style: small.copyWith(color: Colors.green[700])),
                 const SizedBox(width: 8),
-                Text('+${gearMods[k] ?? 0}', style: small.copyWith(color: Colors.purple[700])),
+                Text('+${gearMods[k] ?? 0}',
+                    style: small.copyWith(color: Colors.purple[700])),
                 const SizedBox(width: 8),
                 Text('-0', style: small.copyWith(color: Colors.red[700])),
               ],
@@ -788,16 +1116,20 @@ class _StatsAndAttacks extends StatelessWidget {
         if ((inst1?.attacks.isEmpty ?? true) &&
             (inst2?.attacks.isEmpty ?? true))
           Text('No attacks equipped', style: small),
-        ...((){
+        ...(() {
           // Deduplicate by name, keeping the higher power
           final all = <Map<String, dynamic>>[
-            ...((inst1?.attacks ?? const <Map<String, dynamic>>[]).map((e)=> Map<String,dynamic>.from(e))),
-            ...((inst2?.attacks ?? const <Map<String, dynamic>>[]).map((e)=> Map<String,dynamic>.from(e))),
+            ...((inst1?.attacks ?? const <Map<String, dynamic>>[])
+                .map((e) => Map<String, dynamic>.from(e))),
+            ...((inst2?.attacks ?? const <Map<String, dynamic>>[])
+                .map((e) => Map<String, dynamic>.from(e))),
           ];
           final byName = <String, Map<String, dynamic>>{};
           for (final a in all) {
             final n = (a['name'] ?? '').toString();
-            final p = (a['power'] is int) ? (a['power'] as int) : int.tryParse(a['power']?.toString() ?? '') ?? 0;
+            final p = (a['power'] is int)
+                ? (a['power'] as int)
+                : int.tryParse(a['power']?.toString() ?? '') ?? 0;
             if (n.isEmpty) continue;
             final existing = byName[n];
             if (existing == null || (p > ((existing['power'] ?? 0) as int))) {
@@ -805,11 +1137,16 @@ class _StatsAndAttacks extends StatelessWidget {
             }
           }
           final uniq = byName.values.toList()
-            ..sort((a,b)=> ((b['power']??0) as int).compareTo((a['power']??0) as int));
-          return uniq.map((a)=> Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Text('- ${a['name'] ?? 'Attack'} (Pwr: ${a['power'] ?? '?'} )', style: small),
-          )).toList();
+            ..sort((a, b) =>
+                ((b['power'] ?? 0) as int).compareTo((a['power'] ?? 0) as int));
+          return uniq
+              .map((a) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                        '- ${a['name'] ?? 'Attack'} (Pwr: ${a['power'] ?? '?'} )',
+                        style: small),
+                  ))
+              .toList();
         })(),
       ]),
     );
@@ -831,7 +1168,8 @@ class _SeedTitlesPreviewState extends State<_SeedTitlesPreview> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Echo Titles', style: Theme.of(context).textTheme.labelMedium),
       const SizedBox(height: 4),
-      ...show.map((t) => Text('• $t', style: Theme.of(context).textTheme.labelSmall)),
+      ...show.map(
+          (t) => Text('• $t', style: Theme.of(context).textTheme.labelSmall)),
       if (widget.titles.length > 3)
         Align(
           alignment: Alignment.centerRight,
@@ -844,7 +1182,15 @@ class _SeedTitlesPreviewState extends State<_SeedTitlesPreview> {
   }
 }
 
-enum _HubMenuAction { echoes, items, weapons, armor, codex, crafting, achievements }
+enum _HubMenuAction {
+  echoes,
+  items,
+  weapons,
+  armor,
+  codex,
+  crafting,
+  achievements
+}
 
 class _MenuItemRow extends StatelessWidget {
   final IconData icon;

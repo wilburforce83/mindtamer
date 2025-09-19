@@ -66,8 +66,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Inventory${widget.filter != null ? ' • ${widget.filter}' : ''}')),
+      appBar: AppBar(title: const Text('Inventory')),
       body: Column(children: [
+        if ((widget.filter ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                widget.filter!,
+                style: Theme.of(context).textTheme.titleMedium,
+                softWrap: true,
+              ),
+            ),
+          ),
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -139,20 +151,75 @@ class _InventoryDetailsPanel extends StatelessWidget {
         Row(children: [
           ItemIconBadge(iconPath: item!.def.iconPath, rarity: item!.rarity, element: item!.element, tier: item!.tier, size: 28),
           const SizedBox(width: 8),
-          Expanded(child: Text(item!.displayName, style: Theme.of(context).textTheme.bodyMedium, overflow: TextOverflow.ellipsis)),
+          Expanded(child: Text(item!.displayName, style: Theme.of(context).textTheme.bodyMedium, softWrap: true)),
           IconButton(onPressed: onClose, icon: const Icon(Icons.close)),
         ]),
         const SizedBox(height: 4),
         Text('Slot: ${item!.def.slot.name}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}', style: small),
+        if ((item!.classAffinity ?? item!.def.classAffinity) != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text('Class Affinity: ${(item!.classAffinity ?? item!.def.classAffinity)!}', style: small),
+          ),
         const SizedBox(height: 2),
         if (item!.stats.isNotEmpty)
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Stats: ', style: small),
             Expanded(child: ItemStatsLine(stats: item!.stats, element: item!.element, style: small)),
           ]),
+        if ((item!.stats).isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text('Effects', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 2),
+          ..._effectTexts(item!.stats).map((t) => Text('• ' + t, style: small)),
+        ],
+        if (item!.dnaJournalTitles.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('Echo Titles', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 2),
+          ...item!.dnaJournalTitles.map((t) => Text('• ' + t, style: small)),
+        ],
         const SizedBox(height: 6),
         Align(alignment: Alignment.centerRight, child: FilledButton(onPressed: onEquip, child: const Text('Equip'))),
       ]),
     );
+  }
+
+  List<String> _effectTexts(Map<String, num> stats) {
+    final lines = <String>[];
+    // Base stats
+    const baseOrder = ['def', 'atk', 'hp', 'spd', 'spirit'];
+    for (final k in baseOrder) {
+      final v = stats[k];
+      if (v != null && v != 0) {
+        final iv = v.round();
+        final sign = iv > 0 ? '+' : '';
+        lines.add('${k.toUpperCase()} $sign$iv');
+      }
+    }
+    // Aggregate mod_* stats
+    final mods = <String, int>{};
+    stats.forEach((k, v) {
+      if (k.startsWith('mod_')) {
+        final stat = k.substring(4);
+        mods[stat] = (mods[stat] ?? 0) + v.round();
+      }
+    });
+    for (final entry in mods.entries) {
+      final k = entry.key.toUpperCase();
+      final v = entry.value;
+      if (v == 0) continue;
+      final sign = v > 0 ? '+' : '';
+      lines.add('$k $sign$v');
+    }
+    // Include any other unknown keys
+    stats.forEach((k, v) {
+      if (baseOrder.contains(k) || k.startsWith('mod_')) return;
+      final iv = v.round();
+      if (iv == 0) return;
+      final sign = iv > 0 ? '+' : '';
+      lines.add('${k.toUpperCase()} $sign$iv');
+    });
+    return lines;
   }
 }

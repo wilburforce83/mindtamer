@@ -157,6 +157,7 @@ class _ItemDetailsPanel extends StatelessWidget {
     if (item == null) return const SizedBox.shrink();
     final type = item!['type']?.toString() ?? '';
     final label = ItemEffects.label(type);
+    final def = ItemCatalog.defOf(type);
     final qty = item!['qty'] ?? 0;
     final small = Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 11);
     return Container(
@@ -165,12 +166,94 @@ class _ItemDetailsPanel extends StatelessWidget {
       decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
       child: Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
+          Text(label, style: Theme.of(context).textTheme.bodyMedium, softWrap: true),
           const SizedBox(height: 4),
           Text('Qty: $qty', style: small),
+          if (def != null) ...[
+            const SizedBox(height: 2),
+            Text('Type: ' + _prettyCategory(def.category), style: small),
+            ...(() {
+              final effects = _effectTexts(def);
+              if (effects.isEmpty) return <Widget>[];
+              return <Widget>[
+                const SizedBox(height: 6),
+                Text('Effects', style: Theme.of(context).textTheme.labelMedium),
+                const SizedBox(height: 2),
+                ...effects.map((t) => Text('• ' + t, style: small)),
+              ];
+            })(),
+          ],
         ])),
         FilledButton(onPressed: onUse, child: const Text('Use')),
       ]),
     );
+  }
+
+  String _prettyCategory(String c) {
+    if (c.isEmpty) return c;
+    return c[0].toUpperCase() + c.substring(1);
+  }
+
+  List<String> _effectTexts(ItemDef def) {
+    final lines = <String>[];
+    // Healing
+    if (def.healInstant != null && def.healInstant! > 0) {
+      lines.add('Heals ${def.healInstant} HP instantly');
+    }
+    if (def.regenPerTurn != null && def.regenTurns != null && def.regenPerTurn! > 0 && def.regenTurns! > 0) {
+      final total = def.regenPerTurn! * def.regenTurns!;
+      lines.add('Regenerates ${def.regenPerTurn} HP/turn for ${def.regenTurns} turns (total $total)');
+    }
+    // Buffs / Debuffs / Status
+    if (def.buffKey != null) {
+      final k = def.buffKey!;
+      final mag = def.buffMagnitude;
+      final dur = def.buffDuration;
+      final enemy = def.buffTargetsEnemy;
+      final tgt = enemy ? ' (enemy)' : '';
+      String text;
+      switch (k) {
+        case 'atk+':
+          text = 'ATK +${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'def+':
+          text = 'DEF +${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'atk-':
+          text = 'ATK -${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'def-':
+          text = 'DEF -${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'guard':
+          text = 'Guard +${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'spirit+':
+          text = 'SPIRIT +${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'focus':
+          text = 'Focus +${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        case 'regen':
+          text = 'Regen +${mag ?? 1} for ${dur ?? 1} turns$tgt';
+          break;
+        default:
+          text = k.toUpperCase() + (mag != null ? ' ${mag > 0 ? '+' : ''}$mag' : '') + (dur != null ? ' for $dur turns' : '') + tgt;
+      }
+      lines.add(text);
+    }
+    // Utility effects
+    if (def.cleanseAll) lines.add('Cleanses all negative statuses');
+    if (def.antidote) lines.add('Cures poison');
+    if (def.reduceCooldowns != null && def.reduceCooldowns! > 0) {
+      lines.add('Reduces cooldowns by ${def.reduceCooldowns}');
+    }
+    if (def.damage != null && def.damage! > 0) {
+      lines.add('Deals ${def.damage} damage');
+    }
+    if (def.fullHealOutOfBattle) {
+      lines.add('Fully restores HP outside battle');
+    }
+    return lines;
   }
 }

@@ -29,15 +29,13 @@ def main():
         icon = img.copy().resize((px, px), Image.LANCZOS)
         icon.save(out_png)
         updated.append(str(out_png))
-        # Round variant (if present, update it too)
+        # Round variant (always generate to support circular icons)
         out_png_round = out_dir / 'ic_launcher_round.png'
-        if out_png_round.exists():
-            icon_round = img.copy().resize((px, px), Image.LANCZOS)
-            icon_round.save(out_png_round)
-            updated.append(str(out_png_round))
+        icon_round = img.copy().resize((px, px), Image.LANCZOS)
+        icon_round.save(out_png_round)
+        updated.append(str(out_png_round))
 
     print("Updated icons:\n" + "\n".join(updated))
 
 if __name__ == '__main__':
     main()
-
