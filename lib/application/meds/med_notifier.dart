@@ -108,6 +108,8 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
       final plans = _repo.plans();
       final settings = settingsBox().values.isNotEmpty ? settingsBox().values.first : Settings(id: 'default');
       for (final p in plans) {
+        // Skip alerts when stock tracking is bypassed
+        if (p.startingStock == 0 && p.remainingStock == 0) continue;
         final dosesPerDay = p.scheduleTimes.length;
         final upd = (p.unitsPerDose == 0 ? 1 : p.unitsPerDose);
         final unitsPerDay = (dosesPerDay * upd);

@@ -66,6 +66,11 @@ class MedService {
   Map<String, int> estimateDaysLeft(List<MedPlan> plans) {
     final byId = <String, int>{};
     for (final p in plans) {
+      // Bypass stock tracking when both starting and remaining are zero
+      if (p.startingStock == 0 && p.remainingStock == 0) {
+        byId[p.id] = -1; // sentinel for "not tracked"
+        continue;
+      }
       final dosesPerDay = p.scheduleTimes.length;
       final upd = (p.unitsPerDose == 0 ? 1 : p.unitsPerDose);
       final unitsPerDay = dosesPerDay * upd;

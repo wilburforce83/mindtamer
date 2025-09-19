@@ -270,7 +270,15 @@ class _MedRow extends ConsumerWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${plan.scheduleTimes.join(', ')}\nStock: ${plan.remainingStock}/${plan.startingStock}  •  ~$daysLeft days left'),
+            Builder(builder: (context) {
+              final times = plan.scheduleTimes.join(', ');
+              final bypass = plan.startingStock == 0 && plan.remainingStock == 0;
+              if (bypass) {
+                return Text('$times\nStock: —');
+              }
+              final dl = daysLeft < 0 ? 0 : daysLeft;
+              return Text('$times\nStock: ${plan.remainingStock}/${plan.startingStock}  •  ~$dl days left');
+            }),
             const SizedBox(height: 6),
             slotBar,
           ],
