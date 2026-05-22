@@ -11,7 +11,8 @@ class CraftingService {
   CraftingService(this.assets);
   final _uuid = const Uuid();
 
-  Future<CraftedItem> craftArmorFromEchoes(Echo a, Echo b, {required String playerClass}) async {
+  Future<CraftedItem> craftArmorFromEchoes(Echo a, Echo b,
+      {required String playerClass}) async {
     // Ensure all indices/rules are ready before routing
     await assets.init();
     await GearCatalogService().init();
@@ -26,16 +27,25 @@ class CraftingService {
     if (r < 25) {
       // Weapon — prefer classAffinity
       if (assets.weaponDefs.isNotEmpty) {
-        final pref = assets.weaponDefs.where((d) => (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase()).toList();
+        final pref = assets.weaponDefs
+            .where((d) =>
+                (d.classAffinity ?? '').toLowerCase() ==
+                playerClass.toLowerCase())
+            .toList();
         final pool = pref.isNotEmpty ? pref : assets.weaponDefs;
         pool.shuffle();
         def = pool.first;
       } else {
         // Fallback single weapon per class
         final cls = playerClass.toLowerCase();
-        final fallbackPath = 'assets/images/weapons/$cls/${_fallbackWeaponFile(cls)}';
-        final key = fallbackPath.split('/').last.replaceAll('_32.png','');
-        def = ItemDef(key: key, iconPath: fallbackPath, slot: SlotId.weapon, classAffinity: playerClass);
+        final fallbackPath =
+            'assets/images/weapons/$cls/${_fallbackWeaponFile(cls)}';
+        final key = fallbackPath.split('/').last.replaceAll('_32.png', '');
+        def = ItemDef(
+            key: key,
+            iconPath: fallbackPath,
+            slot: SlotId.weapon,
+            classAffinity: playerClass);
       }
       route = 'weapon';
     } else if (r < 40) {
@@ -59,13 +69,19 @@ class CraftingService {
         final file = _fallbackRingFile();
         if (file != null) {
           final path = 'assets/images/accessories/rings/$file';
-          final key = file.replaceAll('_32.png','');
-          def = ItemDef(key: key, iconPath: path, slot: SlotId.hands, classAffinity: null, equipSlot: 'ring');
+          final key = file.replaceAll('_32.png', '');
+          def = ItemDef(
+              key: key,
+              iconPath: path,
+              slot: SlotId.hands,
+              classAffinity: null,
+              equipSlot: 'ring');
           route = 'accessory';
         } else {
           final desiredSlot = _nextCraftSlot();
           final stage = _stageForTier(1);
-          def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ?? pickClassWeightedArmorDef(playerClass);
+          def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ??
+              pickClassWeightedArmorDef(playerClass);
           route = 'armor';
         }
       }
@@ -74,17 +90,25 @@ class CraftingService {
       final desiredSlot = _nextCraftSlot();
       final stage = _stageForTier(1);
       final slotName = desiredSlot.name;
-      final catalogPath = GearCatalogService().imageFor(playerClass, 1, slotName);
+      final catalogPath =
+          GearCatalogService().imageFor(playerClass, 1, slotName);
       if (catalogPath != null && catalogPath.isNotEmpty) {
         final key = catalogPath.split('/').last.replaceAll('_32.png', '');
-        def = ItemDef(key: key, iconPath: catalogPath, slot: desiredSlot, classAffinity: playerClass);
+        def = ItemDef(
+            key: key,
+            iconPath: catalogPath,
+            slot: desiredSlot,
+            classAffinity: playerClass);
       } else {
-        def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ?? pickClassWeightedArmorDef(playerClass);
+        def = pickClassSlotStageArmorDef(playerClass, desiredSlot, stage) ??
+            pickClassWeightedArmorDef(playerClass);
       }
       route = 'armor';
     }
     // Record debug RNG and route selection
-    try { CraftDebug.record(roll: r, route: route); } catch (_) {}
+    try {
+      CraftDebug.record(roll: r, route: route);
+    } catch (_) {}
     final titles = [...a.journalTitles, ...b.journalTitles];
     final isAccessory = (def.equipSlot != null && def.equipSlot!.isNotEmpty);
     final isWeapon = def.slot == SlotId.weapon;
@@ -114,7 +138,8 @@ class CraftingService {
     );
   }
 
-  String _nameFromFileAndTitles(ElementType el, List<String> titles, {required ItemDef def}) {
+  String _nameFromFileAndTitles(ElementType el, List<String> titles,
+      {required ItemDef def}) {
     // Build base from the file key for non-armor (weapon/accessory).
     final base = _displayBaseFromKey(def.key, classAffinity: def.classAffinity);
     final words = _twoWordsFromTitles(titles);
@@ -142,17 +167,28 @@ class CraftingService {
 
   String _fallbackWeaponFile(String cls) {
     switch (cls) {
-      case 'alchemist': return 'retort_staff_32.png';
-      case 'artificer': return 'gear_mace_32.png';
-      case 'empath': return 'prayer_staff_32.png';
-      case 'oracle': return 'verdict_scepter_32.png';
-      case 'sage': return 'sagewood_staff_32.png';
-      case 'seer': return 'diviner_s_rod_32.png';
-      case 'sentinel': return 'bastion_gladius_32.png';
-      case 'shadow': return 'night_katars_32.png';
-      case 'trickster': return 'flicker_dagger_32.png';
-      case 'warden': return 'bulwark_longsword_32.png';
-      default: return 'sagewood_staff_32.png';
+      case 'alchemist':
+        return 'retort_staff_32.png';
+      case 'artificer':
+        return 'gear_mace_32.png';
+      case 'empath':
+        return 'prayer_staff_32.png';
+      case 'oracle':
+        return 'verdict_scepter_32.png';
+      case 'sage':
+        return 'sagewood_staff_32.png';
+      case 'seer':
+        return 'diviner_s_rod_32.png';
+      case 'sentinel':
+        return 'bastion_gladius_32.png';
+      case 'shadow':
+        return 'night_katars_32.png';
+      case 'trickster':
+        return 'flicker_dagger_32.png';
+      case 'warden':
+        return 'bulwark_longsword_32.png';
+      default:
+        return 'sagewood_staff_32.png';
     }
   }
 
@@ -160,17 +196,21 @@ class CraftingService {
     return 'iron_band_32.png';
   }
 
-  Future<CraftedItem> upgradeWithEcho(CraftedItem it, Echo e, {required String playerClass}) async {
+  Future<CraftedItem> upgradeWithEcho(CraftedItem it, Echo e,
+      {required String playerClass}) async {
+    await assets.init();
     await GearCatalogService().init();
     await CraftingRulesService().init();
     final newSteps = it.upgradeStepsInTier + 1;
     final tierUp = (newSteps >= 3) ? 1 : 0;
     final tier = (tierUp == 1) ? (it.tier < 13 ? it.tier + 1 : 13) : it.tier;
     final steps = (tierUp == 1) ? 0 : newSteps;
-    final upgradedRarity = (e.rarity.index > it.rarity.index) ? e.rarity : it.rarity;
+    final upgradedRarity =
+        (e.rarity.index > it.rarity.index) ? e.rarity : it.rarity;
     final element = e.element; // last infusion dominates
     final titles = [...it.dnaJournalTitles, ...e.journalTitles];
-    final classBonus = it.classAffinity != null && it.classAffinity == playerClass;
+    final classBonus =
+        it.classAffinity != null && it.classAffinity == playerClass;
     final stats = _buildStats(
       slot: it.def.slot,
       tier: tier,
@@ -180,14 +220,22 @@ class CraftingService {
       classAffinity: it.classAffinity,
       element: element,
     );
-    final displayName = _catalogName(playerClass, tier, element, titles, def: it.def);
+    final isAccessory = (it.def.equipSlot ?? '').isNotEmpty;
+    final isWeapon = it.def.slot == SlotId.weapon;
+    final displayName = (isWeapon || isAccessory)
+        ? _nameFromFileAndTitles(element, titles, def: it.def)
+        : _catalogName(playerClass, tier, element, titles, def: it.def);
     // Swap art when crossing era thresholds according to catalog (or anytime mapping exists)
     final slotName = it.def.slot.name;
     final newPath = GearCatalogService().imageFor(playerClass, tier, slotName);
     ItemDef? newDef;
     if (newPath != null && newPath.isNotEmpty && newPath != it.def.iconPath) {
       final key = newPath.split('/').last.replaceAll('_32.png', '');
-      newDef = ItemDef(key: key, iconPath: newPath, slot: it.def.slot, classAffinity: it.classAffinity ?? playerClass);
+      newDef = ItemDef(
+          key: key,
+          iconPath: newPath,
+          slot: it.def.slot,
+          classAffinity: it.classAffinity ?? playerClass);
     }
     return it.copyWith(
       def: newDef,
@@ -201,7 +249,9 @@ class CraftingService {
     );
   }
 
-  Future<CraftedItem> craftFromItems(CraftedItem a, CraftedItem b, {required String playerClass}) async {
+  Future<CraftedItem> craftFromItems(CraftedItem a, CraftedItem b,
+      {required String playerClass}) async {
+    await assets.init();
     await GearCatalogService().init();
     await CraftingRulesService().init();
     // Fusion rules: choose slot (prefer same slot, else use first's), tier=max plus 30% chance +1
@@ -216,8 +266,13 @@ class CraftingService {
     // Pick icon via catalog for class & tier
     final path = GearCatalogService().imageFor(playerClass, tier, slot.name);
     final def = (path != null && path.isNotEmpty)
-        ? ItemDef(key: path.split('/').last.replaceAll('_32.png',''), iconPath: path, slot: slot, classAffinity: classAff)
-        : pickClassSlotStageArmorDef(playerClass, slot, _stageForTier(tier)) ?? pickClassWeightedArmorDef(playerClass);
+        ? ItemDef(
+            key: path.split('/').last.replaceAll('_32.png', ''),
+            iconPath: path,
+            slot: slot,
+            classAffinity: classAff)
+        : pickClassSlotStageArmorDef(playerClass, slot, _stageForTier(tier)) ??
+            pickClassWeightedArmorDef(playerClass);
 
     // Base stats by rules
     final base = _buildStats(
@@ -239,11 +294,20 @@ class CraftingService {
         mods[k] = (mods[k] ?? 0) + v.round();
       });
     }
-    addMods(a.stats); addMods(b.stats);
-    mods.forEach((k, v) { base[k] = ((v * mul).round()); });
 
-    final titles = _dedupeTitles([...a.dnaJournalTitles, ...b.dnaJournalTitles], maxKeep: 50);
-    final name = _catalogName(playerClass, tier, element, titles, def: def);
+    addMods(a.stats);
+    addMods(b.stats);
+    mods.forEach((k, v) {
+      base[k] = ((v * mul).round());
+    });
+
+    final titles = _dedupeTitles([...a.dnaJournalTitles, ...b.dnaJournalTitles],
+        maxKeep: 50);
+    final isAccessory = (def.equipSlot ?? '').isNotEmpty;
+    final isWeapon = def.slot == SlotId.weapon;
+    final name = (isWeapon || isAccessory)
+        ? _nameFromFileAndTitles(element, titles, def: def)
+        : _catalogName(playerClass, tier, element, titles, def: def);
 
     return CraftedItem(
       id: _uuid.v4(),
@@ -267,7 +331,10 @@ class CraftingService {
     for (final list in a.values) {
       for (final d in list) {
         anyPool.add(d);
-        if ((d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase()) classPool.add(d);
+        if ((d.classAffinity ?? '').toLowerCase() ==
+            playerClass.toLowerCase()) {
+          classPool.add(d);
+        }
       }
     }
     final rnd = DateTime.now().microsecondsSinceEpoch % 100;
@@ -276,14 +343,22 @@ class CraftingService {
       return classPool.first;
     }
     anyPool.shuffle();
-    return anyPool.isNotEmpty ? anyPool.first : const ItemDef(key: 'placeholder', iconPath: 'assets/images/ui/slots/chest_empty_32.png', slot: SlotId.chest);
+    return anyPool.isNotEmpty
+        ? anyPool.first
+        : const ItemDef(
+            key: 'placeholder',
+            iconPath: 'assets/images/ui/slots/chest_empty_32.png',
+            slot: SlotId.chest);
   }
 
   ItemDef? pickClassChestFirstArmorDef(String playerClass) {
     final chestList = assets.armorDefs[SlotId.chest] ?? const <ItemDef>[];
     if (chestList.isEmpty) return null;
     // Prefer player's classAffinity
-    final classChest = chestList.where((d) => (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase()).toList();
+    final classChest = chestList
+        .where((d) =>
+            (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase())
+        .toList();
     if (classChest.isNotEmpty) {
       classChest.shuffle();
       return classChest.first;
@@ -294,11 +369,15 @@ class CraftingService {
     return any.isNotEmpty ? any.first : null;
   }
 
-  ItemDef? pickClassSlotStageArmorDef(String playerClass, SlotId slot, String stage) {
+  ItemDef? pickClassSlotStageArmorDef(
+      String playerClass, SlotId slot, String stage) {
     final list = (assets.armorDefs[slot] ?? const <ItemDef>[])
         .where((d) => d.iconPath.contains('/$stage/'))
         .toList();
-    List<ItemDef> cls = list.where((d) => (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase()).toList();
+    List<ItemDef> cls = list
+        .where((d) =>
+            (d.classAffinity ?? '').toLowerCase() == playerClass.toLowerCase())
+        .toList();
     if (cls.isEmpty) {
       cls = list;
     }
@@ -307,7 +386,8 @@ class CraftingService {
     return cls.first;
   }
 
-  String makeDisplayName(ElementType el, List<String> titles, {String? setHint, ItemDef? def}) {
+  String makeDisplayName(ElementType el, List<String> titles,
+      {String? setHint, ItemDef? def}) {
     // If asset key encodes a base name (e.g., artificer_tinkers_rig_hands), use it
     String baseName = '';
     if (def != null && def.key.isNotEmpty) {
@@ -326,7 +406,9 @@ class CraftingService {
     return setHint != null && setHint.isNotEmpty ? '$name ($setHint)' : name;
   }
 
-  String _catalogName(String playerClass, int tier, ElementType el, List<String> titles, {ItemDef? def}) {
+  String _catalogName(
+      String playerClass, int tier, ElementType el, List<String> titles,
+      {ItemDef? def}) {
     final cat = GearCatalogService();
     final set = cat.setName(playerClass, tier);
     final connector = cat.connector(playerClass, tier);
@@ -356,14 +438,19 @@ class CraftingService {
     // Artificer set uses "Tinkers Rig" in file names; prefer display "Tinker Rig"
     var out = s;
     if ((classAffinity ?? '').toLowerCase() == 'artificer') {
-      out = out.replaceAll(RegExp(r'\bTinkers\b', caseSensitive: false), 'Tinker');
+      out = out.replaceAll(
+          RegExp(r'\bTinkers\b', caseSensitive: false), 'Tinker');
     }
     return out;
   }
 
   // Cycle craft slots so we don’t always produce chest pieces.
   static const List<SlotId> _slotCycle = [
-    SlotId.chest, SlotId.hands, SlotId.head, SlotId.legs, SlotId.feet,
+    SlotId.chest,
+    SlotId.hands,
+    SlotId.head,
+    SlotId.legs,
+    SlotId.feet,
   ];
   SlotId _nextCraftSlot() {
     try {
@@ -375,7 +462,9 @@ class CraftingService {
       final nextIdx = ((idx >= 0 ? idx : 0) + 1) % _slotCycle.length;
       box.put('craft_next_slot', _slotCycle[nextIdx].name);
       return slot;
-    } catch (_) { return SlotId.chest; }
+    } catch (_) {
+      return SlotId.chest;
+    }
   }
 
   String _stageForTier(int tier) {
@@ -400,10 +489,71 @@ class CraftingService {
   }
 
   static const Set<String> _stop = {
-    'the','and','with','from','into','over','under','this','that','your','their','ours','mine','ourselves','yourselves','about','after','again','once','very','more','most','some','such','own','same','just','like','have','has','had','will','would','could','should','can','shall','than','then','there','here','when','what','where','which','while','who','whom','whose','why','how','onto','unto','amid','amidst','among','amongst','between','within','without','around'
+    'the',
+    'and',
+    'with',
+    'from',
+    'into',
+    'over',
+    'under',
+    'this',
+    'that',
+    'your',
+    'their',
+    'ours',
+    'mine',
+    'ourselves',
+    'yourselves',
+    'about',
+    'after',
+    'again',
+    'once',
+    'very',
+    'more',
+    'most',
+    'some',
+    'such',
+    'own',
+    'same',
+    'just',
+    'like',
+    'have',
+    'has',
+    'had',
+    'will',
+    'would',
+    'could',
+    'should',
+    'can',
+    'shall',
+    'than',
+    'then',
+    'there',
+    'here',
+    'when',
+    'what',
+    'where',
+    'which',
+    'while',
+    'who',
+    'whom',
+    'whose',
+    'why',
+    'how',
+    'onto',
+    'unto',
+    'amid',
+    'amidst',
+    'among',
+    'amongst',
+    'between',
+    'within',
+    'without',
+    'around'
   };
 
-  Map<String, num> computeStats(SlotId slot, int tier, Rarity rarity, {required bool classBonus, String? playerClass, String? classAffinity}) {
+  Map<String, num> computeStats(SlotId slot, int tier, Rarity rarity,
+      {required bool classBonus, String? playerClass, String? classAffinity}) {
     double baseAtk = 0, baseDef = 0;
     if (slot == SlotId.weapon) {
       baseAtk = 10;
@@ -423,7 +573,10 @@ class CraftingService {
     final rm = rarMul[rarity] ?? 1.0;
     var atk = baseAtk * tierMul * rm;
     var def = baseDef * tierMul * rm;
-    final matches = classBonus || (classAffinity != null && playerClass != null && classAffinity == playerClass);
+    final matches = classBonus ||
+        (classAffinity != null &&
+            playerClass != null &&
+            classAffinity == playerClass);
     if (matches) {
       if (slot == SlotId.weapon) {
         atk *= 1.10;
@@ -461,13 +614,19 @@ class CraftingService {
       };
       final rm = rarMul[rarity] ?? 1.0;
       var atk = baseAtk * tierMul * rm;
-      final matches = classBonus || (classAffinity != null && playerClass != null && classAffinity == playerClass);
+      final matches = classBonus ||
+          (classAffinity != null &&
+              playerClass != null &&
+              classAffinity == playerClass);
       if (matches) atk *= 1.10;
       out['atk'] = atk.round();
     } else {
       // Armor: base DEF roll from rules per tier/slot
       var def = CraftingRulesService().rollBaseDef(tier: tier, slot: slot);
-      final matches = classBonus || (classAffinity != null && playerClass != null && classAffinity == playerClass);
+      final matches = classBonus ||
+          (classAffinity != null &&
+              playerClass != null &&
+              classAffinity == playerClass);
       if (matches) def = (def * 1.10).round();
       out['def'] = def;
     }
@@ -487,46 +646,73 @@ class CraftingService {
   List<String> _dedupeTitles(List<String> t, {required int maxKeep}) {
     final seen = <String>{};
     final out = <String>[];
-    for (final s in t) { if (s.isEmpty) continue; if (seen.add(s)) out.add(s); }
+    for (final s in t) {
+      if (s.isEmpty) continue;
+      if (seen.add(s)) out.add(s);
+    }
     if (out.length > maxKeep) return out.sublist(0, maxKeep);
     return out;
   }
 
   // removed _salientWord (replaced by _twoWordsFromTitles)
-  String _cap(String s) => s.isEmpty ? s : (s[0].toUpperCase() + s.substring(1));
+  String _cap(String s) =>
+      s.isEmpty ? s : (s[0].toUpperCase() + s.substring(1));
   String _capWords(String s) => s.split(' ').map(_cap).join(' ');
 
   String _adjFor(ElementType e) {
     switch (e) {
-      case ElementType.fire: return 'Searing';
-      case ElementType.water: return 'Tidal';
-      case ElementType.air: return 'Gale';
-      case ElementType.nature: return 'Verdant';
-      case ElementType.metal: return 'Tempered';
-      case ElementType.light: return 'Radiant';
-      case ElementType.shadow: return 'Umbral';
+      case ElementType.fire:
+        return 'Searing';
+      case ElementType.water:
+        return 'Tidal';
+      case ElementType.air:
+        return 'Gale';
+      case ElementType.nature:
+        return 'Verdant';
+      case ElementType.metal:
+        return 'Tempered';
+      case ElementType.light:
+        return 'Radiant';
+      case ElementType.shadow:
+        return 'Umbral';
     }
   }
+
   String _nounFor(ElementType e) {
     switch (e) {
-      case ElementType.fire: return 'Ember';
-      case ElementType.water: return 'Brine';
-      case ElementType.air: return 'Zephyr';
-      case ElementType.nature: return 'Briar';
-      case ElementType.metal: return 'Aegis';
-      case ElementType.light: return 'Dawn';
-      case ElementType.shadow: return 'Gloom';
+      case ElementType.fire:
+        return 'Ember';
+      case ElementType.water:
+        return 'Brine';
+      case ElementType.air:
+        return 'Zephyr';
+      case ElementType.nature:
+        return 'Briar';
+      case ElementType.metal:
+        return 'Aegis';
+      case ElementType.light:
+        return 'Dawn';
+      case ElementType.shadow:
+        return 'Gloom';
     }
   }
+
   String _epithetFor(ElementType e) {
     switch (e) {
-      case ElementType.fire: return 'Fury';
-      case ElementType.water: return 'Tide';
-      case ElementType.air: return 'Grace';
-      case ElementType.nature: return 'Bloom';
-      case ElementType.metal: return 'Aegis';
-      case ElementType.light: return 'Dawn';
-      case ElementType.shadow: return 'Gloom';
+      case ElementType.fire:
+        return 'Fury';
+      case ElementType.water:
+        return 'Tide';
+      case ElementType.air:
+        return 'Grace';
+      case ElementType.nature:
+        return 'Bloom';
+      case ElementType.metal:
+        return 'Aegis';
+      case ElementType.light:
+        return 'Dawn';
+      case ElementType.shadow:
+        return 'Gloom';
     }
   }
 }

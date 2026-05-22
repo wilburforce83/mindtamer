@@ -1,6 +1,7 @@
 name: mindtamer
 description: MindTamer – pixel-style mental health companion with gamified loop (Flutter + Flame)
 publish_to: "none"
+version: 0.1.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -71,24 +72,14 @@ flutter:
     # Explicitly include armor class directories to ensure bundling during hot reload
     - assets/images/armor/alchemist/
     - assets/images/armor/alchemist/early/
-    - assets/images/armor/alchemist/mid/
-    - assets/images/armor/alchemist/late/
     - assets/images/armor/artificer/
     - assets/images/armor/artificer/early/
-    - assets/images/armor/artificer/mid/
-    - assets/images/armor/artificer/late/
     - assets/images/armor/empath/
     - assets/images/armor/empath/early/
-    - assets/images/armor/empath/mid/
-    - assets/images/armor/empath/late/
     - assets/images/armor/oracle/
     - assets/images/armor/oracle/early/
-    - assets/images/armor/oracle/mid/
-    - assets/images/armor/oracle/late/
     - assets/images/armor/sage/
     - assets/images/armor/sage/early/
-    - assets/images/armor/sage/mid/
-    - assets/images/armor/sage/late/
     - assets/images/armor/seer/
     - assets/images/armor/seer/early/
     # Seer currently has early only

@@ -19,7 +19,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
   void initState() {
     super.initState();
     // Load asset manifest so we can gate image loads on availability
-    PixelAssets.init().then((_) { if (mounted) setState((){}); });
+    PixelAssets.init().then((_) {
+      if (mounted) setState(() {});
+    });
     _reload();
   }
 
@@ -58,19 +60,42 @@ class _ItemsScreenState extends State<ItemsScreen> {
       try {
         final vals = profileBox().values;
         if (vals.isNotEmpty) {
-          final cls = vals.first.classKey; level = vals.first.level;
+          final cls = vals.first.classKey;
+          level = vals.first.level;
           switch (cls) {
-            case 'Warden': classHp = 20; break;
-            case 'Trickster': classHp = 10; break;
-            case 'Sage': classHp = 12; break;
-            case 'Sentinel': classHp = 16; break;
-            case 'Seer': classHp = 12; break;
-            case 'Artificer': classHp = 14; break;
-            case 'Empath': classHp = 14; break;
-            case 'Oracle': classHp = 12; break;
-            case 'Shadow': classHp = 13; break;
-            case 'Alchemist': classHp = 15; break;
-            default: classHp = 12; break;
+            case 'Warden':
+              classHp = 20;
+              break;
+            case 'Trickster':
+              classHp = 10;
+              break;
+            case 'Sage':
+              classHp = 12;
+              break;
+            case 'Sentinel':
+              classHp = 16;
+              break;
+            case 'Seer':
+              classHp = 12;
+              break;
+            case 'Artificer':
+              classHp = 14;
+              break;
+            case 'Empath':
+              classHp = 14;
+              break;
+            case 'Oracle':
+              classHp = 12;
+              break;
+            case 'Shadow':
+              classHp = 13;
+              break;
+            case 'Alchemist':
+              classHp = 15;
+              break;
+            default:
+              classHp = 12;
+              break;
           }
         }
       } catch (_) {}
@@ -78,22 +103,34 @@ class _ItemsScreenState extends State<ItemsScreen> {
       // Sprite HP from equipped slots
       int spriteHp = 0;
       try {
-        final raw = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? const <String, String?>{};
-        for (final sid in ['sprite1','sprite2']) {
+        final raw = (equipmentBox().get('sprite_slots') as Map?)
+                ?.map((k, v) => MapEntry(k.toString(), v?.toString())) ??
+            const <String, String?>{};
+        for (final sid in ['sprite1', 'sprite2']) {
           final sidv = raw[sid];
           if (sidv == null || sidv.isEmpty) continue;
-          try { final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == sidv); spriteHp += (inst.stats['hp'] ?? 0); } catch (_) {}
+          try {
+            final inst = seedInstanceBox()
+                .values
+                .firstWhere((e) => e.instanceId == sidv);
+            spriteHp += (inst.stats['hp'] ?? 0);
+          } catch (_) {}
         }
       } catch (_) {}
       final maxHp = baseHp + classHp + hpLv + spriteHp;
       final amt = _healAmountForMaxHp(type, maxHp);
-      final newHp = (def?.fullHealOutOfBattle == true) ? maxHp : (hp + amt).clamp(0, maxHp);
+      final newHp = (def?.fullHealOutOfBattle == true)
+          ? maxHp
+          : (hp + amt).clamp(0, maxHp);
       await meta.put('hp', newHp);
       // Consume from inventory
       InventoryService.consume(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(def?.fullHealOutOfBattle == true ? 'Fully healed' : 'Healed +$amt HP')),
+          SnackBar(
+              content: Text(def?.fullHealOutOfBattle == true
+                  ? 'Fully healed'
+                  : 'Healed +$amt HP')),
         );
       }
       _reload();
@@ -130,19 +167,53 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 onTap: () => setState(() => _preview = it),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.2),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.15),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 1.2),
                   ),
-                  alignment: Alignment.center,
-                  child: hasAsset
-                      ? Image.asset(asset, width: 40, height: 40, filterQuality: FilterQuality.none, errorBuilder: (_, __, ___) => const Icon(Icons.inventory_2_outlined, size: 24))
-                      : const Icon(Icons.inventory_2_outlined, size: 24),
+                  child: LayoutBuilder(
+                    builder: (_, constraints) {
+                      final side = constraints.biggest.shortestSide;
+                      final iconSize =
+                          (side * 0.62).clamp(56.0, 88.0).toDouble();
+                      final fallbackSize =
+                          (iconSize * 0.55).clamp(28.0, 44.0).toDouble();
+                      final pad = (side * 0.08).clamp(6.0, 12.0).toDouble();
+                      return Padding(
+                        padding: EdgeInsets.all(pad),
+                        child: Center(
+                          child: hasAsset
+                              ? Image.asset(
+                                  asset,
+                                  width: iconSize,
+                                  height: iconSize,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.none,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: fallbackSize,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: fallbackSize,
+                                ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               );
             },
           ),
         ),
-        _ItemDetailsPanel(item: _preview, onUse: _preview == null ? null : () => _useItem(_preview!)),
+        _ItemDetailsPanel(
+            item: _preview,
+            onUse: _preview == null ? null : () => _useItem(_preview!)),
       ]),
     );
   }
@@ -160,31 +231,42 @@ class _ItemDetailsPanel extends StatelessWidget {
     final def = ItemCatalog.defOf(type);
     final qty = item!['qty'] ?? 0;
     final maxHp = _playerMaxHp();
-    final small = Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 11);
+    final small =
+        Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 11);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+      decoration: BoxDecoration(
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
       child: Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium, softWrap: true),
-          const SizedBox(height: 4),
-          Text('Qty: $qty', style: small),
-          if (def != null) ...[
-            const SizedBox(height: 2),
-            Text('Type: ${_prettyCategory(def.category)}', style: small),
-            ...(() {
-              final effects = _effectTexts(def, playerMaxHp: maxHp);
-              if (effects.isEmpty) return <Widget>[];
-              return <Widget>[
-                const SizedBox(height: 6),
-                Text('Effects', style: Theme.of(context).textTheme.labelMedium),
+        Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+              Text(label,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  softWrap: true),
+              const SizedBox(height: 4),
+              Text('Qty: $qty', style: small),
+              if (def != null) ...[
                 const SizedBox(height: 2),
-                ...effects.map((t) => Text('• $t', style: small)),
-              ];
-            })(),
-          ],
-        ])),
+                Text('Type: ${_prettyCategory(def.category)}', style: small),
+                ...(() {
+                  final effects = _effectTexts(def, playerMaxHp: maxHp);
+                  if (effects.isEmpty) return <Widget>[];
+                  return <Widget>[
+                    const SizedBox(height: 6),
+                    Text('Effects',
+                        style: Theme.of(context).textTheme.labelMedium),
+                    const SizedBox(height: 2),
+                    ...effects.map((t) => Text('• $t', style: small)),
+                  ];
+                })(),
+              ],
+            ])),
         FilledButton(onPressed: onUse, child: const Text('Use')),
       ]),
     );
@@ -203,30 +285,59 @@ class _ItemDetailsPanel extends StatelessWidget {
     try {
       final vals = profileBox().values;
       if (vals.isNotEmpty) {
-        final cls = vals.first.classKey; level = vals.first.level;
+        final cls = vals.first.classKey;
+        level = vals.first.level;
         switch (cls) {
-          case 'Warden': classHp = 20; break;
-          case 'Trickster': classHp = 10; break;
-          case 'Sage': classHp = 12; break;
-          case 'Sentinel': classHp = 16; break;
-          case 'Seer': classHp = 12; break;
-          case 'Artificer': classHp = 14; break;
-          case 'Empath': classHp = 14; break;
-          case 'Oracle': classHp = 12; break;
-          case 'Shadow': classHp = 13; break;
-          case 'Alchemist': classHp = 15; break;
-          default: classHp = 12; break;
+          case 'Warden':
+            classHp = 20;
+            break;
+          case 'Trickster':
+            classHp = 10;
+            break;
+          case 'Sage':
+            classHp = 12;
+            break;
+          case 'Sentinel':
+            classHp = 16;
+            break;
+          case 'Seer':
+            classHp = 12;
+            break;
+          case 'Artificer':
+            classHp = 14;
+            break;
+          case 'Empath':
+            classHp = 14;
+            break;
+          case 'Oracle':
+            classHp = 12;
+            break;
+          case 'Shadow':
+            classHp = 13;
+            break;
+          case 'Alchemist':
+            classHp = 15;
+            break;
+          default:
+            classHp = 12;
+            break;
         }
       }
     } catch (_) {}
     final hpLv = ((level - 1).clamp(0, 999)) * 3;
     int spriteHp = 0;
     try {
-      final raw = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v?.toString())) ?? const <String, String?>{};
-      for (final sid in ['sprite1','sprite2']) {
+      final raw = (equipmentBox().get('sprite_slots') as Map?)
+              ?.map((k, v) => MapEntry(k.toString(), v?.toString())) ??
+          const <String, String?>{};
+      for (final sid in ['sprite1', 'sprite2']) {
         final sidv = raw[sid];
         if (sidv == null || sidv.isEmpty) continue;
-        try { final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == sidv); spriteHp += (inst.stats['hp'] ?? 0); } catch (_) {}
+        try {
+          final inst =
+              seedInstanceBox().values.firstWhere((e) => e.instanceId == sidv);
+          spriteHp += (inst.stats['hp'] ?? 0);
+        } catch (_) {}
       }
     } catch (_) {}
     return baseHp + classHp + hpLv + spriteHp;
@@ -240,10 +351,15 @@ class _ItemDetailsPanel extends StatelessWidget {
       final pct = ((amt / playerMaxHp) * 100).round();
       lines.add('Heals $amt HP instantly (~$pct%)');
     }
-    if (def.regenPerTurn != null && def.regenTurns != null && def.regenPerTurn! > 0 && def.regenTurns! > 0) {
-      final perTurn = def.scaledRegenPerTurnFor(playerMaxHp) ?? def.regenPerTurn!;
+    if (def.regenPerTurn != null &&
+        def.regenTurns != null &&
+        def.regenPerTurn! > 0 &&
+        def.regenTurns! > 0) {
+      final perTurn =
+          def.scaledRegenPerTurnFor(playerMaxHp) ?? def.regenPerTurn!;
       final total = perTurn * def.regenTurns!;
-      lines.add('Regenerates $perTurn HP/turn for ${def.regenTurns} turns (total $total)');
+      lines.add(
+          'Regenerates $perTurn HP/turn for ${def.regenTurns} turns (total $total)');
     }
     // Buffs / Debuffs / Status
     if (def.buffKey != null) {

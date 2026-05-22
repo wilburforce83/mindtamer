@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../data/hive/boxes.dart';
-import '../data/models/journal_entry.dart';
 import '../data/models/med_log.dart';
 import '../features/mood/models/mood_entry.dart';
+import '../features/journal/data/journal_repository.dart';
+import '../features/journal/hooks/journal_events.dart';
+import '../features/journal/model/journal_entry.dart' as journal_v2;
 import '../seed/lexicon_loader.dart';
 import '../seed/seed_generator.dart';
 import '../game/services/seed_pipeline.dart';
@@ -22,6 +24,7 @@ class HealthRewardsService {
   static bool _started = false;
   static final List<StreamSubscription> _subs = [];
   static Timer? _hpTimer;
+  static final JournalRepository _journalRepo = JournalRepository();
 
   static Future<void> start() async {
     if (_started) return;
@@ -52,11 +55,8 @@ class HealthRewardsService {
       }));
     } catch (_) {}
     try {
-      _subs.add(journalBox().watch().listen((e) {
-        if (!e.deleted) {
-          final v = e.value;
-          _onJournalAdded(v is JournalEntry ? v : null);
-        }
+      _subs.add(JournalEvents.stream.listen((e) {
+        _onJournalAdded(e.entry);
       }));
     } catch (_) {}
     try {
@@ -96,10 +96,20 @@ class HealthRewardsService {
       await meta.put('lastProcessedMoodAt', DateTime.now().toIso8601String());
     } catch (_) {}
     try {
-      for (final e in journalBox().values.cast<JournalEntry>().where((e) => e.date.isAfter(lastJournal))) {
-        await _onJournalAdded(e);
+      final entries = await _journalRepo.searchOnce();
+      final pending = entries
+          .where((e) => e.createdAtUtc.isAfter(lastJournal))
+          .toList()
+        ..sort((a, b) => a.createdAtUtc.compareTo(b.createdAtUtc));
+      for (final e in pending) {
+        await _onJournalAdded(e, persistCheckpoint: false);
       }
-      await meta.put('lastProcessedJournalAt', DateTime.now().toIso8601String());
+      if (pending.isNotEmpty) {
+        await meta.put(
+          'lastProcessedJournalAt',
+          pending.last.createdAtUtc.toIso8601String(),
+        );
+      }
     } catch (_) {}
     try {
       for (final e in medLogBox().values.cast<MedLog>().where((e) => e.date.isAfter(lastMed))) {
@@ -194,10 +204,20 @@ class HealthRewardsService {
     }
   }
 
-  static Future<void> _onJournalAdded(JournalEntry? entry) async {
+  static Future<void> _onJournalAdded(
+    journal_v2.JournalEntry? entry, {
+    bool persistCheckpoint = true,
+  }) async {
     if (entry == null) return;
     await _healPercent(25);
-    try { await playerMetaBox().put('lastProcessedJournalAt', entry.date.toIso8601String()); } catch (_) {}
+    if (persistCheckpoint) {
+      try {
+        await playerMetaBox().put(
+          'lastProcessedJournalAt',
+          entry.createdAtUtc.toIso8601String(),
+        );
+      } catch (_) {}
+    }
   }
 
   static Future<void> _onMedLogAdded(MedLog? log) async {

@@ -1,5 +1,6 @@
 // FILE: lib/features/journal/ui/journal_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../data/journal_repository.dart';
@@ -43,13 +44,20 @@ class _JournalDetailScreenState extends State<JournalDetailScreen> {
     if (e != null) {
       jm = journalSeedMetaBox().get(e.id);
       if (jm?.seedRouting == 'monster') {
+        final tickets = encounterTicketBox()
+            .values
+            .where((x) => x.entryId == e.id)
+            .toList();
         try {
-          t = encounterTicketBox().values.firstWhere(
-            (x) => x.entryId == e.id && x.state == 'open');
+          t = tickets.firstWhere((x) => x.state == 'open');
         } catch (_) {
           t = null;
         }
-        final battles = battleBox().values.where((bb) => bb.ticketId == (t?.ticketId ?? 'none')).toList();
+        final ticketIds = tickets.map((x) => x.ticketId).toSet();
+        final battles = battleBox()
+            .values
+            .where((bb) => ticketIds.contains(bb.ticketId))
+            .toList();
         if (battles.isNotEmpty) { battles.sort((a,b)=> b.startedAt.compareTo(a.startedAt)); b = battles.first; }
       }
     }
@@ -173,7 +181,7 @@ class _JournalDetailScreenState extends State<JournalDetailScreen> {
                 try {
                   final battleId = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(t.ticketId);
                   if (!mounted) return;
-                  await _showBattleStub(battleId);
+                  await context.push('/battle', extra: {'battleId': battleId});
                   await _load();
                 } catch (e) {
                   if (!mounted) return;
@@ -190,42 +198,5 @@ class _JournalDetailScreenState extends State<JournalDetailScreen> {
       return Text('Last battle: ${b.result} • ${b.turnCount} turns${echoDropped ? ' • Echo dropped!' : ''}');
     }
     return const SizedBox.shrink();
-  }
-
-  Future<void> _showBattleStub(String battleId) async {
-    int turns = 3;
-    String result = 'win';
-    bool flawless = true;
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('Battle (Stub)'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<String>(
-                value: result,
-                items: const [
-                  DropdownMenuItem(value: 'win', child: Text('Win')),
-                  DropdownMenuItem(value: 'loss', child: Text('Loss')),
-                  DropdownMenuItem(value: 'escape', child: Text('Escape')),
-                ],
-                onChanged: (v) { if (v != null) { setState(() => result = v); } },
-              ),
-              Row(children: [ const Text('Turns:'), const SizedBox(width: 8), Expanded(child: Slider(value: turns.toDouble(), min: 1, max: 20, divisions: 19, label: '$turns', onChanged: (v){ setState(()=>turns = v.round()); })) ]),
-              Row(children: [ const Text('Flawless:'), Switch(value: flawless, onChanged: (v){ setState(()=>flawless = v); }) ]),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('Cancel')),
-            TextButton(onPressed: () async {
-              await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).resolve(battleId: battleId, result: result, turnCount: turns, flawless: flawless);
-              if (context.mounted) Navigator.pop(ctx);
-            }, child: const Text('Resolve')),
-          ],
-        ),
-      ),
-    );
   }
 }

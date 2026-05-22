@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/hive/boxes.dart';
 import '../../data/models/player_profile.dart';
@@ -15,7 +14,7 @@ import '../../crafting/inventory_service.dart';
 import '../../services/drop_table.dart';
 import '../../data/models/settings.dart';
 
-  class BattleState {
+class BattleState {
   final String? battleId;
   final String? enemyName;
   final int playerHp;
@@ -31,7 +30,8 @@ import '../../data/models/settings.dart';
   final String backgroundAsset;
   final String? enemyAssetPath;
   final int actionSeq; // increments per action for UI animations
-  final Map<String, dynamic>? lastAction; // {attacker:'player'|'enemy', melee:bool, element:String?, target:'enemy'|'player' }
+  final Map<String, dynamic>?
+      lastAction; // {attacker:'player'|'enemy', melee:bool, element:String?, target:'enemy'|'player' }
   final Map<String, int> playerStatuses; // key->duration
   final Map<String, int> enemyStatuses; // key->duration
   final String? result; // 'win' | 'loss' | null
@@ -41,6 +41,7 @@ import '../../data/models/settings.dart';
   final List<Map<String, dynamic>> winLoot;
   final bool codexAdded;
   final bool echoDropped;
+  final bool inputLocked;
   const BattleState({
     this.battleId,
     this.enemyName,
@@ -54,7 +55,8 @@ import '../../data/models/settings.dart';
     this.spriteCooldowns = const [],
     this.quickItems = const [],
     this.log = const [],
-    this.backgroundAsset = 'assets/images/backgrounds/ChatGPT Image Sep 8, 2025, 01_02_37 PM.png',
+    this.backgroundAsset =
+        'assets/images/backgrounds/ChatGPT Image Sep 8, 2025, 01_02_37 PM.png',
     this.result,
     this.turnCount = 0,
     this.enemyAssetPath,
@@ -67,6 +69,7 @@ import '../../data/models/settings.dart';
     this.winLoot = const [],
     this.codexAdded = false,
     this.echoDropped = false,
+    this.inputLocked = false,
   });
 
   BattleState copyWith({
@@ -95,36 +98,41 @@ import '../../data/models/settings.dart';
     List<Map<String, dynamic>>? winLoot,
     bool? codexAdded,
     bool? echoDropped,
-  }) => BattleState(
-      battleId: battleId ?? this.battleId,
-      enemyName: enemyName ?? this.enemyName,
-      playerHp: playerHp ?? this.playerHp,
-      playerMaxHp: playerMaxHp ?? this.playerMaxHp,
-      enemyHp: enemyHp ?? this.enemyHp,
-      enemyMaxHp: enemyMaxHp ?? this.enemyMaxHp,
-      skills: skills ?? this.skills,
-      skillCooldowns: skillCooldowns ?? this.skillCooldowns,
-      sprites: sprites ?? this.sprites,
-      spriteCooldowns: spriteCooldowns ?? this.spriteCooldowns,
-      quickItems: quickItems ?? this.quickItems,
-      log: log ?? this.log,
-      backgroundAsset: backgroundAsset ?? this.backgroundAsset,
-      result: result ?? this.result,
-      turnCount: turnCount ?? this.turnCount,
-      enemyAssetPath: enemyAssetPath ?? this.enemyAssetPath,
-      actionSeq: actionSeq ?? this.actionSeq,
-      lastAction: lastAction ?? this.lastAction,
-      playerStatuses: playerStatuses ?? this.playerStatuses,
-      enemyStatuses: enemyStatuses ?? this.enemyStatuses,
-      xpGained: xpGained ?? this.xpGained,
-      leveledUp: leveledUp ?? this.leveledUp,
-      winLoot: winLoot ?? this.winLoot,
-      codexAdded: codexAdded ?? this.codexAdded,
-      echoDropped: echoDropped ?? this.echoDropped,
-    );
+    bool? inputLocked,
+  }) =>
+      BattleState(
+        battleId: battleId ?? this.battleId,
+        enemyName: enemyName ?? this.enemyName,
+        playerHp: playerHp ?? this.playerHp,
+        playerMaxHp: playerMaxHp ?? this.playerMaxHp,
+        enemyHp: enemyHp ?? this.enemyHp,
+        enemyMaxHp: enemyMaxHp ?? this.enemyMaxHp,
+        skills: skills ?? this.skills,
+        skillCooldowns: skillCooldowns ?? this.skillCooldowns,
+        sprites: sprites ?? this.sprites,
+        spriteCooldowns: spriteCooldowns ?? this.spriteCooldowns,
+        quickItems: quickItems ?? this.quickItems,
+        log: log ?? this.log,
+        backgroundAsset: backgroundAsset ?? this.backgroundAsset,
+        result: result ?? this.result,
+        turnCount: turnCount ?? this.turnCount,
+        enemyAssetPath: enemyAssetPath ?? this.enemyAssetPath,
+        actionSeq: actionSeq ?? this.actionSeq,
+        lastAction: lastAction ?? this.lastAction,
+        playerStatuses: playerStatuses ?? this.playerStatuses,
+        enemyStatuses: enemyStatuses ?? this.enemyStatuses,
+        xpGained: xpGained ?? this.xpGained,
+        leveledUp: leveledUp ?? this.leveledUp,
+        winLoot: winLoot ?? this.winLoot,
+        codexAdded: codexAdded ?? this.codexAdded,
+        echoDropped: echoDropped ?? this.echoDropped,
+        inputLocked: inputLocked ?? this.inputLocked,
+      );
 }
 
-final battleProvider = StateNotifierProvider.autoDispose<BattleNotifier, BattleState>((ref) => BattleNotifier());
+final battleProvider =
+    StateNotifierProvider.autoDispose<BattleNotifier, BattleState>(
+        (ref) => BattleNotifier());
 
 class BattleNotifier extends StateNotifier<BattleState> {
   BattleNotifier() : super(const BattleState());
@@ -134,20 +142,29 @@ class BattleNotifier extends StateNotifier<BattleState> {
   late Combatant _enemy;
   List<Skill> _playerSkills = const [];
   List<BattleSpriteAction> _playerSprites = const [];
+  bool _turnLocked = false;
 
   Future<void> init({required String battleId}) async {
     // Reset state to avoid leaking result/action from previous battle
     state = const BattleState();
+    _turnLocked = false;
     // Build stats
-    final profile = profileBox().values.isNotEmpty ? profileBox().values.first : PlayerProfile(id: 'p', classKey: 'Sage');
+    final profile = profileBox().values.isNotEmpty
+        ? profileBox().values.first
+        : PlayerProfile(id: 'p', classKey: 'Sage');
     final classKey = profile.classKey;
-    const int baseHp = 60; const int baseAtk = 4; const int baseDef = 2;
+    const int baseHp = 60;
+    const int baseAtk = 4;
+    const int baseDef = 2;
     final mods = _classMods(classKey);
     final level = profile.level;
     int curHp = baseHp;
-    try { curHp = (playerMetaBox().get('hp') as int?) ?? baseHp; } catch (_) {}
+    try {
+      curHp = (playerMetaBox().get('hp') as int?) ?? baseHp;
+    } catch (_) {}
     // Load equipped sprites for actions
-    final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
+    final slots = (equipmentBox().get('sprite_slots') as Map?)
+        ?.map((k, v) => MapEntry(k.toString(), v.toString()));
     final spriteIds = <String?>[
       (slots?['sprite1']?.toString()) ?? _readSlot('sprite1'),
       (slots?['sprite2']?.toString()) ?? _readSlot('sprite2'),
@@ -155,18 +172,26 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final sprites = <BattleSpriteAction>[];
     int spriteHpBonus = 0;
     for (final id in spriteIds) {
-      if (id == null || id.isEmpty) { continue; }
+      if (id == null || id.isEmpty) {
+        continue;
+      }
       try {
-        final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
+        final inst =
+            seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
         // Sprite stats HP contribution
-        try { spriteHpBonus += (inst.stats['hp'] ?? 0); } catch (_) {}
+        try {
+          spriteHpBonus += (inst.stats['hp'] ?? 0);
+        } catch (_) {}
         if (inst.attacks.isNotEmpty) {
           final a = inst.attacks.first; // single attack for now
           var name = (a['name'] ?? 'Sprite').toString();
-          if (name.toLowerCase().contains('shield')) { name = 'Shield Bash'; }
+          if (name.toLowerCase().contains('shield')) {
+            name = 'Shield Bash';
+          }
           final power = (a['power'] ?? 12) as int;
           final cd = (a['cooldown'] ?? (a['duration'] ?? 3)) as int;
-          final sa = SpriteAttack(name: name, description: '', power: power, durationTurns: cd);
+          final sa = SpriteAttack(
+              name: name, description: '', power: power, durationTurns: cd);
           sprites.add(BattleEngine.fromSpriteAttack(sa));
         }
       } catch (_) {}
@@ -175,9 +200,22 @@ class BattleNotifier extends StateNotifier<BattleState> {
     // Aggregate equipment stats (base and enchant mods)
     final eq = _sumEquipmentStats();
     // Apply to battle stats
-    final maxHp = baseHp + _classHpPerk(classKey) + _hpLevelBonus(level) + spriteHpBonus + (eq['hp'] ?? 0) + (eq['mod_hp'] ?? 0);
-    final atk = baseAtk + mods[1] + _atkLevelBonus(level) + (eq['atk'] ?? 0) + (eq['mod_atk'] ?? 0);
-    final def = baseDef + mods[2] + _defLevelBonus(level) + (eq['def'] ?? 0) + (eq['mod_def'] ?? 0);
+    final maxHp = baseHp +
+        _classHpPerk(classKey) +
+        _hpLevelBonus(level) +
+        spriteHpBonus +
+        (eq['hp'] ?? 0) +
+        (eq['mod_hp'] ?? 0);
+    final atk = baseAtk +
+        mods[1] +
+        _atkLevelBonus(level) +
+        (eq['atk'] ?? 0) +
+        (eq['mod_atk'] ?? 0);
+    final def = baseDef +
+        mods[2] +
+        _defLevelBonus(level) +
+        (eq['def'] ?? 0) +
+        (eq['mod_def'] ?? 0);
     int clampedHp = curHp;
     if (clampedHp < 1) {
       clampedHp = 1;
@@ -191,25 +229,18 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final byName = <String, BattleSpriteAction>{};
     for (final a in sprites) {
       final e = byName[a.name];
-      if (e == null || a.power > e.power || (a.power == e.power && a.cooldown < e.cooldown)) {
+      if (e == null ||
+          a.power > e.power ||
+          (a.power == e.power && a.cooldown < e.cooldown)) {
         byName[a.name] = a;
       }
     }
     _playerSprites = byName.values.toList();
-    _player = Combatant(name: 'You', stats: pStats, skills: _playerSkills, spriteActions: _playerSprites);
-    // Apply any pending pre-battle buffs from meta
-    try {
-      final buffsRaw = (playerMetaBox().get('pendingBuffs') as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? const <Map<String, dynamic>>[];
-      for (final b in buffsRaw) {
-        final k = b['key']?.toString() ?? '';
-        final m = int.tryParse(b['magnitude']?.toString() ?? '0') ?? 0;
-        final d = int.tryParse(b['duration']?.toString() ?? '0') ?? 0;
-        if (k.isNotEmpty && m > 0 && d >= 0) {
-          _engine.applyStatus(_player, k, m, d);
-        }
-      }
-      await playerMetaBox().put('pendingBuffs', <Map<String, dynamic>>[]);
-    } catch (_) {}
+    _player = Combatant(
+        name: 'You',
+        stats: pStats,
+        skills: _playerSkills,
+        spriteActions: _playerSprites);
 
     // Enemy from battle ticket/seed
     String enemyName = 'Monster';
@@ -230,20 +261,43 @@ class BattleNotifier extends StateNotifier<BattleState> {
         } catch (_) {}
       }
     }
-    final scaled = _scaledEnemyStats(battleId: battleId, player: _player.stats, level: level);
+    final scaled = _scaledEnemyStats(
+        battleId: battleId, player: _player.stats, level: level);
     _enemy = Combatant(
       name: enemyName,
-      stats: BattleStats(maxHp: scaled['hp']!, hp: scaled['hp']!, atk: scaled['atk']!, def: scaled['def']!),
+      stats: BattleStats(
+          maxHp: scaled['hp']!,
+          hp: scaled['hp']!,
+          atk: scaled['atk']!,
+          def: scaled['def']!),
       skills: _enemySkills(),
     );
     _engine = BattleEngine(player: _player, enemy: _enemy);
+
+    // Apply any pending pre-battle buffs after the engine is ready.
+    try {
+      final buffsRaw = (playerMetaBox().get('pendingBuffs') as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          const <Map<String, dynamic>>[];
+      for (final b in buffsRaw) {
+        final k = b['key']?.toString() ?? '';
+        final m = int.tryParse(b['magnitude']?.toString() ?? '0') ?? 0;
+        final d = int.tryParse(b['duration']?.toString() ?? '0') ?? 0;
+        if (k.isNotEmpty && m > 0 && d >= 0) {
+          _engine.applyStatus(_player, k, m, d);
+        }
+      }
+      await playerMetaBox().put('pendingBuffs', <Map<String, dynamic>>[]);
+    } catch (_) {}
 
     // Background from asset manifest (random pick)
     final bg = await _pickBackground();
     // Enemy image path
     String? enemyAssetPath;
     try {
-      enemyAssetPath = await MonsterImageService().resolveImagePath(displayName: enemyName, element: enemyElement, type: enemyType);
+      enemyAssetPath = await MonsterImageService().resolveImagePath(
+          displayName: enemyName, element: enemyElement, type: enemyType);
     } catch (_) {}
 
     // Quick items: auto-refill before building list
@@ -266,21 +320,43 @@ class BattleNotifier extends StateNotifier<BattleState> {
       quickItems: qi,
       log: ['An Echo manifests: $enemyName.'],
       turnCount: 0,
-      playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-      enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+      playerStatuses: Map.fromEntries(_player.stats.statuses.entries
+          .map((e) => MapEntry(e.key, e.value.duration))),
+      enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries
+          .map((e) => MapEntry(e.key, e.value.duration))),
+      inputLocked: false,
     );
+  }
+
+  bool _canAcceptInput() => !_turnLocked && state.result == null;
+
+  bool _beginPlayerAction() {
+    if (!_canAcceptInput()) return false;
+    _turnLocked = true;
+    state = state.copyWith(inputLocked: true);
+    return true;
+  }
+
+  void _releaseTurnLock() {
+    _turnLocked = false;
+    state = state.copyWith(inputLocked: false);
   }
 
   // Balance enemy vs player by targeting rough turns-to-kill both ways.
   // Deterministic per battleId so it feels consistent if retried.
-  Map<String, int> _scaledEnemyStats({required String battleId, required BattleStats player, required int level}) {
+  Map<String, int> _scaledEnemyStats(
+      {required String battleId,
+      required BattleStats player,
+      required int level}) {
     int seed = battleId.hashCode & 0x7fffffff;
     if (seed == 0) seed = 1;
-    int rand(int min, int max) { // inclusive
+    int rand(int min, int max) {
+      // inclusive
       seed = (1664525 * seed + 1013904223) & 0x7fffffff;
       final r = seed % (max - min + 1);
       return min + r;
     }
+
     final pHp = player.maxHp.clamp(1, 9999);
     final pAtk = player.atk.clamp(0, 999);
     final pDef = player.def.clamp(0, 99);
@@ -289,7 +365,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
     // then make Balanced and Relaxed 20% easier each step.
     String diff = 'normal';
     try {
-      final s = settingsBox().values.isNotEmpty ? settingsBox().values.first : Settings(id: 'default');
+      final s = settingsBox().values.isNotEmpty
+          ? settingsBox().values.first
+          : Settings(id: 'default');
       diff = (s.difficulty.isEmpty ? 'normal' : s.difficulty);
     } catch (_) {}
 
@@ -304,16 +382,29 @@ class BattleNotifier extends StateNotifier<BattleState> {
     double defFrac, bTtkP, bTtkPMin, bTtkPMax, bTtkE, bTtkEMin, bTtkEMax;
     if (diff == 'challenging') {
       defFrac = defFracBase;
-      bTtkP = ttkPBase; bTtkPMin = ttkPMin; bTtkPMax = ttkPMax;
-      bTtkE = ttkEBase; bTtkEMin = ttkEMin; bTtkEMax = ttkEMax;
+      bTtkP = ttkPBase;
+      bTtkPMin = ttkPMin;
+      bTtkPMax = ttkPMax;
+      bTtkE = ttkEBase;
+      bTtkEMin = ttkEMin;
+      bTtkEMax = ttkEMax;
     } else if (diff == 'normal') {
       defFrac = defFracBase * 0.8;
-      bTtkP = ttkPBase * 0.8; bTtkPMin = ttkPMin * 0.8; bTtkPMax = ttkPMax * 0.8;
-      bTtkE = ttkEBase * 1.2; bTtkEMin = ttkEMin * 1.2; bTtkEMax = ttkEMax * 1.2;
-    } else { // relaxed
+      bTtkP = ttkPBase * 0.8;
+      bTtkPMin = ttkPMin * 0.8;
+      bTtkPMax = ttkPMax * 0.8;
+      bTtkE = ttkEBase * 1.2;
+      bTtkEMin = ttkEMin * 1.2;
+      bTtkEMax = ttkEMax * 1.2;
+    } else {
+      // relaxed
       defFrac = defFracBase * 0.64;
-      bTtkP = ttkPBase * 0.64; bTtkPMin = ttkPMin * 0.64; bTtkPMax = ttkPMax * 0.64;
-      bTtkE = ttkEBase * 1.44; bTtkEMin = ttkEMin * 1.44; bTtkEMax = ttkEMax * 1.44;
+      bTtkP = ttkPBase * 0.64;
+      bTtkPMin = ttkPMin * 0.64;
+      bTtkPMax = ttkPMax * 0.64;
+      bTtkE = ttkEBase * 1.44;
+      bTtkEMin = ttkEMin * 1.44;
+      bTtkEMax = ttkEMax * 1.44;
     }
 
     int eDef = (pAtk * defFrac).round();
@@ -324,12 +415,16 @@ class BattleNotifier extends StateNotifier<BattleState> {
     int dptPlayer = (6 + pAtk - eDef);
     dptPlayer = dptPlayer.clamp(2, 40);
 
-    final targetTtkP = (bTtkP + rand(-1, 1)).round().clamp(bTtkPMin.round().clamp(1, 99), bTtkPMax.round().clamp(2, 99));
+    final targetTtkP = (bTtkP + rand(-1, 1))
+        .round()
+        .clamp(bTtkPMin.round().clamp(1, 99), bTtkPMax.round().clamp(2, 99));
     int eHp = (dptPlayer * targetTtkP * 1.08).round();
     eHp += (level * 2);
     eHp = eHp.clamp(30, 9999);
 
-    final targetTtkE = (bTtkE + rand(-1, 2)).round().clamp(bTtkEMin.round().clamp(1, 99), bTtkEMax.round().clamp(2, 99));
+    final targetTtkE = (bTtkE + rand(-1, 2))
+        .round()
+        .clamp(bTtkEMin.round().clamp(1, 99), bTtkEMax.round().clamp(2, 99));
     // Enemy basic power baseline is 3. Solve: dmg = base(3) + eAtk - pDef ≈ pHp/target
     int eAtk = ((pHp / targetTtkE) - 3 + pDef).round();
     // Smoothness and bounds — allow high values to overcome high player DEF
@@ -341,8 +436,12 @@ class BattleNotifier extends StateNotifier<BattleState> {
   // Sum equipped item stats; returns both base keys and mod_* keys summed
   Map<String, int> _sumEquipmentStats() {
     final out = <String, int>{
-      'hp': 0, 'atk': 0, 'def': 0,
-      'mod_hp': 0, 'mod_atk': 0, 'mod_def': 0,
+      'hp': 0,
+      'atk': 0,
+      'def': 0,
+      'mod_hp': 0,
+      'mod_atk': 0,
+      'mod_def': 0,
     };
     try {
       final slots = (equipmentBox().get('slots') as Map?) ?? const {};
@@ -363,36 +462,61 @@ class BattleNotifier extends StateNotifier<BattleState> {
 
   List<int> _classMods(String classKey) {
     switch (classKey) {
-      case 'Warden': return [8, 0, 1]; // +HP, +ATK, +DEF
-      case 'Sentinel': return [5, 0, 1];
-      case 'Trickster': return [0, 1, 0];
-      case 'Shadow': return [0, 1, 0];
-      case 'Artificer': return [0, 1, 0];
-      case 'Empath': return [5, 0, 0];
-      case 'Oracle': return [0, 0, 1];
+      case 'Warden':
+        return [8, 0, 1]; // +HP, +ATK, +DEF
+      case 'Sentinel':
+        return [5, 0, 1];
+      case 'Trickster':
+        return [0, 1, 0];
+      case 'Shadow':
+        return [0, 1, 0];
+      case 'Artificer':
+        return [0, 1, 0];
+      case 'Empath':
+        return [5, 0, 0];
+      case 'Oracle':
+        return [0, 0, 1];
       // Casters (Sage, Seer, Alchemist) keep base small stats for balance
-      default: return [0, 0, 0];
+      default:
+        return [0, 0, 0];
     }
   }
 
   int _classHpPerk(String classKey) {
     switch (classKey) {
-      case 'Warden': return 20;
-      case 'Trickster': return 10;
-      case 'Sage': return 12;
-      case 'Sentinel': return 16;
-      case 'Seer': return 12;
-      case 'Artificer': return 14;
-      case 'Empath': return 14;
-      case 'Oracle': return 12;
-      case 'Shadow': return 13;
-      case 'Alchemist': return 15;
-      default: return 12;
+      case 'Warden':
+        return 20;
+      case 'Trickster':
+        return 10;
+      case 'Sage':
+        return 12;
+      case 'Sentinel':
+        return 16;
+      case 'Seer':
+        return 12;
+      case 'Artificer':
+        return 14;
+      case 'Empath':
+        return 14;
+      case 'Oracle':
+        return 12;
+      case 'Shadow':
+        return 13;
+      case 'Alchemist':
+        return 15;
+      default:
+        return 12;
     }
   }
 
   void useSkill(int index) {
-    if (index < 0 || index >= _playerSkills.length) { return; }
+    if (!_beginPlayerAction()) {
+      return;
+    }
+    if (index < 0 || index >= _playerSkills.length) {
+      _releaseTurnLock();
+      return;
+    }
     final s = _playerSkills[index];
     final log = _engine.takeTurnBySkill(_player, _enemy, s);
     final element = _weaponElement();
@@ -405,19 +529,37 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void useSprite(int index) {
-    if (index < 0 || index >= _playerSprites.length) { return; }
+    if (!_beginPlayerAction()) {
+      return;
+    }
+    if (index < 0 || index >= _playerSprites.length) {
+      _releaseTurnLock();
+      return;
+    }
     final a = _playerSprites[index];
     final log = _engine.takeTurnBySprite(_player, _enemy, a);
     // Try derive element from the sprite instance if possible (not guaranteed here)
     String? elem;
     try {
-      final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
-      final ids = [slots?['sprite1']?.toString(), slots?['sprite2']?.toString()];
+      final slots = (equipmentBox().get('sprite_slots') as Map?)
+          ?.map((k, v) => MapEntry(k.toString(), v.toString()));
+      final ids = [
+        slots?['sprite1']?.toString(),
+        slots?['sprite2']?.toString()
+      ];
       for (final id in ids) {
-        if (id == null) { continue; }
-        final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
-        final name = (inst.attacks.isNotEmpty ? (inst.attacks.first['name'] ?? '').toString() : '');
-        if (name == a.name) { elem = (inst.seedSnapshot['element'] ?? '').toString(); break; }
+        if (id == null) {
+          continue;
+        }
+        final inst =
+            seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
+        final name = (inst.attacks.isNotEmpty
+            ? (inst.attacks.first['name'] ?? '').toString()
+            : '');
+        if (name == a.name) {
+          elem = (inst.seedSnapshot['element'] ?? '').toString();
+          break;
+        }
       }
     } catch (_) {}
     _afterPlayerAction(log, lastAction: {
@@ -429,12 +571,21 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void useItem(int quickIndex) {
-    if (quickIndex < 0 || quickIndex >= state.quickItems.length) { return; }
+    if (!_beginPlayerAction()) {
+      return;
+    }
+    if (quickIndex < 0 || quickIndex >= state.quickItems.length) {
+      _releaseTurnLock();
+      return;
+    }
     final item = state.quickItems[quickIndex];
     final id = item['id'] as String;
     final type = item['type'] as String? ?? '';
     final def = ItemCatalog.defOf(type);
-    if (def == null) return;
+    if (def == null) {
+      _releaseTurnLock();
+      return;
+    }
     final logs = <String>[];
     bool targetsEnemy = false;
 
@@ -446,19 +597,25 @@ class BattleNotifier extends StateNotifier<BattleState> {
     }
     // Regen
     if (def.regenPerTurn != null && def.regenTurns != null) {
-      final perT = def.scaledRegenPerTurnFor(_player.stats.maxHp) ?? def.regenPerTurn!;
+      final perT =
+          def.scaledRegenPerTurnFor(_player.stats.maxHp) ?? def.regenPerTurn!;
       _engine.applyStatus(_player, 'regen', perT, def.regenTurns!);
       logs.add('You gained Regen $perT/T for ${def.regenTurns}T.');
     }
     // Buff / Debuff
-    if (def.buffKey != null && def.buffMagnitude != null && def.buffDuration != null) {
+    if (def.buffKey != null &&
+        def.buffMagnitude != null &&
+        def.buffDuration != null) {
       final target = def.buffTargetsEnemy ? _enemy : _player;
-      _engine.applyStatus(target, def.buffKey!, def.buffMagnitude!, def.buffDuration!);
+      _engine.applyStatus(
+          target, def.buffKey!, def.buffMagnitude!, def.buffDuration!);
       targetsEnemy = def.buffTargetsEnemy;
       if (def.buffTargetsEnemy) {
-        logs.add('Enemy afflicted: ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+        logs.add(
+            'Enemy afflicted: ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
       } else {
-        logs.add('You gained ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+        logs.add(
+            'You gained ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
       }
     }
     // Damage
@@ -507,15 +664,18 @@ class BattleNotifier extends StateNotifier<BattleState> {
         enemyHp: _enemy.stats.hp,
         quickItems: qi,
         log: [...state.log, ...logs],
-        playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-        enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+        playerStatuses: Map.fromEntries(_player.stats.statuses.entries
+            .map((e) => MapEntry(e.key, e.value.duration))),
+        enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries
+            .map((e) => MapEntry(e.key, e.value.duration))),
         actionSeq: state.actionSeq + 1,
         lastAction: {
-          'attacker':'player',
+          'attacker': 'player',
           'target': targetsEnemy ? 'enemy' : 'player',
           'melee': false,
           'element': null
         },
+        inputLocked: true,
       );
       // Using an item counts as action -> enemy turn after short delay
       Future.delayed(const Duration(milliseconds: 1200), () {
@@ -523,16 +683,27 @@ class BattleNotifier extends StateNotifier<BattleState> {
           _enemyTurn();
         }
       });
+    } else {
+      _releaseTurnLock();
     }
   }
 
   // Use an item directly from inventory by id (modal flow). Counts as a turn.
   void useItemFromInventory(String invId) {
+    if (!_beginPlayerAction()) {
+      return;
+    }
     final it = InventoryService.getById(invId);
-    if (it == null) return;
+    if (it == null) {
+      _releaseTurnLock();
+      return;
+    }
     final type = (it['type'] as String?) ?? '';
     final def = ItemCatalog.defOf(type);
-    if (def == null) return;
+    if (def == null) {
+      _releaseTurnLock();
+      return;
+    }
     final logs = <String>[];
     bool targetsEnemy = false;
 
@@ -542,18 +713,24 @@ class BattleNotifier extends StateNotifier<BattleState> {
       logs.add('You used ${def.name} (+$amt HP).');
     }
     if (def.regenPerTurn != null && def.regenTurns != null) {
-      final perT = def.scaledRegenPerTurnFor(_player.stats.maxHp) ?? def.regenPerTurn!;
+      final perT =
+          def.scaledRegenPerTurnFor(_player.stats.maxHp) ?? def.regenPerTurn!;
       _engine.applyStatus(_player, 'regen', perT, def.regenTurns!);
       logs.add('You gained Regen $perT/T for ${def.regenTurns}T.');
     }
-    if (def.buffKey != null && def.buffMagnitude != null && def.buffDuration != null) {
+    if (def.buffKey != null &&
+        def.buffMagnitude != null &&
+        def.buffDuration != null) {
       final target = def.buffTargetsEnemy ? _enemy : _player;
-      _engine.applyStatus(target, def.buffKey!, def.buffMagnitude!, def.buffDuration!);
+      _engine.applyStatus(
+          target, def.buffKey!, def.buffMagnitude!, def.buffDuration!);
       targetsEnemy = def.buffTargetsEnemy;
       if (def.buffTargetsEnemy) {
-        logs.add('Enemy afflicted: ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+        logs.add(
+            'Enemy afflicted: ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
       } else {
-        logs.add('You gained ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
+        logs.add(
+            'You gained ${def.buffKey} (${def.buffMagnitude} for ${def.buffDuration}T).');
       }
     }
     if (def.damage != null && def.damage! > 0) {
@@ -580,7 +757,11 @@ class BattleNotifier extends StateNotifier<BattleState> {
       for (final k in keys) {
         final cur = _player.cooldowns[k] ?? 0;
         final nv = (cur - n).clamp(0, 99);
-        if (nv == 0) { _player.cooldowns.remove(k); } else { _player.cooldowns[k] = nv; }
+        if (nv == 0) {
+          _player.cooldowns.remove(k);
+        } else {
+          _player.cooldowns[k] = nv;
+        }
       }
       logs.add('Cooldowns reduced by $n.');
     }
@@ -592,33 +773,42 @@ class BattleNotifier extends StateNotifier<BattleState> {
         enemyHp: _enemy.stats.hp,
         quickItems: qi,
         log: [...state.log, ...logs],
-        playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-        enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+        playerStatuses: Map.fromEntries(_player.stats.statuses.entries
+            .map((e) => MapEntry(e.key, e.value.duration))),
+        enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries
+            .map((e) => MapEntry(e.key, e.value.duration))),
         actionSeq: state.actionSeq + 1,
         lastAction: {
-          'attacker':'player',
+          'attacker': 'player',
           'target': targetsEnemy ? 'enemy' : 'player',
           'melee': false,
           'element': null
         },
+        inputLocked: true,
       );
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (_enemy.isAlive() && (state.result == null)) {
           _enemyTurn();
         }
       });
+    } else {
+      _releaseTurnLock();
     }
   }
 
-  void _afterPlayerAction(List<String> logs, {Map<String, dynamic>? lastAction}) {
+  void _afterPlayerAction(List<String> logs,
+      {Map<String, dynamic>? lastAction}) {
     state = state.copyWith(
       enemyHp: _enemy.stats.hp,
       playerHp: _player.stats.hp,
       log: [...state.log, ...logs],
-      playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-      enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+      playerStatuses: Map.fromEntries(_player.stats.statuses.entries
+          .map((e) => MapEntry(e.key, e.value.duration))),
+      enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries
+          .map((e) => MapEntry(e.key, e.value.duration))),
       actionSeq: state.actionSeq + 1,
       lastAction: lastAction,
+      inputLocked: true,
     );
     if (_enemy.isAlive()) {
       Future.delayed(const Duration(milliseconds: 1200), () {
@@ -632,6 +822,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void _enemyTurn() {
+    if (!_turnLocked || state.result != null) {
+      return;
+    }
     final skill = _engine.chooseEnemySkill();
     final logs = _engine.takeTurnBySkill(_enemy, _player, skill);
     _engine.endTurn();
@@ -639,20 +832,33 @@ class BattleNotifier extends StateNotifier<BattleState> {
       playerHp: _player.stats.hp,
       enemyHp: _enemy.stats.hp,
       log: [...state.log, ...logs],
-      skillCooldowns: _playerSkills.map((s) => _player.cooldowns[s.id] ?? 0).toList(),
-      spriteCooldowns: _playerSprites.map((a) => _player.cooldowns[a.id] ?? 0).toList(),
+      skillCooldowns:
+          _playerSkills.map((s) => _player.cooldowns[s.id] ?? 0).toList(),
+      spriteCooldowns:
+          _playerSprites.map((a) => _player.cooldowns[a.id] ?? 0).toList(),
       turnCount: state.turnCount + 1,
-      playerStatuses: Map.fromEntries(_player.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
-      enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries.map((e)=> MapEntry(e.key, e.value.duration))),
+      playerStatuses: Map.fromEntries(_player.stats.statuses.entries
+          .map((e) => MapEntry(e.key, e.value.duration))),
+      enemyStatuses: Map.fromEntries(_enemy.stats.statuses.entries
+          .map((e) => MapEntry(e.key, e.value.duration))),
       actionSeq: state.actionSeq + 1,
-      lastAction: {'attacker':'enemy','target':'player','melee': skill.melee, 'element': null},
+      lastAction: {
+        'attacker': 'enemy',
+        'target': 'player',
+        'melee': skill.melee,
+        'element': null
+      },
+      inputLocked: !_player.isAlive(),
     );
     if (!_player.isAlive()) {
       _finish('loss');
+    } else {
+      _releaseTurnLock();
     }
   }
 
   Future<void> _finish(String result) async {
+    _turnLocked = true;
     final id = state.battleId;
     String? speciesId;
     bool preCodexExists = false;
@@ -668,7 +874,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
     }
     if (id != null) {
       try {
-        await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).resolve(
+        await BattleServiceImpl(
+                codex: CodexServiceImpl(), echo: EchoServiceImpl())
+            .resolve(
           battleId: id,
           result: result,
           turnCount: state.turnCount + 1,
@@ -690,10 +898,21 @@ class BattleNotifier extends StateNotifier<BattleState> {
           int target = level * 20;
           bool leveled = false;
           while (xp >= target) {
-            xp -= target; level += 1; target = level * 20;
+            xp -= target;
+            level += 1;
+            target = level * 20;
             leveled = true;
           }
-          await box.put(p.id, PlayerProfile(id: p.id, classKey: p.classKey, level: level, xp: xp, unlockedSkills: p.unlockedSkills, cosmetics: p.cosmetics, titles: p.titles));
+          await box.put(
+              p.id,
+              PlayerProfile(
+                  id: p.id,
+                  classKey: p.classKey,
+                  level: level,
+                  xp: xp,
+                  unlockedSkills: p.unlockedSkills,
+                  cosmetics: p.cosmetics,
+                  titles: p.titles));
           leveledUpLocal = leveled;
           // Detect codex addition and echo dropped
           bool codexAdded = false;
@@ -705,7 +924,8 @@ class BattleNotifier extends StateNotifier<BattleState> {
             }
           } catch (_) {}
           try {
-            echoDropped = resonantEchoBox().values.any((e) => e.battleId == (id ?? ''));
+            echoDropped =
+                resonantEchoBox().values.any((e) => e.battleId == (id ?? ''));
           } catch (_) {}
           state = state.copyWith(
             xpGained: gain,
@@ -726,7 +946,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
         playerMetaBox().put('hp', _player.stats.hp);
       }
     } catch (_) {}
-    state = state.copyWith(result: result);
+    state = state.copyWith(result: result, inputLocked: true);
   }
 
   int _computeMaxHpForPlayer() {
@@ -735,7 +955,10 @@ class BattleNotifier extends StateNotifier<BattleState> {
     int level = 1;
     try {
       final vals = profileBox().values;
-      if (vals.isNotEmpty) { classKey = vals.first.classKey; level = vals.first.level; }
+      if (vals.isNotEmpty) {
+        classKey = vals.first.classKey;
+        level = vals.first.level;
+      }
     } catch (_) {}
     final classHp = _classHpPerk(classKey);
     return baseHp + classHp + _hpLevelBonus(level);
@@ -745,10 +968,12 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final lv = (level - 1).clamp(0, 999);
     return lv * 3; // +3 HP per level after level 1
   }
+
   int _atkLevelBonus(int level) {
     final lv = (level - 1).clamp(0, 999);
     return lv ~/ 2; // +1 ATK every 2 levels
   }
+
   int _defLevelBonus(int level) {
     final lv = (level - 1).clamp(0, 999);
     return lv ~/ 4; // small DEF every 4 levels
@@ -773,6 +998,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void quickHeal() {
+    if (!_canAcceptInput()) {
+      return;
+    }
     final inv = InventoryService.inventory();
     String? bestId;
     int bestHeal = -1;
@@ -784,7 +1012,10 @@ class BattleNotifier extends StateNotifier<BattleState> {
       final def = ItemCatalog.defOf(t);
       if (def == null) continue;
       final heal = (def.healInstant ?? 0);
-      if (heal > bestHeal) { bestHeal = heal; bestId = it['id'] as String; }
+      if (heal > bestHeal) {
+        bestHeal = heal;
+        bestId = it['id'] as String;
+      }
     }
     if (bestId == null) {
       // choose best regen
@@ -795,7 +1026,10 @@ class BattleNotifier extends StateNotifier<BattleState> {
         final def = ItemCatalog.defOf(t);
         if (def == null) continue;
         final total = (def.regenPerTurn ?? 0) * (def.regenTurns ?? 0);
-        if (total > bestHeal) { bestHeal = total; bestId = it['id'] as String; }
+        if (total > bestHeal) {
+          bestHeal = total;
+          bestId = it['id'] as String;
+        }
       }
     }
     if (bestId != null) {
@@ -804,30 +1038,50 @@ class BattleNotifier extends StateNotifier<BattleState> {
   }
 
   void escapeBattle() {
+    if (!_canAcceptInput()) {
+      return;
+    }
     _finish('escape');
   }
 
   List<Skill> _enemySkills() {
     // Enemy uses generic basic/special to keep balance
     return const [
-      Skill(id:'Enemy.basic', name:'Claw', description:'A crude strike.', type:SkillType.basic, power:3, cooldown:0),
-      Skill(id:'Enemy.special', name:'Rend', description:'A heavy tear.', type:SkillType.special, power:6, cooldown:4),
+      Skill(
+          id: 'Enemy.basic',
+          name: 'Claw',
+          description: 'A crude strike.',
+          type: SkillType.basic,
+          power: 3,
+          cooldown: 0),
+      Skill(
+          id: 'Enemy.special',
+          name: 'Rend',
+          description: 'A heavy tear.',
+          type: SkillType.special,
+          power: 6,
+          cooldown: 4),
     ];
   }
 
   String? _weaponElement() {
     try {
       final eq = equipmentBox().get('slots') as Map?;
-      final w = (eq?['weapon'] as Map?)?.map((k, v) => MapEntry(k.toString(), v));
+      final w =
+          (eq?['weapon'] as Map?)?.map((k, v) => MapEntry(k.toString(), v));
       return w?['element']?.toString();
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> _pickBackground() async {
     try {
-      final manifest = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> map = jsonDecode(manifest);
-      final keys = map.keys.where((p) => p.startsWith('assets/images/backgrounds/')).toList();
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final keys = manifest
+          .listAssets()
+          .where((p) => p.startsWith('assets/images/backgrounds/'))
+          .toList();
       if (keys.isNotEmpty) {
         keys.sort();
         final idx = DateTime.now().microsecondsSinceEpoch % keys.length;
@@ -843,6 +1097,8 @@ class BattleNotifier extends StateNotifier<BattleState> {
       final slots = equipmentBox().get('slots') as Map?;
       final id = (slots?[key])?.toString();
       return id;
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 }

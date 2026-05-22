@@ -54,13 +54,110 @@ class SeedResult {
 
 class SeedGenerator {
   static final Set<String> _stopwords = {
-    'a','an','the','and','or','but','if','then','else','when','at','by','for','from','in','into','on','onto','of','to','up','with','as','is','it','its','be','been','are','was','were','so','that','this','these','those','i','you','he','she','they','we','me','my','your','our','their','them','his','her','us','do','did','does','doing','not','no','yes','can','could','should','would','will','just','about','over','under','again','once','out','off','than','too','very','more','most','some','such','own','same','s','t','y','m','re','ll','d'
+    'a',
+    'an',
+    'the',
+    'and',
+    'or',
+    'but',
+    'if',
+    'then',
+    'else',
+    'when',
+    'at',
+    'by',
+    'for',
+    'from',
+    'in',
+    'into',
+    'on',
+    'onto',
+    'of',
+    'to',
+    'up',
+    'with',
+    'as',
+    'is',
+    'it',
+    'its',
+    'be',
+    'been',
+    'are',
+    'was',
+    'were',
+    'so',
+    'that',
+    'this',
+    'these',
+    'those',
+    'i',
+    'you',
+    'he',
+    'she',
+    'they',
+    'we',
+    'me',
+    'my',
+    'your',
+    'our',
+    'their',
+    'them',
+    'his',
+    'her',
+    'us',
+    'do',
+    'did',
+    'does',
+    'doing',
+    'not',
+    'no',
+    'yes',
+    'can',
+    'could',
+    'should',
+    'would',
+    'will',
+    'just',
+    'about',
+    'over',
+    'under',
+    'again',
+    'once',
+    'out',
+    'off',
+    'than',
+    'too',
+    'very',
+    'more',
+    'most',
+    'some',
+    'such',
+    'own',
+    'same',
+    's',
+    't',
+    'y',
+    'm',
+    're',
+    'll',
+    'd'
   };
+  static const List<String> _allElements = [
+    'fire',
+    'water',
+    'metal',
+    'shadow',
+    'nature',
+    'light',
+    'air',
+  ];
+  static final Map<String, Map<String, int>> _elementCountCache = {};
 
   SeedResult generate(SeedRequest req, LexiconBundle bundle) {
     final normTitle = _normalize(req.title);
     final normBody = _normalize(req.body);
-    final normTags = req.tags.map((e) => _normalize(e)).where((e) => e.isNotEmpty).toList();
+    final normTags =
+        req.tags.map((e) => _normalize(e)).where((e) => e.isNotEmpty).toList();
     normTags.sort();
     final tokensTitle = _tokens(normTitle);
     final tokensBody = _tokens(normBody);
@@ -81,7 +178,10 @@ class SeedGenerator {
 
     // Seed PRNG from canonical + baseWord (first 4 bytes)
     final seedBytes = sha256.convert(utf8.encode('$canonical|$baseWord')).bytes;
-    int seed = (seedBytes[0] << 24) | (seedBytes[1] << 16) | (seedBytes[2] << 8) | (seedBytes[3]);
+    int seed = (seedBytes[0] << 24) |
+        (seedBytes[1] << 16) |
+        (seedBytes[2] << 8) |
+        (seedBytes[3]);
     if (seed == 0) seed = 1;
     final rng = _XorShift32(seed);
 
@@ -103,11 +203,9 @@ class SeedGenerator {
     final type = _pickType(kind, element, req.sentiment, rng, bundle);
 
     // Step 7: Name
-    final baseEntry = bundle.basewords[baseWord] as Map<String, dynamic>?;
-    final related = ((baseEntry?['related'] as List?)?.map((e) => e.toString()).toList() ?? ['Echo','Gleam','Trace']);
-    final relatedWord = related.isEmpty ? 'Echo' : related[rng.nextInt(related.length)];
-    final secondaryWord = _pickSecondary(req.sentiment, rng, bundle);
-    final displayName = _composeName(kind, relatedWord, secondaryWord, type, rng);
+    final secondaryWord =
+        _pickDescriptor(kind, element, req.sentiment, type, rng, bundle);
+    final displayName = _composeName(secondaryWord, type);
 
     // Step 8: Color
     final colorHex = _pickColorHex(element, req.sentiment, rng, bundle);
@@ -119,6 +217,7 @@ class SeedGenerator {
     final attacks = _pickAttacks(element, rng, bundle);
 
     // Rarity from base entry or default
+    final baseEntry = bundle.basewords[baseWord] as Map<String, dynamic>?;
     final rarity = (baseEntry?['rarity']?.toString() ?? 'common');
 
     return SeedResult(
@@ -156,7 +255,8 @@ class SeedGenerator {
     return toks;
   }
 
-  static String _pickBaseWord(List<String> tokensTitle, List<String> tokensBody, Map<String, dynamic> basewords) {
+  static String _pickBaseWord(List<String> tokensTitle, List<String> tokensBody,
+      Map<String, dynamic> basewords) {
     for (final t in tokensTitle) {
       if (basewords.containsKey(t)) return t;
     }
@@ -190,7 +290,12 @@ class SeedGenerator {
     required LexiconBundle bundle,
   }) {
     final baseEntry = bundle.basewords[baseWord] as Map<String, dynamic>?;
-    final baseElems = (baseEntry?['elements'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[];
+    final baseElems =
+        (baseEntry?['elements'] as List?)?.map((e) => e.toString()).toList() ??
+            const <String>[];
+    final themes =
+        (baseEntry?['themes'] as List?)?.map((e) => e.toString()).toList() ??
+            const <String>[];
 
     final haystack = ('$title $body ${tags.join(' ')}').trim();
     final matchedElems = <String>{};
@@ -199,38 +304,48 @@ class SeedGenerator {
         matchedElems.add(rule.element);
       }
     }
-    // Fallback choices by sentiment (wider sets), leaning but not locking.
-    final choicesBySent = <String, List<String>>{
-      'positive': const ['air','water','light','nature'],
-      'negative': const ['fire','metal','shadow'],
-      'mixed': const ['air','water','light','nature','fire','metal','shadow'],
-      'neutral': const ['air','water','light','nature','fire','metal','shadow'],
+    final scores = {
+      for (final element in _allElements) element: 0.0,
     };
-    final fallbacks = choicesBySent[sentiment] ?? const ['shadow'];
-    final fallbackElem = fallbacks[rng.nextInt(fallbacks.length)];
-
-    final groups = <_ElementGroup>[];
-    if (baseElems.isNotEmpty) groups.add(_ElementGroup(weight: 0.6, items: baseElems.toList()));
-    if (matchedElems.isNotEmpty) groups.add(_ElementGroup(weight: 0.3, items: matchedElems.toList()));
-    groups.add(_ElementGroup(weight: 0.1, items: [fallbackElem]));
-
-    final totalWeight = groups.fold<double>(0, (a, b) => a + b.weight);
-    double roll = rng.nextDouble() * totalWeight;
-    for (final g in groups) {
-      if (roll < g.weight) {
-        final idx = rng.nextInt(g.items.length);
-        return g.items[idx];
-      }
-      roll -= g.weight;
+    final prevalence = _elementCounts(bundle);
+    final sentimentWeights = _sentimentElementWeights(sentiment);
+    for (final entry in sentimentWeights.entries) {
+      scores[entry.key] = (scores[entry.key] ?? 0.0) + entry.value;
     }
-    return fallbackElem; // safety
+
+    final fallbackElem = bundle.fallbackElementBySentiment[sentiment] ??
+        _fallbackElementForSentiment(sentiment);
+    scores[fallbackElem] = (scores[fallbackElem] ?? 0.0) + 0.14;
+
+    for (final element in matchedElems) {
+      scores[element] = (scores[element] ?? 0.0) + 0.9;
+    }
+
+    final generalTheme = themes.isEmpty || themes.contains('general');
+    final baseWeight =
+        matchedElems.isNotEmpty ? 0.28 : (generalTheme ? 0.18 : 0.32);
+    for (final element in baseElems.toSet()) {
+      final factor = _elementBalanceFactor(element, prevalence);
+      scores[element] = (scores[element] ?? 0.0) + (baseWeight * factor);
+    }
+
+    if (generalTheme && matchedElems.isEmpty && baseElems.contains('shadow')) {
+      scores['nature'] = (scores['nature'] ?? 0.0) + 0.08;
+      scores['light'] = (scores['light'] ?? 0.0) + 0.07;
+      scores['air'] = (scores['air'] ?? 0.0) + 0.05;
+    }
+
+    return _pickWeightedElement(scores, rng, fallbackElem);
   }
 
-  static String _pickKind(String baseWord, String sentiment, List<String> tags, _XorShift32 rng, LexiconBundle bundle) {
+  static String _pickKind(String baseWord, String sentiment, List<String> tags,
+      _XorShift32 rng, LexiconBundle bundle) {
     final baseEntry = bundle.basewords[baseWord] as Map<String, dynamic>?;
     final baseSprite = (baseEntry?['weights']?['sprite'] ?? 0.5).toDouble();
     final rarity = (baseEntry?['rarity']?.toString() ?? 'common');
-    final themes = (baseEntry?['themes'] as List?)?.map((e)=>e.toString()).toList() ?? const <String>[];
+    final themes =
+        (baseEntry?['themes'] as List?)?.map((e) => e.toString()).toList() ??
+            const <String>[];
 
     double pSprite;
     switch (sentiment) {
@@ -258,7 +373,17 @@ class SeedGenerator {
         break;
       case 'negative':
         // 90–100% monster. Allow up to 10% sprites if tags/themes suggest healing.
-        final healingTags = {'wellbeing','sleep','habits','social','heal','healing','rest','recovery','resilience'};
+        final healingTags = {
+          'wellbeing',
+          'sleep',
+          'habits',
+          'social',
+          'heal',
+          'healing',
+          'rest',
+          'recovery',
+          'resilience'
+        };
         final hasHealingTag = tags.any((t) => healingTags.contains(t));
         final hasHealingTheme = themes.any((t) => healingTags.contains(t));
         pSprite = hasHealingTag || hasHealingTheme ? 0.10 : 0.02;
@@ -271,7 +396,8 @@ class SeedGenerator {
     return r < pSprite ? 'sprite' : 'monster';
   }
 
-  static String _pickType(String kind, String element, String sentiment, _XorShift32 rng, LexiconBundle bundle) {
+  static String _pickType(String kind, String element, String sentiment,
+      _XorShift32 rng, LexiconBundle bundle) {
     if (kind == 'sprite') {
       final list = bundle.spriteTypes[element] ?? const <String>[];
       if (list.isNotEmpty) return list[rng.nextInt(list.length)];
@@ -279,40 +405,61 @@ class SeedGenerator {
       final any = bundle.spriteTypes.values.expand((e) => e).toList();
       return any.isNotEmpty ? any[rng.nextInt(any.length)] : 'Wisp';
     } else {
-      final perSent = bundle.monsterTypes[element] ?? const <String, List<String>>{};
-      List<String> cand = perSent[sentiment] ?? perSent['neutral'] ?? const <String>[];
+      final perSent =
+          bundle.monsterTypes[element] ?? const <String, List<String>>{};
+      List<String> cand =
+          perSent[sentiment] ?? perSent['neutral'] ?? const <String>[];
       if (cand.isEmpty) {
         cand = perSent.values.expand((e) => e).toList();
       }
-      return cand.isNotEmpty ? cand[rng.nextInt(cand.length)] : 'Gremlin';
+      if (cand.isNotEmpty) {
+        return cand[rng.nextInt(cand.length)];
+      }
+      final fallback = bundle.naming.monsterFamilies;
+      return fallback.isNotEmpty
+          ? fallback[rng.nextInt(fallback.length)].label
+          : 'Goblin';
     }
   }
 
-  static String _pickSecondary(String sentiment, _XorShift32 rng, LexiconBundle bundle) {
+  static String _pickDescriptor(
+    String kind,
+    String element,
+    String sentiment,
+    String type,
+    _XorShift32 rng,
+    LexiconBundle bundle,
+  ) {
+    if (kind == 'monster') {
+      final pool = <String>[
+        ...(bundle.naming.monsterModifiers[element] ?? const <String>[]),
+      ];
+      final family = _familyProfileForType(type, bundle);
+      if (family != null) {
+        pool.addAll(family.modifiers);
+      }
+      final deduped = pool.toSet().toList(growable: false);
+      if (deduped.isNotEmpty) {
+        return deduped[rng.nextInt(deduped.length)];
+      }
+    } else {
+      final pool = bundle.naming.spriteDescriptors[element] ?? const <String>[];
+      if (pool.isNotEmpty) {
+        return pool[rng.nextInt(pool.length)];
+      }
+    }
     String bucket = sentiment;
     if (rng.nextDouble() < 0.15) bucket = 'neutral';
-    final list = bundle.secondarySeeds[bucket] ?? bundle.secondarySeeds['neutral'] ?? const <String>[];
-    if (list.isEmpty) return 'Echo';
+    final list = bundle.secondarySeeds[bucket] ??
+        bundle.secondarySeeds['neutral'] ??
+        const <String>[];
+    if (list.isEmpty) return kind == 'monster' ? 'Echoing' : 'Echo';
     return list[rng.nextInt(list.length)];
   }
 
-  static String _composeName(String kind, String related, String secondary, String type, _XorShift32 rng) {
+  static String _composeName(String descriptor, String type) {
     String cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
-    final rel = cap(related);
-    final sec = cap(secondary);
-    if (kind == 'sprite') {
-      String name;
-      if (rng.nextBool()) {
-        name = '$sec $rel';
-      } else {
-        name = '$rel $type';
-      }
-      return _dedupeAdjacentWords(name);
-    } else {
-      final suffix = _inferSuffix(type);
-      final merged = _mergeWithOverlap(rel, suffix);
-      return merged;
-    }
+    return _dedupeAdjacentWords('${cap(descriptor)} ${cap(type)}');
   }
 
   static String _dedupeAdjacentWords(String s) {
@@ -330,44 +477,148 @@ class SeedGenerator {
     return out.join(' ');
   }
 
-  static String _inferSuffix(String type) {
-    final t = type.toLowerCase();
-    const suffixes = ['gremlin', 'sprite', 'wight', 'wisp', 'orb', 'pix', 'imp'];
-    for (final s in suffixes) {
-      if (t.endsWith(s)) return s;
-    }
-    // Fallback to last word/lower
-    final m = RegExp(r"[a-z]+$").firstMatch(t);
-    return m?.group(0) ?? 'wisp';
+  static Map<String, int> _elementCounts(LexiconBundle bundle) {
+    return _elementCountCache.putIfAbsent(bundle.version, () {
+      final counts = {
+        for (final element in _allElements) element: 0,
+      };
+      for (final value in bundle.basewords.values) {
+        final entry = value as Map<String, dynamic>;
+        final elems = ((entry['elements'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toSet();
+        for (final element in elems) {
+          if (counts.containsKey(element)) {
+            counts[element] = counts[element]! + 1;
+          }
+        }
+      }
+      return counts;
+    });
   }
 
-  static String _mergeWithOverlap(String a, String b) {
-    final la = a.toLowerCase();
-    final lb = b.toLowerCase();
-    // Find maximum k where a ends with b.substring(0,k)
-    int k = math.min(la.length, lb.length);
-    for (; k > 0; k--) {
-      if (la.endsWith(lb.substring(0, k))) {
-        final merged = a + b.substring(k);
-        return merged[0].toUpperCase() + merged.substring(1);
+  static Map<String, double> _sentimentElementWeights(String sentiment) {
+    switch (sentiment) {
+      case 'positive':
+        return const {
+          'light': 0.28,
+          'nature': 0.24,
+          'air': 0.20,
+          'water': 0.18,
+          'metal': 0.06,
+          'fire': 0.03,
+          'shadow': 0.01,
+        };
+      case 'negative':
+        return const {
+          'shadow': 0.16,
+          'metal': 0.22,
+          'fire': 0.18,
+          'water': 0.12,
+          'air': 0.12,
+          'nature': 0.10,
+          'light': 0.10,
+        };
+      case 'mixed':
+        return const {
+          'air': 0.20,
+          'water': 0.18,
+          'nature': 0.18,
+          'light': 0.16,
+          'metal': 0.12,
+          'fire': 0.10,
+          'shadow': 0.06,
+        };
+      case 'neutral':
+      default:
+        return const {
+          'nature': 0.24,
+          'light': 0.18,
+          'water': 0.18,
+          'air': 0.16,
+          'metal': 0.10,
+          'shadow': 0.08,
+          'fire': 0.06,
+        };
+    }
+  }
+
+  static String _fallbackElementForSentiment(String sentiment) {
+    switch (sentiment) {
+      case 'positive':
+        return 'light';
+      case 'negative':
+        return 'shadow';
+      case 'mixed':
+        return 'air';
+      case 'neutral':
+      default:
+        return 'nature';
+    }
+  }
+
+  static double _elementBalanceFactor(
+    String element,
+    Map<String, int> counts,
+  ) {
+    final nonZero = counts.values.where((v) => v > 0).toList();
+    if (nonZero.isEmpty) return 1.0;
+    final total = nonZero.fold<int>(0, (sum, v) => sum + v);
+    final average = total / nonZero.length;
+    final count = (counts[element] ?? 0).clamp(1, 1 << 30);
+    final factor = average / count;
+    return factor.clamp(0.55, 1.35).toDouble();
+  }
+
+  static String _pickWeightedElement(
+    Map<String, double> scores,
+    _XorShift32 rng,
+    String fallback,
+  ) {
+    final total = scores.values.fold<double>(0.0, (sum, v) => sum + v);
+    if (total <= 0) return fallback;
+    double roll = rng.nextDouble() * total;
+    for (final element in _allElements) {
+      final score = scores[element] ?? 0.0;
+      if (roll <= score) {
+        return element;
+      }
+      roll -= score;
+    }
+    return fallback;
+  }
+
+  static MonsterFamilyProfile? _familyProfileForType(
+    String type,
+    LexiconBundle bundle,
+  ) {
+    final normalized = type.toLowerCase();
+    for (final family in bundle.naming.monsterFamilies) {
+      if (family.key == normalized ||
+          family.label.toLowerCase() == normalized) {
+        return family;
       }
     }
-    final merged = a + b;
-    return merged[0].toUpperCase() + merged.substring(1);
+    return null;
   }
 
-  static String _pickColorHex(String element, String sentiment, _XorShift32 rng, LexiconBundle bundle) {
+  static String _pickColorHex(
+      String element, String sentiment, _XorShift32 rng, LexiconBundle bundle) {
     List<num>? hueRange = bundle.elementHueOverrides[element];
     hueRange ??= bundle.sentimentHue[sentiment];
     hueRange ??= const [200, 260];
     final h = hueRange[0] + rng.nextDouble() * (hueRange[1] - hueRange[0]);
-    final s = bundle.saturationRange[0] + rng.nextDouble() * (bundle.saturationRange[1] - bundle.saturationRange[0]);
-    final l = bundle.lightnessRange[0] + rng.nextDouble() * (bundle.lightnessRange[1] - bundle.lightnessRange[0]);
+    final s = bundle.saturationRange[0] +
+        rng.nextDouble() *
+            (bundle.saturationRange[1] - bundle.saturationRange[0]);
+    final l = bundle.lightnessRange[0] +
+        rng.nextDouble() *
+            (bundle.lightnessRange[1] - bundle.lightnessRange[0]);
     final rgb = _hslToRgb(h.toDouble(), s.toDouble(), l.toDouble());
     return '#'
-        '${rgb[0].toRadixString(16).padLeft(2, '0')}'
-        '${rgb[1].toRadixString(16).padLeft(2, '0')}'
-        '${rgb[2].toRadixString(16).padLeft(2, '0')}'
+            '${rgb[0].toRadixString(16).padLeft(2, '0')}'
+            '${rgb[1].toRadixString(16).padLeft(2, '0')}'
+            '${rgb[2].toRadixString(16).padLeft(2, '0')}'
         .toUpperCase();
   }
 
@@ -377,12 +628,25 @@ class SeedGenerator {
     final hh = h / 60.0;
     final x = c * (1 - ((hh % 2) - 1).abs());
     double r1 = 0, g1 = 0, b1 = 0;
-    if (0 <= hh && hh < 1) { r1 = c; g1 = x; }
-    else if (1 <= hh && hh < 2) { r1 = x; g1 = c; }
-    else if (2 <= hh && hh < 3) { g1 = c; b1 = x; }
-    else if (3 <= hh && hh < 4) { g1 = x; b1 = c; }
-    else if (4 <= hh && hh < 5) { r1 = x; b1 = c; }
-    else if (5 <= hh && hh < 6) { r1 = c; b1 = x; }
+    if (0 <= hh && hh < 1) {
+      r1 = c;
+      g1 = x;
+    } else if (1 <= hh && hh < 2) {
+      r1 = x;
+      g1 = c;
+    } else if (2 <= hh && hh < 3) {
+      g1 = c;
+      b1 = x;
+    } else if (3 <= hh && hh < 4) {
+      g1 = x;
+      b1 = c;
+    } else if (4 <= hh && hh < 5) {
+      r1 = x;
+      b1 = c;
+    } else if (5 <= hh && hh < 6) {
+      r1 = c;
+      b1 = x;
+    }
     final m = l - c / 2;
     final r = ((r1 + m) * 255).round().clamp(0, 255);
     final g = ((g1 + m) * 255).round().clamp(0, 255);
@@ -390,7 +654,8 @@ class SeedGenerator {
     return [r, g, b];
   }
 
-  static Map<String, int> _rollStats(String kind, String sentiment, _XorShift32 rng) {
+  static Map<String, int> _rollStats(
+      String kind, String sentiment, _XorShift32 rng) {
     final base = switch (sentiment) {
       'positive' => 40,
       'neutral' => 35,
@@ -422,11 +687,13 @@ class SeedGenerator {
     return min + rng.nextInt(max - min + 1);
   }
 
-  static List<Map<String, dynamic>> _pickAttacks(String element, _XorShift32 rng, LexiconBundle bundle) {
+  static List<Map<String, dynamic>> _pickAttacks(
+      String element, _XorShift32 rng, LexiconBundle bundle) {
     final list = bundle.attacks[element] ?? const <Map<String, dynamic>>[];
     if (list.isEmpty) return const [];
     final rawCount = 1 + rng.nextInt(3); // 1..3
-    final count = rawCount.clamp(1, list.length); // avoid duplicates when options are limited
+    final count = rawCount.clamp(
+        1, list.length); // avoid duplicates when options are limited
     final usedIdx = <int>{};
     final out = <Map<String, dynamic>>[];
     for (int i = 0; i < count; i++) {
@@ -478,19 +745,17 @@ extension SeedResultSerialize on SeedResult {
         colorHex: (m['colorHex'] ?? '').toString(),
         rarity: (m['rarity'] ?? '').toString(),
         stats: Map<String, int>.from(m['stats'] ?? const <String, int>{}),
-        attacks: (m['attacks'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? const [],
+        attacks: (m['attacks'] as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            const [],
         hash: (m['hash'] ?? '').toString(),
         version: (m['version'] ?? '').toString(),
       );
 }
 
-String speciesIdFrom(SeedResult s) => '${s.version}:${s.element}:${s.type}:${s.baseWord}';
-
-class _ElementGroup {
-  final double weight;
-  final List<String> items;
-  _ElementGroup({required this.weight, required this.items});
-}
+String speciesIdFrom(SeedResult s) =>
+    '${s.version}:${s.element}:${s.type}:${s.baseWord}';
 
 class _XorShift32 {
   int _x;

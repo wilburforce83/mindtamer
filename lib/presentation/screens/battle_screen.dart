@@ -21,7 +21,8 @@ class BattleScreen extends ConsumerStatefulWidget {
   ConsumerState<BattleScreen> createState() => _BattleScreenState();
 }
 
-class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProviderStateMixin {
+class _BattleScreenState extends ConsumerState<BattleScreen>
+    with TickerProviderStateMixin {
   Future<ui.Image?>? _playerImgFut;
   // Manual frame-based movement
   Offset _playerOffset = Offset.zero;
@@ -41,13 +42,14 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
   void initState() {
     super.initState();
     if (widget.battleId != null) {
-      Future.microtask(() => ref.read(battleProvider.notifier).init(battleId: widget.battleId!));
+      Future.microtask(() =>
+          ref.read(battleProvider.notifier).init(battleId: widget.battleId!));
     }
     _playerImgFut = PlayerImageService().renderCurrentPlayer();
     // Preload asset manifest for item icons
     PixelAssets.init();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-
+    _pulseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
   }
 
   @override
@@ -62,7 +64,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       _floatDrift = 0.0;
       _lastActionSeq = 0;
       _lastLogLen = 0;
-      try { _floatTimer?.cancel(); } catch (_) {}
+      try {
+        _floatTimer?.cancel();
+      } catch (_) {}
       // Defer provider update until after current build to satisfy Riverpod constraints
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || widget.battleId == null) return;
@@ -75,7 +79,8 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
     final attacker = (action['attacker'] ?? 'player') as String;
     final target = (action['target'] ?? 'enemy') as String;
     final melee = (action['melee'] ?? false) as bool;
-    final box = context.size; // might be null at init; compute from MediaQuery if so
+    final box =
+        context.size; // might be null at init; compute from MediaQuery if so
     final w = (box?.width ?? MediaQuery.of(context).size.width);
     // Compute approximate distance between sprites: width - horizontal padding (32) - 2*spriteSize
     const sprite = 64.0;
@@ -131,15 +136,23 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
 
   @override
   void dispose() {
-    try { _floatTimer?.cancel(); } catch (_) {}
-    try { _pulseCtrl.dispose(); } catch (_) {}
+    try {
+      _floatTimer?.cancel();
+    } catch (_) {}
+    try {
+      _pulseCtrl.dispose();
+    } catch (_) {}
     super.dispose();
   }
 
   void _showItemsModal(WidgetRef ref) async {
+    final locked = ref.read(battleProvider).inputLocked;
+    if (locked) return;
     final inv = InventoryService.inventory();
     // Filter only catalog-defined items
-    final usable = inv.where((e) => ItemCatalog.defOf((e['type'] ?? '').toString()) != null).toList();
+    final usable = inv
+        .where((e) => ItemCatalog.defOf((e['type'] ?? '').toString()) != null)
+        .toList();
     if (!mounted) return;
     await showModalBottomSheet(
       context: context,
@@ -169,21 +182,36 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(children: [
                           if (asset != null && PixelAssets.has(asset))
-                            Image.asset(asset, width: 20, height: 20, filterQuality: FilterQuality.none)
+                            Image.asset(asset,
+                                width: 20,
+                                height: 20,
+                                filterQuality: FilterQuality.none)
                           else
                             const Icon(Icons.inventory_2_outlined, size: 18),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(label, style: Theme.of(context).textTheme.labelSmall, overflow: TextOverflow.ellipsis)),
+                          Expanded(
+                              child: Text(label,
+                                  style: Theme.of(context).textTheme.labelSmall,
+                                  overflow: TextOverflow.ellipsis)),
                           const SizedBox(width: 8),
-                          Text('x${it['qty']}', style: Theme.of(context).textTheme.labelSmall),
+                          Text('x${it['qty']}',
+                              style: Theme.of(context).textTheme.labelSmall),
                           const SizedBox(width: 8),
                           OutlinedButton(
-                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), visualDensity: VisualDensity.compact),
-                            onPressed: (it['qty'] as int) > 0 ? () {
-                              Navigator.of(ctx).pop();
-                              ref.read(battleProvider.notifier).useItemFromInventory(id);
-                            } : null,
-                            child: const Text('Use', style: TextStyle(fontSize: 11)),
+                            style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact),
+                            onPressed: (it['qty'] as int) > 0 && !locked
+                                ? () {
+                                    Navigator.of(ctx).pop();
+                                    ref
+                                        .read(battleProvider.notifier)
+                                        .useItemFromInventory(id);
+                                  }
+                                : null,
+                            child: const Text('Use',
+                                style: TextStyle(fontSize: 11)),
                           ),
                         ]),
                       );
@@ -230,21 +258,31 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       if (text != null) {
         _floatText = text;
         _floatColor = color;
-        _floatAlign = (state.lastAction!['target'] == 'enemy') ? Alignment.bottomRight : Alignment.bottomLeft;
+        _floatAlign = (state.lastAction!['target'] == 'enemy')
+            ? Alignment.bottomRight
+            : Alignment.bottomLeft;
         final start = DateTime.now();
         _floatUntil = start.add(const Duration(milliseconds: 800));
         _floatDrift = 0;
         _floatTimer?.cancel();
-        _floatTimer = Timer.periodic(const Duration(milliseconds: 40), (t){
-          if (!mounted) { t.cancel(); return; }
+        _floatTimer = Timer.periodic(const Duration(milliseconds: 40), (t) {
+          if (!mounted) {
+            t.cancel();
+            return;
+          }
           final elapsed = DateTime.now().difference(start).inMilliseconds;
           const total = 800;
           final p = elapsed / total;
           if (p >= 1) {
-            setState((){ _floatText = null; _floatDrift = 0; });
+            setState(() {
+              _floatText = null;
+              _floatDrift = 0;
+            });
             t.cancel();
           } else {
-            setState((){ _floatDrift = 24.0 * p; });
+            setState(() {
+              _floatDrift = 24.0 * p;
+            });
           }
         });
       }
@@ -257,53 +295,84 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
         if (!mounted) return;
         _popped = true;
         await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) {
-            final items = state.winLoot.map((e)=> "${ItemEffects.label(e['type'] as String)} x${e['qty']}").toList();
-            final codex = state.codexAdded ? 'Added to Codex' : null;
-            final echo = state.echoDropped ? 'Resonant Echo acquired' : null;
-            final details = <String>[
-              'XP +${state.xpGained}${state.leveledUp ? ' (Level Up!)' : ''}',
-              if (items.isNotEmpty) 'Loot: ${items.join(', ')}',
-              if (codex != null) codex,
-              if (echo != null) echo,
-            ];
-            return AlertDialog(
-              title: Text(state.result == 'win' ? 'Victory!' : (state.result == 'escape' ? 'Escaped' : 'Defeat')),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final line in details) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text(line)),
-                  if (details.isEmpty) const Text('No rewards this time.')
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) {
+              final items = state.winLoot
+                  .map((e) =>
+                      "${ItemEffects.label(e['type'] as String)} x${e['qty']}")
+                  .toList();
+              final codex = state.codexAdded ? 'Added to Codex' : null;
+              final echo = state.echoDropped ? 'Resonant Echo acquired' : null;
+              final details = <String>[
+                'XP +${state.xpGained}${state.leveledUp ? ' (Level Up!)' : ''}',
+                if (items.isNotEmpty) 'Loot: ${items.join(', ')}',
+                if (codex != null) codex,
+                if (echo != null) echo,
+              ];
+              return AlertDialog(
+                title: Text(state.result == 'win'
+                    ? 'Victory!'
+                    : (state.result == 'escape' ? 'Escaped' : 'Defeat')),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final line in details)
+                      Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(line)),
+                    if (details.isEmpty) const Text('No rewards this time.')
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        context.go('/character');
+                      },
+                      child: const Text('Home')),
+                  Builder(builder: (bctx) {
+                    final open = encounterTicketBox()
+                        .values
+                        .where((e) => e.state == 'open')
+                        .toList();
+                    if (open.isEmpty || state.result != 'win') {
+                      return const SizedBox.shrink();
+                    }
+                    return TextButton(
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          final first = open.first;
+                          final id = await BattleServiceImpl(
+                                  codex: CodexServiceImpl(),
+                                  echo: EchoServiceImpl())
+                              .start(first.ticketId);
+                          if (!mounted) return;
+                          this.context.go('/battle', extra: {'battleId': id});
+                        },
+                        child: const Text('Next Battle'));
+                  })
                 ],
-              ),
-              actions: [
-                TextButton(onPressed: (){ Navigator.of(ctx).pop(); context.go('/character'); }, child: const Text('Home')),
-                Builder(builder: (bctx){
-                  final open = encounterTicketBox().values.where((e) => e.state == 'open').toList();
-                  if (open.isEmpty || state.result != 'win') return const SizedBox.shrink();
-                  return TextButton(onPressed: () async {
-                    Navigator.of(ctx).pop();
-                    final first = open.first;
-                    final id = await BattleServiceImpl(codex: CodexServiceImpl(), echo: EchoServiceImpl()).start(first.ticketId);
-                    if (!mounted) return; this.context.go('/battle', extra: {'battleId': id});
-                  }, child: const Text('Next Battle'));
-                })
-              ],
-            );
-          }
-        );
+              );
+            });
       });
     }
 
     final topHud = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _StatBar(label: 'HP', current: state.playerHp, max: state.playerMaxHp, color: Colors.redAccent),
+        _StatBar(
+            label: 'HP',
+            current: state.playerHp,
+            max: state.playerMaxHp,
+            color: Colors.redAccent),
         const SizedBox(height: 6),
-        _StatBar(label: state.enemyName ?? 'Enemy', current: state.enemyHp, max: state.enemyMaxHp, color: Colors.teal),
+        _StatBar(
+            label: state.enemyName ?? 'Enemy',
+            current: state.enemyHp,
+            max: state.enemyMaxHp,
+            color: Colors.teal),
       ],
     );
 
@@ -314,13 +383,15 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
         children: [
           // Background
           if (state.backgroundAsset.isNotEmpty)
-            Image.asset(state.backgroundAsset, fit: BoxFit.cover, filterQuality: FilterQuality.none),
+            Image.asset(state.backgroundAsset,
+                fit: BoxFit.cover, filterQuality: FilterQuality.none),
           // Foreground: player left, enemy right
           // Foreground combatants with transforms (shake/lunge)
           LayoutBuilder(builder: (context, cts) {
             final width = cts.maxWidth;
             final height = width / (16 / 9);
-            final baseShift = width * 0.10; // move 10% towards center (further apart by ~15% from previous)
+            final baseShift = width *
+                0.10; // move 10% towards center (further apart by ~15% from previous)
             final upShift = -height * 0.05; // move up by ~5%
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -341,7 +412,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                           }
                           final img = snap.data;
                           if (img == null) return const Text('You');
-                          return RawImage(image: img, filterQuality: FilterQuality.none, fit: BoxFit.contain);
+                          return RawImage(
+                              image: img,
+                              filterQuality: FilterQuality.none,
+                              fit: BoxFit.contain);
                         },
                       ),
                     ),
@@ -352,8 +426,13 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
                       width: 64,
                       height: 64,
                       child: state.enemyAssetPath != null
-                          ? Image.asset(state.enemyAssetPath!, filterQuality: FilterQuality.none, fit: BoxFit.contain)
-                          : Center(child: Text(state.enemyName ?? 'Enemy', style: Theme.of(context).textTheme.titleSmall)),
+                          ? Image.asset(state.enemyAssetPath!,
+                              filterQuality: FilterQuality.none,
+                              fit: BoxFit.contain)
+                          : Center(
+                              child: Text(state.enemyName ?? 'Enemy',
+                                  style:
+                                      Theme.of(context).textTheme.titleSmall)),
                     ),
                   ),
                 ],
@@ -376,10 +455,15 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
             Align(
               alignment: _floatAlign,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 120, left: 24, right: 24),
+                padding:
+                    const EdgeInsets.only(bottom: 120, left: 24, right: 24),
                 child: Transform.translate(
                   offset: Offset(0, -_floatDrift),
-                  child: Text(_floatText!, style: TextStyle(color: _floatColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(_floatText!,
+                      style: TextStyle(
+                          color: _floatColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ),
               ),
             ),
@@ -389,25 +473,40 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
 
     Color colorForElement(String? e) {
       switch ((e ?? '').toLowerCase()) {
-        case 'fire': return Colors.deepOrange;
-        case 'water': return Colors.blueAccent;
-        case 'air': return Colors.lightBlueAccent;
-        case 'light': return Colors.amber;
-        case 'shadow': return Colors.purple;
-        case 'nature': return Colors.green;
-        case 'metal': return Colors.grey;
-        default: return Theme.of(context).colorScheme.surface; // neutral
+        case 'fire':
+          return Colors.deepOrange;
+        case 'water':
+          return Colors.blueAccent;
+        case 'air':
+          return Colors.lightBlueAccent;
+        case 'light':
+          return Colors.amber;
+        case 'shadow':
+          return Colors.purple;
+        case 'nature':
+          return Colors.green;
+        case 'metal':
+          return Colors.grey;
+        default:
+          return Theme.of(context).colorScheme.surface; // neutral
       }
     }
 
     String? elementForSpriteName(String name) {
       try {
-        final slots = (equipmentBox().get('sprite_slots') as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
-        final ids = [slots?['sprite1']?.toString(), slots?['sprite2']?.toString()];
+        final slots = (equipmentBox().get('sprite_slots') as Map?)
+            ?.map((k, v) => MapEntry(k.toString(), v.toString()));
+        final ids = [
+          slots?['sprite1']?.toString(),
+          slots?['sprite2']?.toString()
+        ];
         for (final id in ids) {
           if (id == null || id.isEmpty) continue;
-          final inst = seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
-          final n = (inst.attacks.isNotEmpty ? (inst.attacks.first['name'] ?? '').toString() : '');
+          final inst =
+              seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
+          final n = (inst.attacks.isNotEmpty
+              ? (inst.attacks.first['name'] ?? '').toString()
+              : '');
           if (n == name) return (inst.seedSnapshot['element'] ?? '').toString();
         }
       } catch (_) {}
@@ -420,8 +519,13 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       children: [
         for (int i = 0; i < state.skills.length; i++)
           PixelButton(
-            label: state.skillCooldowns.elementAt(i) > 0 ? '${state.skills[i]} (${state.skillCooldowns[i]})' : state.skills[i],
-            onPressed: state.skillCooldowns.elementAt(i) > 0 ? null : () => ref.read(battleProvider.notifier).useSkill(i),
+            label: state.skillCooldowns.elementAt(i) > 0
+                ? '${state.skills[i]} (${state.skillCooldowns[i]})'
+                : state.skills[i],
+            onPressed:
+                state.skillCooldowns.elementAt(i) > 0 || state.inputLocked
+                    ? null
+                    : () => ref.read(battleProvider.notifier).useSkill(i),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
       ],
@@ -436,10 +540,15 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
             final elem = elementForSpriteName(state.sprites[i]);
             final bg = colorForElement(elem).withValues(alpha: 0.85);
             const fg = Colors.white;
-            final label = state.spriteCooldowns.elementAt(i) > 0 ? '${state.sprites[i]} (${state.spriteCooldowns[i]})' : state.sprites[i];
+            final label = state.spriteCooldowns.elementAt(i) > 0
+                ? '${state.sprites[i]} (${state.spriteCooldowns[i]})'
+                : state.sprites[i];
             return PixelButton(
               label: label,
-              onPressed: state.spriteCooldowns.elementAt(i) > 0 ? null : () => ref.read(battleProvider.notifier).useSprite(i),
+              onPressed:
+                  state.spriteCooldowns.elementAt(i) > 0 || state.inputLocked
+                      ? null
+                      : () => ref.read(battleProvider.notifier).useSprite(i),
               primary: false,
               bgColor: bg,
               fgColor: fg,
@@ -453,7 +562,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
       alignment: Alignment.centerLeft,
       child: PixelButton(
         label: 'Items',
-        onPressed: () => _showItemsModal(ref),
+        onPressed: state.inputLocked ? null : () => _showItemsModal(ref),
         primary: false,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
@@ -467,14 +576,18 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
           if (q <= 0) continue;
           final def = ItemCatalog.defOf(t);
           if (def == null) continue;
-          if ((def.healInstant ?? 0) > 0 || ((def.regenPerTurn ?? 0) > 0 && (def.regenTurns ?? 0) > 0)) return true;
+          if ((def.healInstant ?? 0) > 0 ||
+              ((def.regenPerTurn ?? 0) > 0 && (def.regenTurns ?? 0) > 0)) {
+            return true;
+          }
         }
       } catch (_) {}
       return false;
     }
 
     final healAvailable = hasHealingItem();
-    final below25 = state.playerMaxHp > 0 && (state.playerHp / state.playerMaxHp) <= 0.25;
+    final below25 =
+        state.playerMaxHp > 0 && (state.playerHp / state.playerMaxHp) <= 0.25;
     final shouldPulse = healAvailable && below25 && (state.result == null);
     if (shouldPulse) {
       if (!_pulseCtrl.isAnimating) _pulseCtrl.repeat(reverse: true);
@@ -485,7 +598,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
     Widget quickHealButton() {
       final btn = PixelButton(
         label: 'Quick Heal',
-        onPressed: healAvailable ? () => ref.read(battleProvider.notifier).quickHeal() : null,
+        onPressed: healAvailable && !state.inputLocked
+            ? () => ref.read(battleProvider.notifier).quickHeal()
+            : null,
         primary: false,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       );
@@ -508,21 +623,30 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
     Widget runAwayButton() {
       return PixelButton(
         label: 'Run Away',
-        onPressed: () async {
-          final leave = await showDialog<bool>(context: context, builder: (ctx) {
-            return AlertDialog(
-              title: const Text('Leave Battle?'),
-              content: const Text('You can hide from your echoes, but you have to face them one day. Leave?'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
-                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leave')),
-              ],
-            );
-          });
-          if (leave == true && mounted) {
-            ref.read(battleProvider.notifier).escapeBattle();
-          }
-        },
+        onPressed: state.inputLocked
+            ? null
+            : () async {
+                final leave = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) {
+                      return AlertDialog(
+                        title: const Text('Leave Battle?'),
+                        content: const Text(
+                            'You can hide from your echoes, but you have to face them one day. Leave?'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Stay')),
+                          TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Leave')),
+                        ],
+                      );
+                    });
+                if (leave == true && mounted) {
+                  ref.read(battleProvider.notifier).escapeBattle();
+                }
+              },
         primary: false,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       );
@@ -530,7 +654,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with TickerProvider
 
     final logList = Expanded(
       child: Container(
-        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
+        decoration: BoxDecoration(
+            border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant)),
         child: ListView(
           padding: const EdgeInsets.all(8),
           children: [
@@ -638,22 +764,33 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-
 class _StatBar extends StatelessWidget {
   final String label;
   final int current;
   final int max;
   final Color color;
-  const _StatBar({required this.label, required this.current, required this.max, required this.color});
+  const _StatBar(
+      {required this.label,
+      required this.current,
+      required this.max,
+      required this.color});
   @override
   Widget build(BuildContext context) {
     final pct = max > 0 ? (current / max).clamp(0.0, 1.0) : 0.0;
     return SizedBox(
       height: 18,
       child: Stack(children: [
-        Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant))),
-        FractionallySizedBox(widthFactor: pct, child: Container(color: color.withValues(alpha: 0.8))),
-        Positioned.fill(child: Center(child: Text('$label: $current/$max', style: Theme.of(context).textTheme.labelSmall))),
+        Container(
+            decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant))),
+        FractionallySizedBox(
+            widthFactor: pct,
+            child: Container(color: color.withValues(alpha: 0.8))),
+        Positioned.fill(
+            child: Center(
+                child: Text('$label: $current/$max',
+                    style: Theme.of(context).textTheme.labelSmall))),
       ]),
     );
   }

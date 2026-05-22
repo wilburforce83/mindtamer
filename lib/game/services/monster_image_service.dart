@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:hive/hive.dart';
 
 import '../../data/hive/boxes.dart';
@@ -16,42 +16,37 @@ class MonsterImageService {
     'assets/images/monsters/64x64/',
   ];
 
-  List<String>? _allMonsterAssets; // cached manifest entries under known prefixes
+  List<String>?
+      _allMonsterAssets; // cached manifest entries under known prefixes
 
   Future<List<String>> _loadMonsterAssetList() async {
     if (_allMonsterAssets != null) return _allMonsterAssets!;
-    dynamic decoded;
     try {
-      final text = await rootBundle.loadString('AssetManifest.json');
-      decoded = json.decode(text);
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final out = manifest
+          .listAssets()
+          .where((k) =>
+              _prefixes.any((p) => k.startsWith(p)) &&
+              (k.endsWith('.png') || k.endsWith('.webp')))
+          .toList()
+        ..sort();
+      if (out.isNotEmpty) {
+        _allMonsterAssets = out;
+        return out;
+      }
     } catch (_) {
-      decoded = null; // Some build modes may not include the JSON file; fall back later.
+      // Fall through to the static index fallback.
     }
 
     final out = <String>[];
-    bool matchesPrefix(String k) => _prefixes.any((p) => k.startsWith(p));
-
-    if (decoded is Map) {
-      for (final key in decoded.keys) {
-        final k = key.toString();
-        if (matchesPrefix(k) && (k.endsWith('.png') || k.endsWith('.webp'))) {
-          out.add(k);
-        }
-      }
-    } else if (decoded is List) {
-      for (final v in decoded) {
-        final k = v.toString();
-        if (matchesPrefix(k) && (k.endsWith('.png') || k.endsWith('.webp'))) {
-          out.add(k);
-        }
-      }
-    }
     // Fallback: try static index if manifest provided none
     if (out.isEmpty) {
       try {
-        final idx = await rootBundle.loadString('assets/images/monsters/index.json');
+        final idx =
+            await rootBundle.loadString('assets/images/monsters/index.json');
         final list = List<String>.from(json.decode(idx));
-        out.addAll(list.where((k) => k.endsWith('.png') || k.endsWith('.webp')));
+        out.addAll(
+            list.where((k) => k.endsWith('.png') || k.endsWith('.webp')));
       } catch (_) {}
     }
     out.sort();
@@ -100,11 +95,15 @@ class MonsterImageService {
     }
 
     final both = assets.where((p) => hasElem(p) && hasType(p)).toList();
-    final elemOnly = assets.where((p) => !both.contains(p) && hasElem(p)).toList();
-    final any = assets.where((p) => !both.contains(p) && !elemOnly.contains(p)).toList();
+    final elemOnly =
+        assets.where((p) => !both.contains(p) && hasElem(p)).toList();
+    final any = assets
+        .where((p) => !both.contains(p) && !elemOnly.contains(p))
+        .toList();
     if (debug) {
       // ignore: avoid_print
-      print('[MonsterImageService] name="$displayName" type="$type" element="$element" fam=${fam ?? 'n/a'} candidates both=${both.length} elemOnly=${elemOnly.length} any=${any.length}');
+      print(
+          '[MonsterImageService] name="$displayName" type="$type" element="$element" fam=${fam ?? 'n/a'} candidates both=${both.length} elemOnly=${elemOnly.length} any=${any.length}');
     }
 
     // Family+element filter if both is empty but we can still identify the family from type
@@ -112,12 +111,16 @@ class MonsterImageService {
     if (both.isEmpty && fam != null) {
       famElem = elemOnly.where((p) => _pathHasSegment(p, fam)).toList();
     }
-    List<String> bucket =
-        both.isNotEmpty ? both : (famElem.isNotEmpty ? famElem : (elemOnly.isNotEmpty ? elemOnly : any));
+    List<String> bucket = both.isNotEmpty
+        ? both
+        : (famElem.isNotEmpty
+            ? famElem
+            : (elemOnly.isNotEmpty ? elemOnly : any));
     // Prefer a variant (melee/magic) based on family + element when available.
     final pref = _preferredVariant(displayName, type, element);
     if (pref != null) {
-      final subset = bucket.where((p) => p.toLowerCase().contains('_${pref}_')).toList();
+      final subset =
+          bucket.where((p) => p.toLowerCase().contains('_${pref}_')).toList();
       if (subset.isNotEmpty) bucket = subset;
     }
     if (bucket.isEmpty) {
@@ -126,7 +129,8 @@ class MonsterImageService {
         final famAny = assets.where((p) => _pathHasSegment(p, fam)).toList();
         if (debug) {
           // ignore: avoid_print
-          print('[MonsterImageService] no fam+elem match; using family-any fallback fam=$fam count=${famAny.length}');
+          print(
+              '[MonsterImageService] no fam+elem match; using family-any fallback fam=$fam count=${famAny.length}');
         }
         if (famAny.isNotEmpty) {
           final idx = _stableIndex(displayName, famAny.length);
@@ -153,7 +157,8 @@ class MonsterImageService {
     final chosen = bucket[idx];
     if (debug) {
       // ignore: avoid_print
-      print('[MonsterImageService] chosen[$idx/${bucket.length}] $chosen (prefVariant=${pref ?? 'none'})');
+      print(
+          '[MonsterImageService] chosen[$idx/${bucket.length}] $chosen (prefVariant=${pref ?? 'none'})');
     }
     await box.put(displayName, chosen);
     return chosen;
@@ -173,37 +178,99 @@ class MonsterImageService {
   List<String> _typeCandidates(String typ) {
     final t = typ.toLowerCase();
     final out = <String>{t};
-    void add(String s) { if (s.isNotEmpty) out.add(s); }
+    void add(String s) {
+      if (s.isNotEmpty) out.add(s);
+    }
 
-    if (t.contains('gremlin')) { add('gremlin'); add('goblin'); }
-    if (t.contains('goblin')) { add('goblin'); }
-    if (t.contains('imp')) { add('imp'); }
-    if (t.contains('wisp')) { add('wisp'); }
-    if (t.contains('wight')) { add('wight'); add('shade'); add('gargoyle'); }
-    if (t.contains('shade') || t.contains('dus') || t.contains('gloom') || t.contains('veil')) { add('shade'); }
-    if (t.contains('pix')) { add('wisp'); add('shade'); }
-    if (t.contains('moss') || t.contains('bloom') || t.contains('thorn') || t.contains('sprig') ) { add('spriggan'); add('myconid'); }
-    if (t.contains('eddie') || t.contains('tidel') || t.contains('brine')) { add('serpent'); add('wisp'); }
-    if (t.contains('gear') || t.contains('copper') || t.contains('tin') || t.contains('clank')) { add('construct'); add('golem'); }
-    if (t.contains('coal') || t.contains('soot') || t.contains('ash')) { add('gargoyle'); add('golem'); }
-    if (t.contains('draft') || t.contains('gust') || t.contains('flitter')) { add('harpy'); add('wisp'); }
+    if (t.contains('gremlin')) {
+      add('gremlin');
+      add('goblin');
+    }
+    if (t.contains('goblin')) {
+      add('goblin');
+    }
+    if (t.contains('imp')) {
+      add('imp');
+    }
+    if (t.contains('wisp')) {
+      add('wisp');
+    }
+    if (t.contains('wight')) {
+      add('wight');
+      add('shade');
+      add('gargoyle');
+    }
+    if (t.contains('shade') ||
+        t.contains('dus') ||
+        t.contains('gloom') ||
+        t.contains('veil')) {
+      add('shade');
+    }
+    if (t.contains('pix')) {
+      add('wisp');
+      add('shade');
+    }
+    if (t.contains('moss') ||
+        t.contains('bloom') ||
+        t.contains('thorn') ||
+        t.contains('sprig')) {
+      add('spriggan');
+      add('myconid');
+    }
+    if (t.contains('eddie') || t.contains('tidel') || t.contains('brine')) {
+      add('serpent');
+      add('wisp');
+    }
+    if (t.contains('gear') ||
+        t.contains('copper') ||
+        t.contains('tin') ||
+        t.contains('clank')) {
+      add('construct');
+      add('golem');
+    }
+    if (t.contains('coal') || t.contains('soot') || t.contains('ash')) {
+      add('gargoyle');
+      add('golem');
+    }
+    if (t.contains('draft') || t.contains('gust') || t.contains('flitter')) {
+      add('harpy');
+      add('wisp');
+    }
 
     return out.toList();
   }
 
   /// If manifest is unavailable, try a handful of common filename patterns and
   /// return the first one that loads successfully.
-  Future<String?> _probeCommonFamilies(String elem, List<String> typeTokens) async {
+  Future<String?> _probeCommonFamilies(
+      String elem, List<String> typeTokens) async {
     const families = [
-      'harpy','gargoyle','drake','golem','serpent','slime','shade','spriggan','myconid','imp','beast','construct','goblin','wisp','insectoid'
+      'harpy',
+      'gargoyle',
+      'drake',
+      'golem',
+      'serpent',
+      'slime',
+      'shade',
+      'spriggan',
+      'myconid',
+      'imp',
+      'beast',
+      'construct',
+      'goblin',
+      'wisp',
+      'insectoid'
     ];
-    final variants = ['melee','magic'];
+    final variants = ['melee', 'magic'];
     // Try candidates where family appears in typeTokens first
     final preferred = [
       for (final f in families)
         if (typeTokens.any((t) => f == t)) f
     ];
-    final others = [for (final f in families) if (!preferred.contains(f)) f];
+    final others = [
+      for (final f in families)
+        if (!preferred.contains(f)) f
+    ];
     final order = [...preferred, ...others];
     for (final fam in order) {
       for (final kind in variants) {
@@ -222,8 +289,15 @@ class MonsterImageService {
     final t = type.toLowerCase();
     // Family bias
     final fam = _familyFromType(t) ?? t.split(RegExp(r"\s+")).last;
-    const magicFav = {'wisp','shade','harpy'};
-    const meleeFav = {'golem','beast','gargoyle','serpent','drake','construct'};
+    const magicFav = {'wisp', 'shade', 'harpy'};
+    const meleeFav = {
+      'golem',
+      'beast',
+      'gargoyle',
+      'serpent',
+      'drake',
+      'construct'
+    };
     String? bias;
     if (magicFav.contains(fam)) bias = 'magic';
     if (meleeFav.contains(fam)) bias = 'melee';
@@ -235,11 +309,14 @@ class MonsterImageService {
     // Element hint
     final elem = element.toLowerCase();
     String? elemBias;
-    if ({'light','shadow','air'}.contains(elem)) elemBias = 'magic';
-    if ({'metal','nature'}.contains(elem)) elemBias = 'melee';
+    if ({'light', 'shadow', 'air'}.contains(elem)) elemBias = 'magic';
+    if ({'metal', 'nature'}.contains(elem)) elemBias = 'melee';
 
     // Combine preferences with priority: modifier > family > element > deterministic
-    final chosen = modBias ?? bias ?? elemBias ?? ((_stableIndex(type, 2) == 0) ? 'melee' : 'magic');
+    final chosen = modBias ??
+        bias ??
+        elemBias ??
+        ((_stableIndex(type, 2) == 0) ? 'melee' : 'magic');
     return chosen;
   }
 
@@ -253,37 +330,172 @@ class MonsterImageService {
     final m = mod;
     // Word buckets — extend as desired
     const magicWords = {
-      'veil','halo','gleam','ray','prism','echo','wisp','shade','dusk','gloom','night','umbral','aura','rune','glyph','sigil','mist','ripple','tide','spore','spirit','soul','whisper','whirl','gust','zephyr','haze','pulse','surge'
+      'veil',
+      'veiled',
+      'halo',
+      'haloed',
+      'gleam',
+      'gleaming',
+      'ray',
+      'prism',
+      'radiant',
+      'luminous',
+      'dawnlit',
+      'aurora',
+      'echo',
+      'wisp',
+      'shade',
+      'dusk',
+      'gloom',
+      'gloam',
+      'night',
+      'umbral',
+      'aura',
+      'rune',
+      'glyph',
+      'sigil',
+      'mist',
+      'ripple',
+      'tide',
+      'spore',
+      'spirit',
+      'soul',
+      'whisper',
+      'whirl',
+      'gust',
+      'zephyr',
+      'haze',
+      'pulse',
+      'surge',
+      'tidal',
+      'current',
+      'drift',
+      'tempest'
     };
     const meleeWords = {
-      'thorn','briar','root','leaf','iron','steel','gear','aegis','stone','rock','boulder','monolith','claw','fang','bite','strike','smash','hammer','pounce','blade','spear','talon','scale','lash','ember','cinder','forge','rust','horn'
+      'thorn',
+      'thorned',
+      'briar',
+      'root',
+      'rooted',
+      'leaf',
+      'verdant',
+      'blooming',
+      'moss',
+      'iron',
+      'ironclad',
+      'steel',
+      'gear',
+      'gearbound',
+      'aegis',
+      'stone',
+      'granite',
+      'crag',
+      'rock',
+      'boulder',
+      'monolith',
+      'claw',
+      'clawed',
+      'fang',
+      'fanged',
+      'bite',
+      'strike',
+      'smash',
+      'hammer',
+      'pounce',
+      'blade',
+      'spear',
+      'talon',
+      'scale',
+      'scaled',
+      'lash',
+      'ember',
+      'cinder',
+      'forge',
+      'ashen',
+      'blazing',
+      'molten',
+      'rust',
+      'horn',
+      'horned',
+      'alloy',
+      'copper',
+      'spore',
+      'chitin',
+      'skittering',
+      'shelled'
     };
     if (magicWords.contains(m)) return 'magic';
     if (meleeWords.contains(m)) return 'melee';
 
     // Fallback: sub-string cues
-    if (m.contains('veil') || m.contains('halo') || m.contains('rune') || m.contains('glyph') || m.contains('mist') || m.contains('wisp')) return 'magic';
-    if (m.contains('thorn') || m.contains('briar') || m.contains('iron') || m.contains('gear') || m.contains('stone') || m.contains('claw') || m.contains('fang') || m.contains('blade')) return 'melee';
+    if (m.contains('veil') ||
+        m.contains('halo') ||
+        m.contains('radiant') ||
+        m.contains('lumin') ||
+        m.contains('rune') ||
+        m.contains('glyph') ||
+        m.contains('mist') ||
+        m.contains('wisp') ||
+        m.contains('zephyr') ||
+        m.contains('tempest') ||
+        m.contains('umbral')) {
+      return 'magic';
+    }
+    if (m.contains('thorn') ||
+        m.contains('briar') ||
+        m.contains('iron') ||
+        m.contains('gear') ||
+        m.contains('stone') ||
+        m.contains('claw') ||
+        m.contains('fang') ||
+        m.contains('blade') ||
+        m.contains('scale') ||
+        m.contains('spore') ||
+        m.contains('chitin')) {
+      return 'melee';
+    }
 
     // Family hints: wisps/shades tend to magic, golems/beasts/serpents to melee
     if (family != null) {
-      if ({'wisp','shade','harpy'}.contains(family)) return 'magic';
-      if ({'golem','beast','gargoyle','serpent','drake','construct'}.contains(family)) return 'melee';
+      if ({'wisp', 'shade', 'harpy'}.contains(family)) {
+        return 'magic';
+      }
+      if ({'golem', 'beast', 'gargoyle', 'serpent', 'drake', 'construct'}
+          .contains(family)) {
+        return 'melee';
+      }
     }
 
     // Element hint
     final e = element.toLowerCase();
-    if ({'light','shadow','air'}.contains(e)) return 'magic';
-    if ({'metal','nature'}.contains(e)) return 'melee';
+    if ({'light', 'shadow', 'air'}.contains(e)) return 'magic';
+    if ({'metal', 'nature'}.contains(e)) return 'melee';
     return null;
   }
 
   String? _familyFromType(String type) {
     final t = type.toLowerCase();
     const families = [
-      'slime','wisp','shade','imp','goblin','beast','drake','serpent','insectoid','myconid','spriggan','golem','gargoyle','harpy','undead','construct'
+      'slime',
+      'wisp',
+      'shade',
+      'imp',
+      'goblin',
+      'beast',
+      'drake',
+      'serpent',
+      'insectoid',
+      'myconid',
+      'spriggan',
+      'golem',
+      'gargoyle',
+      'harpy',
+      'undead',
+      'construct'
     ];
-    final tokens = t.split(RegExp(r'[\s_\-/]+')).where((s) => s.isNotEmpty).toList();
+    final tokens =
+        t.split(RegExp(r'[\s_\-/]+')).where((s) => s.isNotEmpty).toList();
     for (final f in families) {
       if (tokens.contains(f)) return f;
     }

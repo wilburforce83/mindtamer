@@ -4,21 +4,41 @@ import 'package:archive/archive_io.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import '../hive/boxes.dart';
+import '../../features/journal/data/journal_repository.dart';
+import '../../features/mood/data/mood_repository.dart' as mood_v2;
+
 class ExportRepository {
   Future<File> exportAll() async {
     final dir = await getApplicationDocumentsDirectory();
     final outDir = Directory('${dir.path}/exports'); if (!await outDir.exists()) await outDir.create(recursive: true);
-    final journal = journalBox().values.toList();
-    final moods = moodBox().values.toList();
+    final journal = await JournalRepository().searchOnce();
+    final moods = mood_v2.MoodRepository.all();
     final plans = medPlanBox().values.toList();
     final medlogs = medLogBox().values.toList();
     final journalCsv = const ListToCsvConverter().convert([
-      ['id','date','text','tags','sentiment','linkedEnemies'],
-      ...journal.map((e)=>[e.id,e.date.toIso8601String(),e.text,e.tags.join('|'),e.sentiment.name,e.linkedEnemies.join('|')])
+      ['id','createdAtUtc','localDate','title','body','tags','sentiment','schemaVersion'],
+      ...journal.map((e)=>[
+        e.id,
+        e.createdAtUtc.toIso8601String(),
+        e.localDate,
+        e.title,
+        e.body ?? '',
+        e.tags.join('|'),
+        e.sentiment.name,
+        e.schemaVersion,
+      ])
     ]);
     final moodsCsv = const ListToCsvConverter().convert([
-      ['id','date','battery','stress','focus','mood','sleep','social','custom1','custom2','locked'],
-      ...moods.map((m)=>[m.id,m.date.toIso8601String(),m.battery,m.stress,m.focus,m.mood,m.sleep,m.social,m.custom1??'',m.custom2??'',m.locked])
+      ['timestamp','energy','stress','focus','mood','sleepQuality','socialConnection'],
+      ...moods.map((m)=>[
+        m.timestamp.toIso8601String(),
+        m.values['energy'] ?? '',
+        m.values['stress'] ?? '',
+        m.values['focus'] ?? '',
+        m.values['mood'] ?? '',
+        m.values['sleepQuality'] ?? '',
+        m.values['socialConnection'] ?? '',
+      ])
     ]);
     final plansCsv = const ListToCsvConverter().convert([
       ['id','name','dose','times','active'],

@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "files": [
     {
       "name": "basewords-a.json",
@@ -133,8 +133,8 @@
     },
     {
       "name": "secondary-seeds.json",
-      "size": 377,
-      "sha256": "32b70fb8ded1813eaf66d16b99c4fbdda811437b3bc63a7f2483db2bf36ed292"
+      "size": 397,
+      "sha256": "3278b6609a1bb91899e4e190d2f7197968c1f474faa840a2077010f783a891b5"
     },
     {
       "name": "elements.json",
@@ -143,8 +143,13 @@
     },
     {
       "name": "types.json",
-      "size": 1007,
-      "sha256": "369e4b8f6079f841a1845aa746de7e0a2de08a7cf0ad7912464b362ddda25987"
+      "size": 1176,
+      "sha256": "e903237a29b04aedc04066d8bbab4dfda842b8471b44854fad4174da55f5570c"
+    },
+    {
+      "name": "naming.json",
+      "size": 5541,
+      "sha256": "17cb1b12957646089caa521ea81da6da2e417d1f037ac1d213939e0ed60dbd21"
     },
     {
       "name": "color-palettes.json",

@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:flutter/widgets.dart';
 
 /// Centralized asset availability + helpers.
@@ -27,9 +26,8 @@ class PixelAssets {
   static Future<void> init() async {
     if (_assets != null) return;
     try {
-      final json = await rootBundle.loadString('AssetManifest.json');
-      final map = jsonDecode(json) as Map<String, dynamic>;
-      _assets = map.keys.toSet();
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      _assets = manifest.listAssets().toSet();
     } catch (_) {
       _assets = <String>{};
     }
@@ -57,7 +55,9 @@ class PixelAssets {
 
   static List<String> listSlotPlaceholders() {
     final a = _assets ?? const <String>{};
-    final list = a.where((k) => k.startsWith('assets/images/ui/slots/')).toList()
+    final list = a
+        .where((k) => k.startsWith('assets/images/ui/slots/'))
+        .toList()
       ..sort();
     return list;
   }
