@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/repos/equipment_repo.dart';
 import '../../core/pixel_assets.dart';
 import '../../crafting/inventory_service.dart';
+import '../../theme/colors.dart';
 import 'item_icon_badge.dart';
 
 class GearSlot extends StatelessWidget {
@@ -9,18 +10,23 @@ class GearSlot extends StatelessWidget {
   final EquippedItem? item;
   final VoidCallback onTap;
   final double size; // visual box size (e.g., 64)
-  const GearSlot({super.key, required this.slotId, required this.item, required this.onTap, this.size = 64});
+  const GearSlot(
+      {super.key,
+      required this.slotId,
+      required this.item,
+      required this.onTap,
+      this.size = 64});
 
   Color _rarityColor(BuildContext context, String? rarity) {
     switch (rarity) {
       case 'uncommon':
-        return Colors.blueAccent;
+        return const Color(0xFF58A0FF);
       case 'rare':
-        return Colors.purpleAccent;
+        return const Color(0xFFB16BFF);
       case 'epic':
-        return Colors.orangeAccent;
+        return AppColors.ember;
       default:
-        return Theme.of(context).colorScheme.outlineVariant;
+        return AppColors.outlineBright.withValues(alpha: 0.58);
     }
   }
 
@@ -36,9 +42,18 @@ class GearSlot extends StatelessWidget {
         height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+          color: AppColors.panelSoft.withValues(alpha: 0.34),
           border: Border.all(color: borderColor, width: 1.2),
           borderRadius: BorderRadius.zero,
+          boxShadow: hasItem
+              ? [
+                  BoxShadow(
+                    color: borderColor.withValues(alpha: 0.16),
+                    blurRadius: 0,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
         child: hasItem
             ? _equippedVisual(context)
@@ -62,13 +77,16 @@ class GearSlot extends StatelessWidget {
       );
     }
     // Fallback minimal mark if we don't know the crafted item
-    return Icon(Icons.check, size: size * 0.5, color: Theme.of(context).colorScheme.onSurfaceVariant);
+    return Icon(Icons.check,
+        size: size * 0.5,
+        color: Theme.of(context).colorScheme.onSurfaceVariant);
   }
 
   Widget _emptyVisual(String slotId, double size, BuildContext context) {
     final asset = PixelAssets.emptyAssetForSlot(slotId);
     if (asset != null) {
-      _debugLogOnce('GearSlot:$slotId uses empty asset: $asset (inManifest=${PixelAssets.has(asset)})');
+      _debugLogOnce(
+          'GearSlot:$slotId uses empty asset: $asset (inManifest=${PixelAssets.has(asset)})');
       final slots = PixelAssets.listSlotPlaceholders();
       _debugLogOnce('Slots in manifest: ${slots.join(', ')}');
       return Image.asset(
@@ -78,11 +96,13 @@ class GearSlot extends StatelessWidget {
         filterQuality: FilterQuality.none,
         errorBuilder: (_, error, stack) {
           _debugLogOnce('Failed to load $asset: $error');
-          return Icon(Icons.stop_rounded, size: size * 0.4, color: Theme.of(context).colorScheme.outline);
+          return Icon(Icons.stop_rounded,
+              size: size * 0.4, color: Theme.of(context).colorScheme.outline);
         },
       );
     }
-    return Icon(Icons.stop_rounded, size: size * 0.4, color: Theme.of(context).colorScheme.outline);
+    return Icon(Icons.stop_rounded,
+        size: size * 0.4, color: Theme.of(context).colorScheme.outline);
   }
 
   static final Set<String> _logged = <String>{};

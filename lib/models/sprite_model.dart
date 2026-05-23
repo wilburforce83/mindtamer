@@ -12,6 +12,10 @@ class SpriteModel {
   final String? element; // e.g., fire, water, shadow, etc.
   final String? colorHex; // palette hex used during seed
   final bool fused; // whether created by fusion
+  final String sourceType;
+  final String? sourceTitle;
+  final DateTime? sourceDate;
+  final List<String> fusedFromNames;
 
   const SpriteModel({
     required this.id,
@@ -25,6 +29,10 @@ class SpriteModel {
     this.element,
     this.colorHex,
     this.fused = false,
+    this.sourceType = 'unknown',
+    this.sourceTitle,
+    this.sourceDate,
+    this.fusedFromNames = const [],
   });
 
   SpriteModel copyWith({
@@ -36,7 +44,12 @@ class SpriteModel {
     String? element,
     String? colorHex,
     bool? fused,
-  }) => SpriteModel(
+    String? sourceType,
+    String? sourceTitle,
+    DateTime? sourceDate,
+    List<String>? fusedFromNames,
+  }) =>
+      SpriteModel(
         id: id,
         seedName: seedName,
         tier: tier ?? this.tier,
@@ -48,5 +61,9 @@ class SpriteModel {
         element: element ?? this.element,
         colorHex: colorHex ?? this.colorHex,
         fused: fused ?? this.fused,
+        sourceType: sourceType ?? this.sourceType,
+        sourceTitle: sourceTitle ?? this.sourceTitle,
+        sourceDate: sourceDate ?? this.sourceDate,
+        fusedFromNames: fusedFromNames ?? this.fusedFromNames,
       );
 }

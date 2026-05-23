@@ -35,8 +35,9 @@ ThemeData mindTamerTheme() {
     displayColor: AppColors.onSurface,
   );
 
-  TextStyle? scale(TextStyle? s) =>
-      (s == null || s.fontSize == null) ? s : s.copyWith(fontSize: s.fontSize! * 0.9);
+  TextStyle? scale(TextStyle? s) => (s == null || s.fontSize == null)
+      ? s
+      : s.copyWith(fontSize: s.fontSize! * 0.9);
 
   final textTheme = baseTextTheme.copyWith(
     displayLarge: scale(baseTextTheme.displayLarge),
@@ -64,26 +65,26 @@ ThemeData mindTamerTheme() {
     highlightColor: Colors.transparent,
     hoverColor: Colors.transparent,
     scaffoldBackgroundColor: AppColors.background,
-    dividerColor: AppColors.outline.withValues(alpha: 0.4),
+    dividerColor: AppColors.outlineSoft.withValues(alpha: 0.8),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: AppColors.accentWarm,
       selectionColor: Color(0x44F7C93E),
       selectionHandleColor: AppColors.accentWarm,
     ),
     snackBarTheme: const SnackBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.panelSoft,
       contentTextStyle: TextStyle(color: AppColors.onSurface),
       actionTextColor: AppColors.accentWarm,
     ),
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
-      fillColor: Color(0xFF2D5280),
+      fillColor: AppColors.panelSoft,
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.outline, width: 2),
+        borderSide: BorderSide(color: AppColors.outlineSoft, width: 2),
         borderRadius: BorderRadius.zero,
       ),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.outline, width: 2),
+        borderSide: BorderSide(color: AppColors.outlineSoft, width: 2),
         borderRadius: BorderRadius.zero,
       ),
       focusedBorder: OutlineInputBorder(
@@ -94,7 +95,7 @@ ThemeData mindTamerTheme() {
       labelStyle: TextStyle(color: AppColors.mutedAlt),
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.deepNight,
       foregroundColor: AppColors.onBackground,
       elevation: 0,
       centerTitle: false,
@@ -109,14 +110,24 @@ ThemeData mindTamerTheme() {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 2,
+        side: const BorderSide(color: AppColors.outlineBright, width: 1.5),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        side: const BorderSide(color: AppColors.outlineBright, width: 1.5),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.onSurface,
-        side: const BorderSide(color: AppColors.outline),
+        side: const BorderSide(color: AppColors.outlineBright),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
@@ -141,24 +152,25 @@ ThemeData mindTamerTheme() {
     ),
     textTheme: textTheme,
     cardTheme: const CardThemeData(
-      color: AppColors.surface,
+      color: AppColors.panelSoft,
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
-        side: BorderSide(color: AppColors.outline, width: 1),
+        side: BorderSide(color: AppColors.outlineSoft, width: 1.2),
       ),
       margin: EdgeInsets.all(8),
     ),
     scrollbarTheme: ScrollbarThemeData(
       thickness: const WidgetStatePropertyAll(8),
       radius: const Radius.circular(0),
-      thumbColor: WidgetStatePropertyAll(AppColors.secondary.withValues(alpha: 0.8)),
-      trackColor: const WidgetStatePropertyAll(AppColors.surface),
+      thumbColor:
+          WidgetStatePropertyAll(AppColors.secondary.withValues(alpha: 0.8)),
+      trackColor: const WidgetStatePropertyAll(AppColors.panelSoft),
       crossAxisMargin: 2,
       mainAxisMargin: 2,
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.nav,
       selectedItemColor: AppColors.accentWarm,
       unselectedItemColor: AppColors.muted,
       showUnselectedLabels: true,

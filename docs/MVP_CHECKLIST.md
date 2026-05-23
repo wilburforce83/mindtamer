@@ -47,6 +47,7 @@ The goal is a beta-ready MVP where UX, data, and core game systems behave consis
 - [x] Replace archaic forge-slot add buttons with direct drag-and-drop crafting interactions.
 - [x] Add contextual crafting tutorial support that appears when a new player earns enough echoes to forge.
 - [x] Expand achievements into a real progression system covering journaling, mood, medication, crafting, items, echoes, battles, sprites, equipment, and level milestones.
+- [x] Preserve gear provenance across forging, upgrading, and fusion so equipment keeps its original memory-linked echo history.
 - [x] Add scalable programmatic achievement badge iconography instead of one-off art per badge.
 - [ ] Replace global text scaling overrides with overflow-safe responsive layouts.
 - [ ] Refactor settings UI to avoid mutating state during build and recreating controllers every frame.

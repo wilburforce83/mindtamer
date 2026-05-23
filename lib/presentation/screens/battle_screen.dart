@@ -23,6 +23,8 @@ class BattleScreen extends ConsumerStatefulWidget {
 
 class _BattleScreenState extends ConsumerState<BattleScreen>
     with TickerProviderStateMixin {
+  static const _battleLeaveMessage =
+      'You cannot change pages during battle. Use Run Away if you want to leave.';
   Future<ui.Image?>? _playerImgFut;
   // Manual frame-based movement
   Offset _playerOffset = Offset.zero;
@@ -226,9 +228,19 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     );
   }
 
+  void _showBattleLockedMessage() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      const SnackBar(content: Text(_battleLeaveMessage)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(battleProvider);
+    final navigationLocked = state.result == null;
 
     // Trigger animations when an action occurs (post-frame to avoid build-time side effects)
     if (state.actionSeq != _lastActionSeq && state.lastAction != null) {
@@ -492,27 +504,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
       }
     }
 
-    String? elementForSpriteName(String name) {
-      try {
-        final slots = (equipmentBox().get('sprite_slots') as Map?)
-            ?.map((k, v) => MapEntry(k.toString(), v.toString()));
-        final ids = [
-          slots?['sprite1']?.toString(),
-          slots?['sprite2']?.toString()
-        ];
-        for (final id in ids) {
-          if (id == null || id.isEmpty) continue;
-          final inst =
-              seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
-          final n = (inst.attacks.isNotEmpty
-              ? (inst.attacks.first['name'] ?? '').toString()
-              : '');
-          if (n == name) return (inst.seedSnapshot['element'] ?? '').toString();
-        }
-      } catch (_) {}
-      return null;
-    }
-
     final skillsWrap = Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -537,7 +528,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
       children: [
         for (int i = 0; i < state.sprites.length; i++)
           Builder(builder: (ctx) {
-            final elem = elementForSpriteName(state.sprites[i]);
+            final elem = i < state.spriteElements.length
+                ? state.spriteElements[i]
+                : null;
             final bg = colorForElement(elem).withValues(alpha: 0.85);
             const fg = Colors.white;
             final label = state.spriteCooldowns.elementAt(i) > 0
@@ -666,49 +659,59 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
       ),
     );
 
-    return GameScaffold(
-      title: 'Battle',
-      padding: const EdgeInsets.all(12),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          topHud,
-          const SizedBox(height: 8),
-          battleArea,
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    skillsWrap,
-                    const SizedBox(height: 8),
-                    itemsOpenButton,
-                  ],
+    return PopScope(
+      canPop: !navigationLocked,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && navigationLocked) {
+          _showBattleLockedMessage();
+        }
+      },
+      child: GameScaffold(
+        title: 'Battle',
+        padding: const EdgeInsets.all(12),
+        lockNavigation: navigationLocked,
+        navigationLockMessage: _battleLeaveMessage,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            topHud,
+            const SizedBox(height: 8),
+            battleArea,
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      skillsWrap,
+                      const SizedBox(height: 8),
+                      itemsOpenButton,
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    spritesWrap,
-                    const SizedBox(height: 8),
-                    quickHealButton(),
-                    const SizedBox(height: 8),
-                    runAwayButton(),
-                  ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      spritesWrap,
+                      const SizedBox(height: 8),
+                      quickHealButton(),
+                      const SizedBox(height: 8),
+                      runAwayButton(),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          logList,
-        ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            logList,
+          ],
+        ),
       ),
     );
   }

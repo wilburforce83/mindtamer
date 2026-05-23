@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/sprite_model.dart';
+import '../../services/sprite_instance_utils.dart';
 
 class SpriteDetailsPanel extends StatelessWidget {
   final SpriteModel? selected;
@@ -38,7 +39,9 @@ class SpriteDetailsPanel extends StatelessWidget {
       height: 200 + extra,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1)),
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outline, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,8 +53,12 @@ class SpriteDetailsPanel extends StatelessWidget {
               Flexible(
                 child: Text(
                   s.seedName,
-                  style: (Theme.of(context).textTheme.bodySmall ?? const TextStyle()).copyWith(
-                    color: Color(s.argbRamp.length > 2 ? s.argbRamp[2] : s.argbRamp.first),
+                  style: (Theme.of(context).textTheme.bodySmall ??
+                          const TextStyle())
+                      .copyWith(
+                    color: Color(s.argbRamp.length > 2
+                        ? s.argbRamp[2]
+                        : s.argbRamp.first),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -59,17 +66,24 @@ class SpriteDetailsPanel extends StatelessWidget {
               const SizedBox(width: 6),
               if (s.fused)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1),
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: 0.6),
                   ),
                   child: const Text('Fused', style: TextStyle(fontSize: 9)),
                 ),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Tier: ${s.tier==0 ? 'Base' : 'T${s.tier}'} • Rarity: ${s.rarity}'),
+          Text(
+              'Tier: ${s.tier == 0 ? 'Base' : 'T${s.tier}'} • Rarity: ${s.rarity}'),
           const SizedBox(height: 4),
           Text('Attack: ${s.attack.name}'),
           Text(s.attack.description),
@@ -78,17 +92,45 @@ class SpriteDetailsPanel extends StatelessWidget {
             Row(
               children: [
                 if (s.colorHex != null && s.colorHex!.isNotEmpty)
-                  Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 6), color: _fromHex(s.colorHex!)),
-                Text('Element: ${s.element ?? '—'}', style: Theme.of(context).textTheme.bodySmall),
+                  Container(
+                      width: 10,
+                      height: 10,
+                      margin: const EdgeInsets.only(right: 6),
+                      color: _fromHex(s.colorHex!)),
+                Text('Element: ${s.element ?? '—'}',
+                    style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           const SizedBox(height: 4),
-          // Source line beneath details in smaller font
+          Text(
+            'Origin: ${SpriteInstanceUtils.sourceTypeLabel(s.sourceType)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 2),
           Builder(builder: (context) {
-            final dt = DateFormat('d/M/yyyy').format(s.createdAt.toLocal());
-            final title = seedTitle ?? 'Unknown';
-            return Text('Source: $title ($dt)', style: Theme.of(context).textTheme.bodySmall);
+            final sourceDate = s.sourceDate ?? s.createdAt.toLocal();
+            final dt = DateFormat('d/M/yyyy').format(sourceDate);
+            final title = s.sourceTitle ?? seedTitle ?? 'Unknown';
+            return Text(
+              'Source: $title ($dt)',
+              style: Theme.of(context).textTheme.bodySmall,
+            );
           }),
+          if (s.fusedFromNames.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Lineage: ${s.fusedFromNames.join(' + ')}',
+              style: Theme.of(context).textTheme.bodySmall,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (primaryTag != null && primaryTag!.trim().isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Tag: ${primaryTag!.trim()}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
           const Spacer(),
           Builder(builder: (context) {
             if (!fuseMode) {
@@ -98,12 +140,14 @@ class SpriteDetailsPanel extends StatelessWidget {
                 OutlinedButton(onPressed: onFuse, child: const Text('Fuse…')),
               ]);
             } else {
-              final isPrimary = fusePrimary != null && selected?.id == fusePrimary!.id;
+              final isPrimary =
+                  fusePrimary != null && selected?.id == fusePrimary!.id;
               return Row(children: [
                 if (!isPrimary)
                   ElevatedButton(onPressed: onFuse, child: const Text('Fuse')),
                 const SizedBox(width: 8),
-                OutlinedButton(onPressed: onCancel, child: const Text('Cancel')),
+                OutlinedButton(
+                    onPressed: onCancel, child: const Text('Cancel')),
               ]);
             }
           }),

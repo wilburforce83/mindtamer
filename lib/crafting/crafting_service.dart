@@ -4,6 +4,7 @@ import 'craft_debug.dart';
 import 'asset_index_service.dart';
 import 'gear_catalog_service.dart';
 import 'crafting_rules_service.dart';
+import 'item_provenance_service.dart';
 import '../data/hive/boxes.dart';
 
 class CraftingService {
@@ -124,6 +125,17 @@ class CraftingService {
       classAffinity: def.classAffinity,
       element: element,
     );
+    final sourceA = await ItemProvenanceService.sourceFromEcho(a);
+    final sourceB = await ItemProvenanceService.sourceFromEcho(b);
+    final memorySources =
+        ItemProvenanceService.mergeSources([sourceA, sourceB]);
+    final lineageSteps = ItemProvenanceService.mergeLineage([
+      ItemProvenanceService.buildLineageStep(
+        kind: 'forge',
+        summary:
+            'Forged from ${ItemProvenanceService.labelForEchoSource(sourceA)} + ${ItemProvenanceService.labelForEchoSource(sourceB)}',
+      ),
+    ]);
     return CraftedItem(
       id: _uuid.v4(),
       def: def,
@@ -132,6 +144,8 @@ class CraftingService {
       element: element,
       displayName: name,
       dnaJournalTitles: _dedupeTitles(titles, maxKeep: 50),
+      memorySources: memorySources,
+      lineageSteps: lineageSteps,
       upgradeStepsInTier: 0,
       stats: stats,
       classAffinity: def.classAffinity,
@@ -225,6 +239,19 @@ class CraftingService {
     final displayName = (isWeapon || isAccessory)
         ? _nameFromFileAndTitles(element, titles, def: it.def)
         : _catalogName(playerClass, tier, element, titles, def: it.def);
+    final infusedSource = await ItemProvenanceService.sourceFromEcho(e);
+    final memorySources = ItemProvenanceService.mergeSources([
+      ...it.memorySources,
+      infusedSource,
+    ]);
+    final lineageSteps = ItemProvenanceService.mergeLineage([
+      ...it.lineageSteps,
+      ItemProvenanceService.buildLineageStep(
+        kind: 'upgrade',
+        summary:
+            'Infused with ${ItemProvenanceService.labelForEchoSource(infusedSource)}',
+      ),
+    ]);
     // Swap art when crossing era thresholds according to catalog (or anytime mapping exists)
     final slotName = it.def.slot.name;
     final newPath = GearCatalogService().imageFor(playerClass, tier, slotName);
@@ -244,6 +271,8 @@ class CraftingService {
       element: element,
       displayName: displayName,
       dnaJournalTitles: _dedupeTitles(titles, maxKeep: 100),
+      memorySources: memorySources,
+      lineageSteps: lineageSteps,
       upgradeStepsInTier: steps,
       stats: stats,
     );
@@ -308,6 +337,18 @@ class CraftingService {
     final name = (isWeapon || isAccessory)
         ? _nameFromFileAndTitles(element, titles, def: def)
         : _catalogName(playerClass, tier, element, titles, def: def);
+    final memorySources = ItemProvenanceService.mergeSources([
+      ...a.memorySources,
+      ...b.memorySources,
+    ]);
+    final lineageSteps = ItemProvenanceService.mergeLineage([
+      ...a.lineageSteps,
+      ...b.lineageSteps,
+      ItemProvenanceService.buildLineageStep(
+        kind: 'fusion',
+        summary: 'Fused ${a.displayName} + ${b.displayName}',
+      ),
+    ]);
 
     return CraftedItem(
       id: _uuid.v4(),
@@ -317,6 +358,8 @@ class CraftingService {
       element: element,
       displayName: name,
       dnaJournalTitles: titles,
+      memorySources: memorySources,
+      lineageSteps: lineageSteps,
       upgradeStepsInTier: 0,
       stats: base,
       classAffinity: def.classAffinity,

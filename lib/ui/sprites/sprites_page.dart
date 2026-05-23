@@ -3,6 +3,7 @@ import '../../models/sprite_model.dart';
 import '../../models/sprite_attack.dart';
 import '../../services/sprite_palette.dart';
 import '../../services/fusion_service.dart';
+import '../../services/sprite_instance_utils.dart';
 import '../../data/hive/boxes.dart';
 import '../../game/models/seed_instance.dart';
 import '../../game/models/journal_seed_meta.dart';
@@ -45,7 +46,8 @@ class _SpritesPageState extends State<SpritesPage> {
     final weaker = stronger.id == a.id ? b : a;
     var fused = service.fuse(stronger, weaker);
     // Generate a concise new name for the fused sprite
-    final mergedElem = _blendElement(stronger.element, weaker.element) ?? (stronger.element ?? weaker.element);
+    final mergedElem = _blendElement(stronger.element, weaker.element) ??
+        (stronger.element ?? weaker.element);
     final newName = _newFusedName(stronger, weaker, mergedElem: mergedElem);
     // Preserve stronger's identity for in-memory display; persistence will create a new instance
     fused = SpriteModel(
@@ -59,6 +61,10 @@ class _SpritesPageState extends State<SpritesPage> {
       createdAt: DateTime.now(),
       element: mergedElem,
       colorHex: stronger.colorHex ?? weaker.colorHex,
+      sourceType: 'fusion',
+      sourceTitle: 'Fusion: ${a.seedName} + ${b.seedName}',
+      sourceDate: DateTime.now(),
+      fusedFromNames: [a.seedName, b.seedName],
     );
     return fused;
   }
@@ -89,12 +95,21 @@ class _SpritesPageState extends State<SpritesPage> {
   }
 
   String _newFusedName(SpriteModel a, SpriteModel b, {String? mergedElem}) {
-    List<String> parts(String s) => s.split(RegExp(r"\s+")).where((e) => e.isNotEmpty).toList();
+    List<String> parts(String s) =>
+        s.split(RegExp(r"\s+")).where((e) => e.isNotEmpty).toList();
     final pa = parts(a.seedName);
     final pb = parts(b.seedName);
     final first = pa.isNotEmpty ? pa.first : 'Sprite';
     final lastB = pb.isNotEmpty ? pb.last : (pa.length > 1 ? pa.last : 'Core');
-    const suffixes = ['Prime','Ascendant','Nova','Pulse','Arc','Veil','Bloom'];
+    const suffixes = [
+      'Prime',
+      'Ascendant',
+      'Nova',
+      'Pulse',
+      'Arc',
+      'Veil',
+      'Bloom'
+    ];
     final idx = (a.id.hashCode ^ b.id.hashCode).abs() % suffixes.length;
     // Pick among concise patterns
     if ((idx % 4) == 0 && (mergedElem != null && mergedElem.isNotEmpty)) {
@@ -107,19 +122,37 @@ class _SpritesPageState extends State<SpritesPage> {
     return '${suffixes[idx]} $first';
   }
 
-  Future<void> _persistFusion(SpriteModel a, SpriteModel b, SpriteModel fused) async {
+  Future<void> _persistFusion(
+      SpriteModel a, SpriteModel b, SpriteModel fused) async {
     final instA = _instById[a.id];
     final instB = _instById[b.id];
     if (instA == null || instB == null) return;
     final newId = const Uuid().v4();
     final snap = Map<String, dynamic>.from(instA.seedSnapshot);
     snap['displayName'] = fused.seedName;
-    String rarityStrFromInt(int r) => switch (r) { 1 => 'uncommon', 2 => 'rare', 3 => 'epic', 4 => 'legendary', _ => 'common' };
+    String rarityStrFromInt(int r) => switch (r) {
+          1 => 'uncommon',
+          2 => 'rare',
+          3 => 'epic',
+          4 => 'legendary',
+          _ => 'common'
+        };
     snap['rarity'] = rarityStrFromInt(fused.rarity);
-    if (fused.element != null && fused.element!.isNotEmpty) snap['element'] = fused.element;
-    if (fused.colorHex != null && fused.colorHex!.isNotEmpty) snap['colorHex'] = fused.colorHex;
+    if (fused.element != null && fused.element!.isNotEmpty) {
+      snap['element'] = fused.element;
+    }
+    if (fused.colorHex != null && fused.colorHex!.isNotEmpty) {
+      snap['colorHex'] = fused.colorHex;
+    }
+    snap['sourceTitle'] = 'Fusion: ${a.seedName} + ${b.seedName}';
+    snap['sourceDate'] = DateTime.now().toUtc().toIso8601String();
+    snap['fusedFrom'] = [a.seedName, b.seedName];
     final attacks = <Map<String, dynamic>>[
-      { 'name': fused.attack.name, 'power': fused.attack.power, 'cooldown': fused.attack.durationTurns }
+      {
+        'name': fused.attack.name,
+        'power': fused.attack.power,
+        'cooldown': fused.attack.durationTurns
+      }
     ];
     snap['tier'] = fused.tier;
     final instNew = SeedInstance(
@@ -127,14 +160,16 @@ class _SpritesPageState extends State<SpritesPage> {
       speciesId: instA.speciesId,
       createdAt: DateTime.now().toUtc(),
       source: 'fusion',
-      seedHash: 'fused:${instA.seedHash.substring(0,6)}:${instB.seedHash.substring(0,6)}',
+      seedHash:
+          'fused:${instA.seedHash.substring(0, 6)}:${instB.seedHash.substring(0, 6)}',
       seedSnapshot: snap,
       stats: Map<String, int>.from(instA.stats),
       attacks: attacks,
       state: 'inventory',
     );
     await seedInstanceBox().put(newId, instNew);
-    await summonsInventoryBox().put(newId, SummonsInventoryItem(instanceId: newId));
+    await summonsInventoryBox()
+        .put(newId, SummonsInventoryItem(instanceId: newId));
     await seedInstanceBox().delete(instA.instanceId);
     await seedInstanceBox().delete(instB.instanceId);
     await summonsInventoryBox().delete(instA.instanceId);
@@ -142,10 +177,12 @@ class _SpritesPageState extends State<SpritesPage> {
     try {
       final slotsRepo = SpriteSlotsRepoImpl();
       final current = await slotsRepo.getAll();
-      if (current['sprite1'] == instA.instanceId || current['sprite1'] == instB.instanceId) {
+      if (current['sprite1'] == instA.instanceId ||
+          current['sprite1'] == instB.instanceId) {
         await slotsRepo.set('sprite1', null);
       }
-      if (current['sprite2'] == instA.instanceId || current['sprite2'] == instB.instanceId) {
+      if (current['sprite2'] == instA.instanceId ||
+          current['sprite2'] == instB.instanceId) {
         await slotsRepo.set('sprite2', null);
       }
     } catch (_) {}
@@ -153,20 +190,27 @@ class _SpritesPageState extends State<SpritesPage> {
     _instById.remove(instB.instanceId);
     _instById[newId] = instNew;
     setState(() {
-      _items.removeWhere((x) => x.id == instA.instanceId || x.id == instB.instanceId);
-      _items.insert(0, SpriteModel(
-        id: newId,
-        seedName: fused.seedName,
-        tier: fused.tier,
-        rarity: fused.rarity,
-        hue: fused.hue,
-        argbRamp: fused.argbRamp,
-        attack: fused.attack,
-        createdAt: DateTime.now(),
-        element: fused.element,
-        colorHex: fused.colorHex,
-        fused: true,
-      ));
+      _items.removeWhere(
+          (x) => x.id == instA.instanceId || x.id == instB.instanceId);
+      _items.insert(
+          0,
+          SpriteModel(
+            id: newId,
+            seedName: fused.seedName,
+            tier: fused.tier,
+            rarity: fused.rarity,
+            hue: fused.hue,
+            argbRamp: fused.argbRamp,
+            attack: fused.attack,
+            createdAt: DateTime.now(),
+            element: fused.element,
+            colorHex: fused.colorHex,
+            fused: true,
+            sourceType: 'fusion',
+            sourceTitle: 'Fusion: ${a.seedName} + ${b.seedName}',
+            sourceDate: DateTime.now(),
+            fusedFromNames: [a.seedName, b.seedName],
+          ));
     });
   }
 
@@ -178,7 +222,9 @@ class _SpritesPageState extends State<SpritesPage> {
       _instById[inst.instanceId] = inst;
       out.add(_fromInstance(inst));
     }
-    setState(() { _items = out; });
+    setState(() {
+      _items = out;
+    });
     if (_items.isNotEmpty) _onSelect(_items.first, metas);
   }
 
@@ -188,21 +234,24 @@ class _SpritesPageState extends State<SpritesPage> {
     final ramp = SpritePalette.pickRampForSeed(seed);
     final hue = (seed.hashCode & 0x7fffffff) % 360;
     final rarityStr = (inst.seedSnapshot['rarity'] ?? 'common').toString();
-    final rarity = switch (rarityStr) { 'uncommon' => 1, 'rare' => 2, 'epic' => 3, 'legendary' => 4, _ => 0 };
+    final rarity = switch (rarityStr) {
+      'uncommon' => 1,
+      'rare' => 2,
+      'epic' => 3,
+      'legendary' => 4,
+      _ => 0
+    };
     final element = (inst.seedSnapshot['element'] ?? '').toString();
     final colorHex = (inst.seedSnapshot['colorHex'] ?? '').toString();
-    String atkName = 'Sprite Attack';
-    int power = 30;
-    int duration = 2;
-    if (inst.attacks.isNotEmpty) {
-      final a = inst.attacks.first;
-      atkName = (a['name'] ?? atkName).toString();
-      if (atkName.toLowerCase().contains('shield')) { atkName = 'Shield Bash'; }
-      power = (a['power'] ?? power) as int;
-      duration = (a['cooldown'] ?? duration) as int; // reusing for demo
-    }
-    final atk = SpriteAttack(name: atkName, description: 'Fires a focused burst for $power power over $duration turns.', power: power, durationTurns: duration);
-    final name = (inst.seedSnapshot['displayName'] ?? inst.speciesId).toString();
+    final atk = SpriteInstanceUtils.strongestAttackModel(inst) ??
+        const SpriteAttack(
+          name: 'Sprite Attack',
+          description: 'Fires a focused burst for 30 power over 2 turns.',
+          power: 30,
+          durationTurns: 2,
+        );
+    final name =
+        (inst.seedSnapshot['displayName'] ?? inst.speciesId).toString();
     final tier = (inst.seedSnapshot['tier'] is int)
         ? (inst.seedSnapshot['tier'] as int)
         : int.tryParse((inst.seedSnapshot['tier'] ?? '0').toString()) ?? 0;
@@ -216,14 +265,25 @@ class _SpritesPageState extends State<SpritesPage> {
       argbRamp: ramp,
       attack: atk,
       createdAt: inst.createdAt,
-      element: element.isEmpty? null: element,
-      colorHex: colorHex.isEmpty? null: colorHex,
+      element: element.isEmpty ? null : element,
+      colorHex: colorHex.isEmpty ? null : colorHex,
       fused: isFused,
+      sourceType: inst.source,
+      sourceTitle: SpriteInstanceUtils.sourceTitleOf(inst),
+      sourceDate: SpriteInstanceUtils.sourceDateOf(inst),
+      fusedFromNames: SpriteInstanceUtils.fusedFromNamesOf(inst),
     );
   }
 
   void _onSelect(SpriteModel s, List<JournalSeedMeta> metas) {
-    final m = metas.firstWhere((e) => e.seedSnapshot['displayName'] == s.seedName, orElse: () => JournalSeedMeta(entryId: -1, seedHash: '', seedVersion: '', seedSnapshot: const {}, seedRouting: 'none'));
+    final m = metas.firstWhere(
+        (e) => e.seedSnapshot['displayName'] == s.seedName,
+        orElse: () => JournalSeedMeta(
+            entryId: -1,
+            seedHash: '',
+            seedVersion: '',
+            seedSnapshot: const {},
+            seedRouting: 'none'));
     setState(() {
       _selected = s;
       _selTitle = m.title;
@@ -235,7 +295,8 @@ class _SpritesPageState extends State<SpritesPage> {
   Widget build(BuildContext context) {
     final metas = journalSeedMetaBox().values.toList();
     return Scaffold(
-      appBar: AppBar(title: Text(widget.selectMode ? 'Select Sprite' : 'Sprites')),
+      appBar:
+          AppBar(title: Text(widget.selectMode ? 'Select Sprite' : 'Sprites')),
       body: Column(
         children: [
           Expanded(
@@ -259,27 +320,45 @@ class _SpritesPageState extends State<SpritesPage> {
               if (!_fusing) {
                 // Begin fusion
                 if (_selected == null) return;
-                setState(() { _fusing = true; _fusePrimary = _selected; });
+                setState(() {
+                  _fusing = true;
+                  _fusePrimary = _selected;
+                });
               } else {
                 // Execute fusion if a second sprite is selected
-                final a = _fusePrimary; final b = _selected;
+                final a = _fusePrimary;
+                final b = _selected;
                 if (a == null || b == null || a.id == b.id) return;
                 final fused = _fuseSprites(a, b);
                 final metas = journalSeedMetaBox().values.toList();
                 // Choose source title: stronger of two seeds (by rarity, then attack power)
                 final stronger = _strongerOf(a, b);
-                final m = metas.firstWhere((e) => e.seedSnapshot['displayName'] == stronger.seedName, orElse: () => JournalSeedMeta(entryId: -1, seedHash: '', seedVersion: '', seedSnapshot: const {}, seedRouting: 'none'));
+                final m = metas.firstWhere(
+                    (e) => e.seedSnapshot['displayName'] == stronger.seedName,
+                    orElse: () => JournalSeedMeta(
+                        entryId: -1,
+                        seedHash: '',
+                        seedVersion: '',
+                        seedSnapshot: const {},
+                        seedRouting: 'none'));
                 await _persistFusion(a, b, fused);
                 setState(() {
                   _fusing = false;
                   _fusePrimary = null;
-                  _selected = _items.firstWhere((it) => it.seedName == fused.seedName, orElse: () => _items.first);
+                  _selected = _items.firstWhere(
+                      (it) => it.seedName == fused.seedName,
+                      orElse: () => _items.first);
                   _selTitle = m.title;
                   _selPrimaryTag = m.primaryTag;
                 });
               }
             },
-            onCancel: () { setState(() { _fusing = false; _fusePrimary = null; }); },
+            onCancel: () {
+              setState(() {
+                _fusing = false;
+                _fusePrimary = null;
+              });
+            },
           ),
         ],
       ),

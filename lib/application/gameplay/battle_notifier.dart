@@ -6,7 +6,6 @@ import '../../game/battle/battle_engine.dart';
 import '../../game/services/seed_pipeline.dart';
 import '../../game/skills/skill.dart';
 import '../../game/skills/skill_catalog.dart';
-import '../../models/sprite_attack.dart';
 import '../../game/services/monster_image_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/achievement_service.dart';
@@ -14,6 +13,7 @@ import '../../services/item_catalog.dart';
 import '../../crafting/inventory_service.dart';
 import '../../services/drop_table.dart';
 import '../../data/models/settings.dart';
+import '../../services/sprite_instance_utils.dart';
 
 class BattleState {
   final String? battleId;
@@ -25,6 +25,7 @@ class BattleState {
   final List<String> skills; // names
   final List<int> skillCooldowns; // remaining per skill index
   final List<String> sprites; // names
+  final List<String> spriteElements; // aligned to sprites
   final List<int> spriteCooldowns;
   final List<Map<String, dynamic>> quickItems; // [{'id','label','qty'}]
   final List<String> log;
@@ -53,6 +54,7 @@ class BattleState {
     this.skills = const [],
     this.skillCooldowns = const [],
     this.sprites = const [],
+    this.spriteElements = const [],
     this.spriteCooldowns = const [],
     this.quickItems = const [],
     this.log = const [],
@@ -83,6 +85,7 @@ class BattleState {
     List<String>? skills,
     List<int>? skillCooldowns,
     List<String>? sprites,
+    List<String>? spriteElements,
     List<int>? spriteCooldowns,
     List<Map<String, dynamic>>? quickItems,
     List<String>? log,
@@ -111,6 +114,7 @@ class BattleState {
         skills: skills ?? this.skills,
         skillCooldowns: skillCooldowns ?? this.skillCooldowns,
         sprites: sprites ?? this.sprites,
+        spriteElements: spriteElements ?? this.spriteElements,
         spriteCooldowns: spriteCooldowns ?? this.spriteCooldowns,
         quickItems: quickItems ?? this.quickItems,
         log: log ?? this.log,
@@ -177,6 +181,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
       (slots?['sprite2']?.toString()) ?? _readSlot('sprite2'),
     ];
     final sprites = <BattleSpriteAction>[];
+    final spriteElements = <String>[];
     int spriteHpBonus = 0;
     for (final id in spriteIds) {
       if (id == null || id.isEmpty) {
@@ -189,17 +194,12 @@ class BattleNotifier extends StateNotifier<BattleState> {
         try {
           spriteHpBonus += (inst.stats['hp'] ?? 0);
         } catch (_) {}
-        if (inst.attacks.isNotEmpty) {
-          final a = inst.attacks.first; // single attack for now
-          var name = (a['name'] ?? 'Sprite').toString();
-          if (name.toLowerCase().contains('shield')) {
-            name = 'Shield Bash';
-          }
-          final power = (a['power'] ?? 12) as int;
-          final cd = (a['cooldown'] ?? (a['duration'] ?? 3)) as int;
-          final sa = SpriteAttack(
-              name: name, description: '', power: power, durationTurns: cd);
+        final sa = SpriteInstanceUtils.strongestAttackModel(inst);
+        if (sa != null) {
           sprites.add(BattleEngine.fromSpriteAttack(sa));
+          spriteElements.add(
+            (inst.seedSnapshot['element'] ?? '').toString(),
+          );
         }
       } catch (_) {}
     }
@@ -232,17 +232,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final pStats = BattleStats(maxHp: maxHp, hp: clampedHp, atk: atk, def: def);
 
     _playerSkills = SkillCatalog.forClass(classKey);
-    // Deduplicate sprite actions by name, keeping higher power (tie-breaker: lower cooldown)
-    final byName = <String, BattleSpriteAction>{};
-    for (final a in sprites) {
-      final e = byName[a.name];
-      if (e == null ||
-          a.power > e.power ||
-          (a.power == e.power && a.cooldown < e.cooldown)) {
-        byName[a.name] = a;
-      }
-    }
-    _playerSprites = byName.values.toList();
+    _playerSprites = sprites;
     _player = Combatant(
         name: 'You',
         stats: pStats,
@@ -321,6 +311,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
       skills: _playerSkills.map((s) => s.name).toList(),
       skillCooldowns: List.filled(_playerSkills.length, 0),
       sprites: _playerSprites.map((s) => s.name).toList(),
+      spriteElements: spriteElements,
       spriteCooldowns: List.filled(_playerSprites.length, 0),
       backgroundAsset: bg,
       enemyAssetPath: enemyAssetPath,
@@ -546,29 +537,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
     final a = _playerSprites[index];
     final log = _engine.takeTurnBySprite(_player, _enemy, a);
     // Try derive element from the sprite instance if possible (not guaranteed here)
-    String? elem;
-    try {
-      final slots = (equipmentBox().get('sprite_slots') as Map?)
-          ?.map((k, v) => MapEntry(k.toString(), v.toString()));
-      final ids = [
-        slots?['sprite1']?.toString(),
-        slots?['sprite2']?.toString()
-      ];
-      for (final id in ids) {
-        if (id == null) {
-          continue;
-        }
-        final inst =
-            seedInstanceBox().values.firstWhere((e) => e.instanceId == id);
-        final name = (inst.attacks.isNotEmpty
-            ? (inst.attacks.first['name'] ?? '').toString()
-            : '');
-        if (name == a.name) {
-          elem = (inst.seedSnapshot['element'] ?? '').toString();
-          break;
-        }
-      }
-    } catch (_) {}
+    final elem = index < state.spriteElements.length
+        ? state.spriteElements[index]
+        : null;
     _afterPlayerAction(log, lastAction: {
       'attacker': 'player',
       'target': 'enemy',
@@ -666,8 +637,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
     // Consume and update state if any effect occurred
     if (logs.isNotEmpty && InventoryService.consume(id)) {
       _itemsUsedTotal += 1;
-      final healingItem =
-          (def.healInstant != null && def.healInstant! > 0) ||
+      final healingItem = (def.healInstant != null && def.healInstant! > 0) ||
           (def.regenPerTurn != null && def.regenTurns != null);
       if (healingItem) {
         _itemsUsedHeal += 1;
@@ -789,8 +759,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
 
     if (logs.isNotEmpty && InventoryService.consume(invId)) {
       _itemsUsedTotal += 1;
-      final healingItem =
-          (def.healInstant != null && def.healInstant! > 0) ||
+      final healingItem = (def.healInstant != null && def.healInstant! > 0) ||
           (def.regenPerTurn != null && def.regenTurns != null);
       if (healingItem) {
         _itemsUsedHeal += 1;
@@ -921,7 +890,8 @@ class BattleNotifier extends StateNotifier<BattleState> {
       final w =
           (eq?['weapon'] as Map?)?.map((k, v) => MapEntry(k.toString(), v));
       if (w != null) {
-        final crafted = CraftedInventoryService.getById((w['id'] ?? '').toString());
+        final crafted =
+            CraftedInventoryService.getById((w['id'] ?? '').toString());
         weaponKey = crafted?.def.key;
       }
     } catch (_) {}
@@ -1005,8 +975,9 @@ class BattleNotifier extends StateNotifier<BattleState> {
       }
     } catch (_) {}
     try {
-      final hpPct =
-          ((_player.stats.hp / _player.stats.maxHp) * 100).round().clamp(0, 100);
+      final hpPct = ((_player.stats.hp / _player.stats.maxHp) * 100)
+          .round()
+          .clamp(0, 100);
       await AchievementService().recordBattleEnd(
         victory: result == 'win',
         turns: state.turnCount + 1,

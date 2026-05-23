@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/hive/boxes.dart';
 import '../../models/sprite_model.dart';
 import '../../models/sprite_attack.dart';
+import '../../services/sprite_instance_utils.dart';
 import '../../services/sprite_palette.dart';
 
 class SummonsScreen extends StatelessWidget {
@@ -18,7 +19,8 @@ class SummonsScreen extends StatelessWidget {
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (_, i) {
                 final s = list[i];
-                final name = (s.seedSnapshot['displayName'] ?? 'Sprite').toString();
+                final name =
+                    (s.seedSnapshot['displayName'] ?? 'Sprite').toString();
                 final element = (s.seedSnapshot['element'] ?? '').toString();
                 final rarity = (s.seedSnapshot['rarity'] ?? '').toString();
                 return ListTile(
@@ -28,16 +30,14 @@ class SummonsScreen extends StatelessWidget {
                   onTap: () {
                     // Equip into selected sprite slot by returning a SpriteModel
                     final ramp = SpritePalette.pickRampForSeed(s.seedHash);
-                    String atkName = 'Sprite Attack';
-                    int power = 30;
-                    int duration = 2;
-                    if (s.attacks.isNotEmpty) {
-                      final a = s.attacks.first;
-                      atkName = (a['name'] ?? atkName).toString();
-                      power = (a['power'] ?? power) as int;
-                      duration = (a['cooldown'] ?? duration) as int; // reuse cooldown as duration
-                    }
-                    final atk = SpriteAttack(name: atkName, description: 'Fires a focused burst for $power power over $duration turns.', power: power, durationTurns: duration);
+                    final atk = SpriteInstanceUtils.strongestAttackModel(s) ??
+                        const SpriteAttack(
+                          name: 'Sprite Attack',
+                          description:
+                              'Fires a focused burst for 30 power over 2 turns.',
+                          power: 30,
+                          durationTurns: 2,
+                        );
                     final model = SpriteModel(
                       id: s.instanceId,
                       seedName: name,
@@ -49,6 +49,10 @@ class SummonsScreen extends StatelessWidget {
                       createdAt: s.createdAt,
                       element: (s.seedSnapshot['element'] ?? '').toString(),
                       colorHex: (s.seedSnapshot['colorHex'] ?? '').toString(),
+                      sourceType: s.source,
+                      sourceTitle: SpriteInstanceUtils.sourceTitleOf(s),
+                      sourceDate: SpriteInstanceUtils.sourceDateOf(s),
+                      fusedFromNames: SpriteInstanceUtils.fusedFromNamesOf(s),
                     );
                     Navigator.pop(context, model);
                   },

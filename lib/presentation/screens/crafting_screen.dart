@@ -13,6 +13,7 @@ import '../widgets/echo_wisp_icon.dart';
 import '../widgets/item_icon_badge.dart';
 import '../widgets/pixel_button.dart';
 import '../widgets/item_stats_line.dart';
+import '../widgets/item_provenance_block.dart';
 
 class CraftingScreen extends StatefulWidget {
   const CraftingScreen({super.key});
@@ -139,8 +140,9 @@ class _CraftingScreenState extends State<CraftingScreen> {
     }
     if (data.echo != null) {
       final id = data.echo!.id;
-      final isDuplicate =
-          slot == _ForgeDropSlot.left ? _selEchoB?.id == id : _selEchoA?.id == id;
+      final isDuplicate = slot == _ForgeDropSlot.left
+          ? _selEchoB?.id == id
+          : _selEchoA?.id == id;
       if (isDuplicate) return false;
       if (slot == _ForgeDropSlot.right && _leftHasItem) {
         return false;
@@ -149,8 +151,9 @@ class _CraftingScreenState extends State<CraftingScreen> {
     }
     if (data.item != null) {
       final id = data.item!.id;
-      final isDuplicate =
-          slot == _ForgeDropSlot.left ? _selItem?.id == id : _selItemA?.id == id;
+      final isDuplicate = slot == _ForgeDropSlot.left
+          ? _selItem?.id == id
+          : _selItemA?.id == id;
       if (isDuplicate) return false;
       if (slot == _ForgeDropSlot.left && _rightHasEcho) {
         return false;
@@ -236,8 +239,7 @@ class _CraftingScreenState extends State<CraftingScreen> {
       );
     }
     return Icon(Icons.pan_tool_alt_outlined,
-        size: slotSize * 0.18,
-        color: Theme.of(context).colorScheme.outline);
+        size: slotSize * 0.18, color: Theme.of(context).colorScheme.outline);
   }
 
   String _forgeHintText() {
@@ -537,10 +539,12 @@ class _CraftingScreenState extends State<CraftingScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontSize:
-                                (Theme.of(context).textTheme.labelSmall?.fontSize ??
-                                        11) *
-                                    0.92,
+                            fontSize: (Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.fontSize ??
+                                    11) *
+                                0.92,
                           ),
                     ),
                   ),
@@ -564,71 +568,71 @@ class _CraftingScreenState extends State<CraftingScreen> {
                           });
                         },
                         children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: 1),
-                    itemCount: echoes.length,
-                    itemBuilder: (_, i) {
-                      final e = echoes[i];
-                      final selected = _previewEcho?.id == e.id;
-                      final inForge = _isEchoSelected(e.id);
-                      final card = InkWell(
-                        onTap: () {
-                          setState(() {
-                            _previewEcho = e;
-                            _previewItem = null;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.2),
-                            border: Border.all(
-                                color: selected
-                                    ? Colors.tealAccent
-                                    : Colors.tealAccent
-                                        .withValues(alpha: 0.6),
-                                width: selected ? 1.5 : 1),
-                          ),
-                          alignment: Alignment.center,
-                          child: EchoWispIcon(
-                              color: _echoColor(e),
-                              seed: e.id,
-                              size: 24,
-                              pixelate: true,
-                              pixels: 16),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  childAspectRatio: 1),
+                          itemCount: echoes.length,
+                          itemBuilder: (_, i) {
+                            final e = echoes[i];
+                            final selected = _previewEcho?.id == e.id;
+                            final inForge = _isEchoSelected(e.id);
+                            final card = InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _previewEcho = e;
+                                  _previewItem = null;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.2),
+                                  border: Border.all(
+                                      color: selected
+                                          ? Colors.tealAccent
+                                          : Colors.tealAccent
+                                              .withValues(alpha: 0.6),
+                                      width: selected ? 1.5 : 1),
+                                ),
+                                alignment: Alignment.center,
+                                child: EchoWispIcon(
+                                    color: _echoColor(e),
+                                    seed: e.id,
+                                    size: 24,
+                                    pixelate: true,
+                                    pixels: 16),
+                              ),
+                            );
+                            return Draggable<_ForgeIngredient>(
+                              data: _ForgeIngredient.echo(e),
+                              feedback: _ForgeFeedback(
+                                size: 72,
+                                child: EchoWispIcon(
+                                    color: _echoColor(e),
+                                    seed: e.id,
+                                    size: 28,
+                                    pixelate: true,
+                                    pixels: 16),
+                              ),
+                              childWhenDragging:
+                                  Opacity(opacity: 0.3, child: card),
+                              maxSimultaneousDrags: inForge ? 0 : 1,
+                              child: card,
+                            );
+                          },
                         ),
-                      );
-                      return Draggable<_ForgeIngredient>(
-                        data: _ForgeIngredient.echo(e),
-                        feedback: _ForgeFeedback(
-                          size: 72,
-                          child: EchoWispIcon(
-                              color: _echoColor(e),
-                              seed: e.id,
-                              size: 28,
-                              pixelate: true,
-                              pixels: 16),
-                        ),
-                        childWhenDragging:
-                            Opacity(opacity: 0.3, child: card),
-                        maxSimultaneousDrags: inForge ? 0 : 1,
-                        child: card,
-                      );
-                    },
-                    ),
-                  )
-                ])),
+                      )
+                    ])),
                 const SizedBox(width: 8),
                 Expanded(
                     child: _ReturningListPanel(
@@ -642,71 +646,71 @@ class _CraftingScreenState extends State<CraftingScreen> {
                           });
                         },
                         children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: 1),
-                    itemCount: items.length,
-                    itemBuilder: (_, i) {
-                      final it = items[i];
-                      final border = _rarityColor(it.rarity);
-                      final selected = _previewItem?.id == it.id;
-                      final inForge = _isItemSelected(it.id);
-                      final card = InkWell(
-                        onTap: () {
-                          setState(() {
-                            _previewItem = it;
-                            _previewEcho = null;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.15),
-                            border: Border.all(
-                                color: selected ? Colors.white : border,
-                                width: selected ? 1.5 : 1.2),
-                          ),
-                          alignment: Alignment.center,
-                          child: ItemIconBadge(
-                              iconPath: it.def.iconPath,
-                              rarity: it.rarity,
-                              element: it.element,
-                              tier: it.tier,
-                              size: 56,
-                              framed: false),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  childAspectRatio: 1),
+                          itemCount: items.length,
+                          itemBuilder: (_, i) {
+                            final it = items[i];
+                            final border = _rarityColor(it.rarity);
+                            final selected = _previewItem?.id == it.id;
+                            final inForge = _isItemSelected(it.id);
+                            final card = InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _previewItem = it;
+                                  _previewEcho = null;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.15),
+                                  border: Border.all(
+                                      color: selected ? Colors.white : border,
+                                      width: selected ? 1.5 : 1.2),
+                                ),
+                                alignment: Alignment.center,
+                                child: ItemIconBadge(
+                                    iconPath: it.def.iconPath,
+                                    rarity: it.rarity,
+                                    element: it.element,
+                                    tier: it.tier,
+                                    size: 56,
+                                    framed: false),
+                              ),
+                            );
+                            return Draggable<_ForgeIngredient>(
+                              data: _ForgeIngredient.item(it),
+                              feedback: _ForgeFeedback(
+                                size: 72,
+                                child: ItemIconBadge(
+                                    iconPath: it.def.iconPath,
+                                    rarity: it.rarity,
+                                    element: it.element,
+                                    tier: it.tier,
+                                    size: 42,
+                                    framed: false),
+                              ),
+                              childWhenDragging:
+                                  Opacity(opacity: 0.3, child: card),
+                              maxSimultaneousDrags: inForge ? 0 : 1,
+                              child: card,
+                            );
+                          },
                         ),
-                      );
-                      return Draggable<_ForgeIngredient>(
-                        data: _ForgeIngredient.item(it),
-                        feedback: _ForgeFeedback(
-                          size: 72,
-                          child: ItemIconBadge(
-                              iconPath: it.def.iconPath,
-                              rarity: it.rarity,
-                              element: it.element,
-                              tier: it.tier,
-                              size: 42,
-                              framed: false),
-                        ),
-                        childWhenDragging:
-                            Opacity(opacity: 0.3, child: card),
-                        maxSimultaneousDrags: inForge ? 0 : 1,
-                        child: card,
-                      );
-                    },
-                    ),
-                  )
-                ])),
+                      )
+                    ])),
               ]),
             ),
           ),
@@ -745,9 +749,8 @@ class _ListPanel extends StatelessWidget {
           child: LayoutBuilder(builder: (context, constraints) {
             final base = Theme.of(context).textTheme.labelLarge;
             final baseSize = base?.fontSize ?? 14;
-            final fontSize = constraints.maxWidth < 170
-                ? baseSize * 0.92
-                : baseSize * 1.05;
+            final fontSize =
+                constraints.maxWidth < 170 ? baseSize * 0.92 : baseSize * 1.05;
             final bigger = base?.copyWith(fontSize: fontSize) ??
                 TextStyle(fontSize: fontSize);
             return Text(
@@ -791,9 +794,7 @@ class _ReturningListPanel extends StatelessWidget {
           duration: const Duration(milliseconds: 120),
           decoration: BoxDecoration(
             border: Border.all(
-              color: active
-                  ? Colors.tealAccent
-                  : Colors.transparent,
+              color: active ? Colors.tealAccent : Colors.transparent,
               width: 1.2,
             ),
           ),
@@ -877,9 +878,7 @@ class _ForgeSideSlot extends StatelessWidget {
   final String title;
   final Widget child;
   const _ForgeSideSlot(
-      {required this.size,
-      required this.title,
-      required this.child});
+      {required this.size, required this.title, required this.child});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -1081,60 +1080,63 @@ class _CraftDetailsPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-            if (echo != null) ...[
-              Row(children: [
-                EchoWispIcon(
-                    color: _colorForEcho(echo!),
-                    seed: echo!.id,
-                    size: 20,
-                    pixelate: true,
-                    pixels: 16),
-                const SizedBox(width: 8),
-                _pill(
-                    text: echo!.rarity.name.toUpperCase(),
-                    color: _rarityColor(echo!.rarity)),
-                const SizedBox(width: 6),
-                _pill(
-                    text: echo!.element.name,
-                    color: _elementColor(echo!.element)),
-              ]),
-              const SizedBox(height: 4),
-              _echoMeta(context, echo!, small),
-              const SizedBox(height: 6),
-              Text(
-                'Drag this echo into a forge slot to craft new gear or upgrade an item.',
-                style: small,
-              )
-            ],
-            if (item != null) ...[
-              Text(item!.displayName, style: small),
-              const SizedBox(height: 2),
-              Text(
-                  'Slot: ${_prettySlotLabel(item!.def)}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}',
-                  style: small),
-              const SizedBox(height: 2),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Stats: ', style: small),
-                Expanded(
-                    child: ItemStatsLine(
-                        stats: item!.stats,
-                        element: item!.element,
-                        style: small)),
-              ]),
-              if (item!.dnaJournalTitles.isNotEmpty) ...[
+              if (echo != null) ...[
+                Row(children: [
+                  EchoWispIcon(
+                      color: _colorForEcho(echo!),
+                      seed: echo!.id,
+                      size: 20,
+                      pixelate: true,
+                      pixels: 16),
+                  const SizedBox(width: 8),
+                  _pill(
+                      text: echo!.rarity.name.toUpperCase(),
+                      color: _rarityColor(echo!.rarity)),
+                  const SizedBox(width: 6),
+                  _pill(
+                      text: echo!.element.name,
+                      color: _elementColor(echo!.element)),
+                ]),
+                const SizedBox(height: 4),
+                _echoMeta(context, echo!, small),
                 const SizedBox(height: 6),
-                Text('Echo Titles', style: small),
-                const SizedBox(height: 2),
-                ...item!.dnaJournalTitles
-                    .take(3)
-                    .map((t) => Text('• $t', style: small)),
+                Text(
+                  'Drag this echo into a forge slot to craft new gear or upgrade an item.',
+                  style: small,
+                )
               ],
-              const SizedBox(height: 6),
-              Text(
-                'Drag this item into a forge slot to fuse it with another item or upgrade it with an echo.',
-                style: small,
-              )
-            ]
+              if (item != null) ...[
+                Text(item!.displayName, style: small),
+                const SizedBox(height: 2),
+                Text(
+                    'Slot: ${_prettySlotLabel(item!.def)}  Tier ${item!.tier}  Rarity: ${item!.rarity.name}',
+                    style: small),
+                const SizedBox(height: 2),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Stats: ', style: small),
+                  Expanded(
+                      child: ItemStatsLine(
+                          stats: item!.stats,
+                          element: item!.element,
+                          style: small)),
+                ]),
+                if (item!.memorySources.isNotEmpty ||
+                    item!.lineageSteps.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  ItemProvenanceBlock(
+                    item: item!,
+                    headingStyle: small,
+                    bodyStyle: small,
+                    maxSources: 3,
+                    maxLineageSteps: 2,
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  'Drag this item into a forge slot to fuse it with another item or upgrade it with an echo.',
+                  style: small,
+                )
+              ]
             ]),
       ),
     );
@@ -1224,7 +1226,8 @@ class _CraftingTutorialDialog extends StatefulWidget {
   const _CraftingTutorialDialog();
 
   @override
-  State<_CraftingTutorialDialog> createState() => _CraftingTutorialDialogState();
+  State<_CraftingTutorialDialog> createState() =>
+      _CraftingTutorialDialogState();
 }
 
 class _CraftingTutorialDialogState extends State<_CraftingTutorialDialog> {
