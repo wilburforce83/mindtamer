@@ -9,6 +9,7 @@ import '../../game/skills/skill_catalog.dart';
 import '../../models/sprite_attack.dart';
 import '../../game/services/monster_image_service.dart';
 import '../../services/inventory_service.dart';
+import '../../services/achievement_service.dart';
 import '../../services/item_catalog.dart';
 import '../../crafting/inventory_service.dart';
 import '../../services/drop_table.dart';
@@ -143,11 +144,17 @@ class BattleNotifier extends StateNotifier<BattleState> {
   List<Skill> _playerSkills = const [];
   List<BattleSpriteAction> _playerSprites = const [];
   bool _turnLocked = false;
+  int _itemsUsedTotal = 0;
+  int _itemsUsedHeal = 0;
+  int _damageTakenTotal = 0;
 
   Future<void> init({required String battleId}) async {
     // Reset state to avoid leaking result/action from previous battle
     state = const BattleState();
     _turnLocked = false;
+    _itemsUsedTotal = 0;
+    _itemsUsedHeal = 0;
+    _damageTakenTotal = 0;
     // Build stats
     final profile = profileBox().values.isNotEmpty
         ? profileBox().values.first
@@ -658,6 +665,20 @@ class BattleNotifier extends StateNotifier<BattleState> {
 
     // Consume and update state if any effect occurred
     if (logs.isNotEmpty && InventoryService.consume(id)) {
+      _itemsUsedTotal += 1;
+      final healingItem =
+          (def.healInstant != null && def.healInstant! > 0) ||
+          (def.regenPerTurn != null && def.regenTurns != null);
+      if (healingItem) {
+        _itemsUsedHeal += 1;
+      }
+      try {
+        AchievementService().recordItemUsed(
+          type: type,
+          healing: healingItem,
+          inBattle: true,
+        );
+      } catch (_) {}
       final qi = _loadQuickItems();
       state = state.copyWith(
         playerHp: _player.stats.hp,
@@ -767,6 +788,20 @@ class BattleNotifier extends StateNotifier<BattleState> {
     }
 
     if (logs.isNotEmpty && InventoryService.consume(invId)) {
+      _itemsUsedTotal += 1;
+      final healingItem =
+          (def.healInstant != null && def.healInstant! > 0) ||
+          (def.regenPerTurn != null && def.regenTurns != null);
+      if (healingItem) {
+        _itemsUsedHeal += 1;
+      }
+      try {
+        AchievementService().recordItemUsed(
+          type: type,
+          healing: healingItem,
+          inBattle: true,
+        );
+      } catch (_) {}
       final qi = _loadQuickItems();
       state = state.copyWith(
         playerHp: _player.stats.hp,
@@ -825,9 +860,14 @@ class BattleNotifier extends StateNotifier<BattleState> {
     if (!_turnLocked || state.result != null) {
       return;
     }
+    final hpBefore = _player.stats.hp;
     final skill = _engine.chooseEnemySkill();
     final logs = _engine.takeTurnBySkill(_enemy, _player, skill);
     _engine.endTurn();
+    final damageThisTurn = hpBefore - _player.stats.hp;
+    if (damageThisTurn > 0) {
+      _damageTakenTotal += damageThisTurn;
+    }
     state = state.copyWith(
       playerHp: _player.stats.hp,
       enemyHp: _enemy.stats.hp,
@@ -861,17 +901,30 @@ class BattleNotifier extends StateNotifier<BattleState> {
     _turnLocked = true;
     final id = state.battleId;
     String? speciesId;
+    bool isBoss = false;
+    String? weaponKey;
     bool preCodexExists = false;
     bool leveledUpLocal = false;
     if (id != null) {
       try {
         final b = battleBox().get(id);
         speciesId = b?.speciesId;
+        final ticket = b == null ? null : encounterTicketBox().get(b.ticketId);
+        isBoss = ticket?.seedSnapshot['isBoss'] == true;
         if (speciesId != null) {
           preCodexExists = (monsterCodexBox().get(speciesId) != null);
         }
       } catch (_) {}
     }
+    try {
+      final eq = equipmentBox().get('slots') as Map?;
+      final w =
+          (eq?['weapon'] as Map?)?.map((k, v) => MapEntry(k.toString(), v));
+      if (w != null) {
+        final crafted = CraftedInventoryService.getById((w['id'] ?? '').toString());
+        weaponKey = crafted?.def.key;
+      }
+    } catch (_) {}
     if (id != null) {
       try {
         await BattleServiceImpl(
@@ -914,6 +967,11 @@ class BattleNotifier extends StateNotifier<BattleState> {
                   cosmetics: p.cosmetics,
                   titles: p.titles));
           leveledUpLocal = leveled;
+          if (leveled) {
+            try {
+              await AchievementService().recordLevelReached(level);
+            } catch (_) {}
+          }
           // Detect codex addition and echo dropped
           bool codexAdded = false;
           bool echoDropped = false;
@@ -945,6 +1003,21 @@ class BattleNotifier extends StateNotifier<BattleState> {
       } else {
         playerMetaBox().put('hp', _player.stats.hp);
       }
+    } catch (_) {}
+    try {
+      final hpPct =
+          ((_player.stats.hp / _player.stats.maxHp) * 100).round().clamp(0, 100);
+      await AchievementService().recordBattleEnd(
+        victory: result == 'win',
+        turns: state.turnCount + 1,
+        isBoss: isBoss,
+        damageTaken: _damageTakenTotal,
+        itemsUsedTotal: _itemsUsedTotal,
+        itemsUsedHeal: _itemsUsedHeal,
+        skillsUsedHeal: 0,
+        hpPct: hpPct,
+        weaponKey: weaponKey,
+      );
     } catch (_) {}
     state = state.copyWith(result: result, inputLocked: true);
   }

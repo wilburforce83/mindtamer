@@ -106,10 +106,17 @@ flutter:
     - assets/images/icons/tab_journal_32.png
     - assets/images/icons/tab_meds_32.png
     - assets/images/icons/tab_settings_32.png
+    - assets/images/icons/pills/
     # Explicit slot placeholders to ensure bundling
     - assets/images/ui/slots/ring_empty_32.png
     - assets/images/ui/slots/hand_empty_32.png
     - assets/images/ui/slots/chest_empty_32.png
+    - assets/images/ui/slots/head_empty_32.png
+    - assets/images/ui/slots/neck_empty_32.png
+    - assets/images/ui/slots/legs_empty_32.png
+    - assets/images/ui/slots/feet_empty_32.png
+    - assets/images/ui/slots/sprite_empty_32.png
+    - assets/images/ui/slots/weapon_empty_32.png
   fonts:
     - family: PixelFont
       fonts:

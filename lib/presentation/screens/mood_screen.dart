@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:mindtamer/features/mood/data/mood_repository.dart';
 import 'package:mindtamer/features/mood/models/mood_entry.dart';
 import 'package:mindtamer/features/mood/ui/mood_analytics_screen.dart';
+import '../../services/achievement_service.dart';
 
 class MoodScreen extends StatefulWidget {
   const MoodScreen({super.key});
@@ -63,6 +64,12 @@ class _MoodScreenState extends State<MoodScreen> {
   Future<void> _record() async {
     if (_cooldown) return;
     await MoodRepository.addSnapshot({for (final e in values.entries) e.key: e.value});
+    try {
+      await AchievementService().recordMoodSnapshot(
+        snapshotsToday: _todayCount(),
+        timestamp: DateTime.now(),
+      );
+    } catch (_) {}
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mood recorded')));
     setState(() {

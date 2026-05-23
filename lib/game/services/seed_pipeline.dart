@@ -14,7 +14,6 @@ import '../models/resonant_echo.dart';
 import 'monster_image_service.dart';
 import '../models/seed_instance.dart';
 import '../models/summons_inventory.dart';
-import '../../crafting/inventory_service.dart';
 import '../../services/achievement_service.dart';
 
 abstract class SeedRouter {
@@ -343,32 +342,6 @@ class BattleServiceImpl implements BattleService {
     }
     await codex.onVictory(
         speciesId: updated.speciesId, displayName: displayName);
-    // Achievements: battle_end event
-    try {
-      // infer weapon from currently equipped
-      String? weaponKey;
-      try {
-        final eq = equipmentBox().get('slots') as Map?;
-        final w =
-            (eq?['weapon'] as Map?)?.map((k, v) => MapEntry(k.toString(), v));
-        if (w != null) {
-          final crafted =
-              CraftedInventoryService.getById((w['id'] ?? '').toString());
-          weaponKey = crafted?.def.key;
-        }
-      } catch (_) {}
-      await AchievementService().recordBattleEnd(
-        victory: result == 'win',
-        turns: turnCount,
-        isBoss: (ticket?.seedSnapshot['isBoss'] == true),
-        damageTaken: 0,
-        itemsUsedTotal: 0,
-        itemsUsedHeal: 0,
-        skillsUsedHeal: 0,
-        hpPct: 100,
-        weaponKey: weaponKey,
-      );
-    } catch (_) {}
     if (ticket != null && (ticket.seedSnapshot['noEcho'] != true)) {
       final seed = SeedResultSerialize.fromMap(
           Map<String, dynamic>.from(ticket.seedSnapshot));
@@ -446,6 +419,12 @@ class EchoServiceImpl implements EchoService {
         createdAt: DateTime.now().toUtc(),
       );
       await resonantEchoBox().put(id, e);
+      try {
+        await AchievementService().recordEchoCollected(
+          element: e.element,
+          rarity: e.rarity,
+        );
+      } catch (_) {}
       return id;
     }
     return null;
@@ -484,6 +463,9 @@ class SummonServiceImpl implements SummonService {
     );
     await seedInstanceBox().put(id, inst);
     await summonsInventoryBox().put(id, SummonsInventoryItem(instanceId: id));
+    try {
+      await AchievementService().recordSummonCreated();
+    } catch (_) {}
     return id;
   }
 }

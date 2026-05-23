@@ -19,6 +19,8 @@ import '../../game/models/seed_instance.dart';
 import 'dart:async';
 import '../../theme/colors.dart';
 import '../../game/services/player_image_service.dart';
+import '../../services/achievement_service.dart';
+import '../../services/crafting_tutorial_service.dart';
 import '../../crafting/inventory_service.dart';
 import '../../crafting/models.dart';
 import '../widgets/item_icon_badge.dart';
@@ -41,8 +43,10 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   StreamSubscription? _equipSub;
   StreamSubscription? _profileSub;
   StreamSubscription? _metaSub;
+  StreamSubscription? _echoSub;
   ui.Image? _playerImage;
   String? _playerAssetPath; // raw asset fallback
+  bool _hideCraftingCoach = false;
 
   @override
   void initState() {
@@ -67,6 +71,12 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
       if (!mounted) return;
       await _refreshPlayerImage();
       setState(() {});
+    });
+    _echoSub = resonantEchoBox().watch().listen((_) {
+      if (!mounted) return;
+      setState(() {
+        _hideCraftingCoach = false;
+      });
     });
   }
 
@@ -161,6 +171,9 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
           spriteSlots.set('sprite2', sel.id);
         }
       });
+      try {
+        await AchievementService().recordSpriteEquipped();
+      } catch (_) {}
     }
     if (mounted) setState(() => _selecting = false);
   }
@@ -413,6 +426,10 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     }
   }
 
+  bool _showCraftingCoach() {
+    return !_hideCraftingCoach && CraftingTutorialService.shouldShowHubCoach();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<CharacterHubVM>().state;
@@ -451,6 +468,16 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _HubBars(),
+                        if (_showCraftingCoach()) ...[
+                          _CraftingCoachCard(
+                            echoCount: resonantEchoBox().length,
+                            onOpen: () => context.push('/crafting'),
+                            onDismiss: () => setState(() {
+                              _hideCraftingCoach = true;
+                            }),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         LayoutBuilder(
                           builder: (ctx, c) {
                             final w = c.maxWidth;
@@ -806,6 +833,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
     _equipSub?.cancel();
     _profileSub?.cancel();
     _metaSub?.cancel();
+    _echoSub?.cancel();
     super.dispose();
   }
 }
@@ -1174,6 +1202,71 @@ class _StatsAndAttacks extends StatelessWidget {
               .toList();
         })(),
       ]),
+    );
+  }
+}
+
+class _CraftingCoachCard extends StatelessWidget {
+  final int echoCount;
+  final VoidCallback onOpen;
+  final VoidCallback onDismiss;
+
+  const _CraftingCoachCard({
+    required this.echoCount,
+    required this.onOpen,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.24),
+        border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.handyman,
+                  size: 20, color: Colors.tealAccent.withValues(alpha: 0.95)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You have $echoCount echoes ready to forge',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              IconButton(
+                onPressed: onDismiss,
+                icon: const Icon(Icons.close, size: 18),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Hide tip',
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Crafting turns echoes into gear, upgrades items with echo energy, and fuses crafted items into stronger results.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: onOpen,
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Try Crafting'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

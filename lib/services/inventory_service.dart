@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+import 'dart:async';
 import '../data/hive/boxes.dart';
+import 'achievement_service.dart';
 import 'item_catalog.dart';
 
 class InventoryService {
@@ -21,6 +23,9 @@ class InventoryService {
     final inv = inventory();
     inv.add({'id': id, 'type': type, 'qty': qty});
     save(inv);
+    unawaited(
+      AchievementService().recordItemCollected(type: type, qty: qty),
+    );
     return id;
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/inventory_service.dart';
+import '../../services/achievement_service.dart';
 import '../../services/item_catalog.dart';
 import '../../data/hive/boxes.dart';
 import '../../core/pixel_assets.dart';
@@ -125,6 +126,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
       await meta.put('hp', newHp);
       // Consume from inventory
       InventoryService.consume(id);
+      try {
+        await AchievementService().recordItemUsed(
+          type: type,
+          healing: true,
+          inBattle: false,
+        );
+      } catch (_) {}
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

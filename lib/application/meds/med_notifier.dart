@@ -7,6 +7,7 @@ import '../../core/notifications.dart';
 import '../../data/models/med_log.dart';
 import '../../data/models/settings.dart';
 import '../../data/hive/boxes.dart';
+import '../../services/achievement_service.dart';
 final medPlansProvider = StateNotifierProvider<MedPlansNotifier, List<MedPlan>>(
   (ref) => MedPlansNotifier(ref.read(medRepoProvider), ref),
 );
@@ -50,6 +51,12 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   MedPlansNotifier(this._repo, this._ref) : super(_repo.plans());
   Future<MedPlan> addPlan(String name, String dose, List<String> times, {bool schedule = true}) async {
     final p = await _repo.addPlan(name, dose, times);
+    try {
+      await AchievementService().recordMedPlanCreated(
+        totalPlans: _repo.plans().length,
+        scheduleCount: times.length,
+      );
+    } catch (_) {}
     if (schedule) {
       try { await _reschedule(); } catch (_) {}
       await _checkRefillAlerts();
@@ -83,6 +90,12 @@ class MedPlansNotifier extends StateNotifier<List<MedPlan>> {
   }
   Future<void> log(String planId, DateTime date, String time, bool taken, {DateTime? loggedAt}) async {
     await _repo.logIntake(planId, date, time, taken, loggedAt: loggedAt);
+    try {
+      await AchievementService().recordMedLog(
+        taken: taken,
+        day: loggedAt ?? date,
+      );
+    } catch (_) {}
     await _checkRefillAlerts();
     state = _repo.plans();
     _ref.read(medLogsTickProvider.notifier).state++;

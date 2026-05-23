@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:typed_data';
 import 'dart:async';
 import 'dart:ui' as ui;
@@ -5,6 +6,11 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../../data/hive/boxes.dart';
 
 class PlayerImageService {
+  static const int _zoneNone = 0;
+  static const int _zoneHair = 1;
+  static const int _zoneSkin = 2;
+  static const int _zoneWeapon = 3;
+
   // Authoring key ramps (exact source colors in the PNGs)
   // Authoring 3-step ramps per latest art spec
   static const List<int> _hairKeys = [
@@ -17,6 +23,7 @@ class PlayerImageService {
   static const List<int> _weaponGlowKeys = [
     0xFF11BEA3, 0xFF1FD9BC, 0xFF33FFE2,
   ];
+  static final Map<String, _ModifierMask> _maskCache = <String, _ModifierMask>{};
 
   // Build the asset path for a given class and gender (m/f)
   static String assetPathFor(String classKey, String gender) {
@@ -98,20 +105,11 @@ class PlayerImageService {
       final src = bd.buffer.asUint8List();
       final w = img.width;
       final h = img.height;
-
-      // Build mapping table from source→target colors
-      final map = <int, int>{};
-      for (int i = 0; i < _hairKeys.length && i < hairRamp6.length; i++) {
-        map[_hairKeys[i] & 0xFFFFFF] = hairRamp6[i] & 0xFFFFFF;
-      }
-      for (int i = 0; i < _skinKeys.length && i < skinRamp6.length; i++) {
-        map[_skinKeys[i] & 0xFFFFFF] = skinRamp6[i] & 0xFFFFFF;
-      }
-      if (weaponGlowRamp3 != null && weaponGlowRamp3.length >= 3) {
-        for (int i = 0; i < _weaponGlowKeys.length && i < 3; i++) {
-          map[_weaponGlowKeys[i] & 0xFFFFFF] = weaponGlowRamp3[i] & 0xFFFFFF;
-        }
-      }
+      final mask = _maskCache.putIfAbsent(
+        assetPath,
+        () => _buildModifierMask(src, w, h),
+      );
+      final replacementCache = <int, int>{};
 
       // Iterate pixels and replace colors (ignore alpha in match)
       for (int p = 0; p < src.length; p += 4) {
@@ -120,13 +118,31 @@ class PlayerImageService {
         final b = src[p + 2];
         final a = src[p + 3];
         if (a == 0) continue;
+        final zone = mask.zones[p ~/ 4];
+        if (zone == _zoneNone) continue;
         final key = (r << 16) | (g << 8) | b;
-        final rep = map[key];
-        if (rep != null) {
-          src[p] = (rep >> 16) & 0xFF;
-          src[p + 1] = (rep >> 8) & 0xFF;
-          src[p + 2] = rep & 0xFF;
+        final cacheKey = (zone << 24) | key;
+        int? rep = replacementCache[cacheKey];
+        if (rep == null) {
+          switch (zone) {
+            case _zoneHair:
+              rep = hairRamp6[_closestKeyIndex(key, _hairKeys)] & 0xFFFFFF;
+              break;
+            case _zoneSkin:
+              rep = skinRamp6[_closestKeyIndex(key, _skinKeys)] & 0xFFFFFF;
+              break;
+            case _zoneWeapon:
+              final glowRamp = weaponGlowRamp3 ?? _weaponGlowKeys;
+              rep = glowRamp[_closestKeyIndex(key, _weaponGlowKeys)] & 0xFFFFFF;
+              break;
+            default:
+              rep = key;
+          }
+          replacementCache[cacheKey] = rep;
         }
+        src[p] = (rep >> 16) & 0xFF;
+        src[p + 1] = (rep >> 8) & 0xFF;
+        src[p + 2] = rep & 0xFF;
       }
 
       // Create a new image from modified pixel buffer
@@ -135,6 +151,324 @@ class PlayerImageService {
     } catch (_) {
       return null;
     }
+  }
+
+  static _ModifierMask _buildModifierMask(Uint8List rgba, int width, int height) {
+    final hairCandidates = _emptyMask(width, height);
+    final warmCandidates = _emptyMask(width, height);
+    final exactSkinCandidates = _emptyMask(width, height);
+    final weaponCandidates = _emptyMask(width, height);
+    final saturation = List<List<double>>.generate(
+      height,
+      (_) => List<double>.filled(width, 0),
+      growable: false,
+    );
+
+    for (int y = 0; y < height; y++) {
+      final rowOffset = y * width * 4;
+      for (int x = 0; x < width; x++) {
+        final offset = rowOffset + (x * 4);
+        final r = rgba[offset];
+        final g = rgba[offset + 1];
+        final b = rgba[offset + 2];
+        final a = rgba[offset + 3];
+        if (a == 0) continue;
+        final rgb = (r << 16) | (g << 8) | b;
+        final hsv = _rgbToHsv(rgb);
+        saturation[y][x] = hsv.s;
+
+        if (_isExactSkinKey(rgb)) {
+          exactSkinCandidates[y][x] = true;
+        }
+        if (_isHairCandidate(rgb, hsv, y, height)) {
+          hairCandidates[y][x] = true;
+        }
+        if (_isWeaponCandidate(rgb, hsv)) {
+          weaponCandidates[y][x] = true;
+        }
+        if (_isWarmSkinCandidate(rgb, hsv)) {
+          warmCandidates[y][x] = true;
+        }
+      }
+    }
+
+    final hairMask = _refineHairMask(hairCandidates);
+    final skinMask = _buildSkinMask(
+      warmCandidates,
+      exactSkinCandidates,
+      saturation,
+    );
+
+    final zones = Uint8List(width * height);
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final index = y * width + x;
+        if (weaponCandidates[y][x]) {
+          zones[index] = _zoneWeapon;
+        } else if (hairMask[y][x]) {
+          zones[index] = _zoneHair;
+        } else if (skinMask[y][x]) {
+          zones[index] = _zoneSkin;
+        }
+      }
+    }
+    return _ModifierMask(width: width, height: height, zones: zones);
+  }
+
+  static List<List<bool>> _emptyMask(int width, int height) {
+    return List<List<bool>>.generate(
+      height,
+      (_) => List<bool>.filled(width, false),
+      growable: false,
+    );
+  }
+
+  static bool _isHairCandidate(int rgb, _HSV hsv, int y, int height) {
+    if (_hairKeys.any((k) => (k & 0xFFFFFF) == rgb)) return true;
+    final inKeyRange = _closestKeyDistanceSq(rgb, _hairKeys) <= 3600;
+    final hueBand = (hsv.h >= 0.84 || hsv.h <= 0.02) &&
+        hsv.s >= 0.38 &&
+        hsv.v >= 0.22 &&
+        _maxRgb(rgb) >= 70 &&
+        y < (height * 0.78);
+    return inKeyRange || hueBand;
+  }
+
+  static bool _isWeaponCandidate(int rgb, _HSV hsv) {
+    if (_weaponGlowKeys.any((k) => (k & 0xFFFFFF) == rgb)) return true;
+    final inKeyRange = _closestKeyDistanceSq(rgb, _weaponGlowKeys) <= 5200;
+    final hueBand = hsv.h >= 0.43 &&
+        hsv.h <= 0.58 &&
+        hsv.s >= 0.35 &&
+        hsv.v >= 0.42 &&
+        _maxRgb(rgb) >= 110;
+    return inKeyRange || hueBand;
+  }
+
+  static bool _isWarmSkinCandidate(int rgb, _HSV hsv) {
+    if (_isExactSkinKey(rgb)) return true;
+    final r = (rgb >> 16) & 0xFF;
+    final g = (rgb >> 8) & 0xFF;
+    final b = rgb & 0xFF;
+    return hsv.h >= 0.03 &&
+        hsv.h <= 0.14 &&
+        hsv.s >= 0.12 &&
+        hsv.s <= 0.72 &&
+        hsv.v >= 0.25 &&
+        r >= 70 &&
+        g >= 45 &&
+        b >= 25 &&
+        r >= g &&
+        g >= b;
+  }
+
+  static bool _isExactSkinKey(int rgb) {
+    return _skinKeys.any((k) => (k & 0xFFFFFF) == rgb);
+  }
+
+  static int _maxRgb(int rgb) {
+    final r = (rgb >> 16) & 0xFF;
+    final g = (rgb >> 8) & 0xFF;
+    final b = rgb & 0xFF;
+    var max = r;
+    if (g > max) max = g;
+    if (b > max) max = b;
+    return max;
+  }
+
+  static List<List<bool>> _refineHairMask(List<List<bool>> mask) {
+    final height = mask.length;
+    final width = mask.first.length;
+    final comps = _components(mask);
+    if (comps.isEmpty) return mask;
+
+    final keep = Set<({int x, int y})>.from(comps.first.points);
+    var frontier = _dilatePoints(keep, width, height, radius: 4);
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (final comp in comps.skip(1)) {
+        if (comp.minY > height * 0.72) continue;
+        if (comp.points.every((p) => keep.contains(p))) continue;
+        if (comp.points.any(frontier.contains)) {
+          keep.addAll(comp.points);
+          frontier = _dilatePoints(keep, width, height, radius: 4);
+          changed = true;
+        }
+      }
+    }
+
+    final refined = _emptyMask(width, height);
+    for (final p in keep) {
+      refined[p.y][p.x] = true;
+    }
+    return refined;
+  }
+
+  static List<List<bool>> _buildSkinMask(
+    List<List<bool>> warmMask,
+    List<List<bool>> exactSkinMask,
+    List<List<double>> saturation,
+  ) {
+    final height = warmMask.length;
+    final width = warmMask.first.length;
+    final skinMask = _emptyMask(width, height);
+    final comps = _components(warmMask);
+    for (final comp in comps) {
+      final meanSat = comp.points
+              .map((p) => saturation[p.y][p.x])
+              .fold<double>(0, (sum, v) => sum + v) /
+          comp.points.length;
+      final exactCount = comp.points
+          .where((p) => exactSkinMask[p.y][p.x])
+          .length;
+      final hasExactKeys = exactCount > 0;
+      final handMaxArea = hasExactKeys ? 32 : 20;
+      final handLeftBoundary = width * (hasExactKeys ? 0.40 : 0.35);
+      final handRightBoundary = width * (hasExactKeys ? 0.60 : 0.65);
+      final handMaxWidth = hasExactKeys ? 8 : 6;
+      final handMaxHeight = hasExactKeys ? 8 : 6;
+      final isFace = comp.area <= 120 &&
+          comp.centroidY <= height * 0.45 &&
+          meanSat >= 0.22;
+      final isHand = comp.area <= handMaxArea &&
+          comp.centroidY >= height * 0.35 &&
+          comp.centroidY <= height * 0.82 &&
+          meanSat >= 0.22 &&
+          (comp.centroidX <= handLeftBoundary ||
+              comp.centroidX >= handRightBoundary) &&
+          (comp.maxX - comp.minX) <= handMaxWidth &&
+          (comp.maxY - comp.minY) <= handMaxHeight;
+      if (!isFace && !isHand) continue;
+      for (final p in comp.points) {
+        skinMask[p.y][p.x] = true;
+      }
+    }
+    return skinMask;
+  }
+
+  static List<_MaskComponent> _components(List<List<bool>> mask) {
+    final height = mask.length;
+    final width = mask.first.length;
+    final seen = _emptyMask(width, height);
+    final comps = <_MaskComponent>[];
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        if (!mask[y][x] || seen[y][x]) continue;
+        final queue = Queue<({int x, int y})>();
+        final points = <({int x, int y})>[];
+        queue.add((x: x, y: y));
+        seen[y][x] = true;
+        var minX = x;
+        var minY = y;
+        var maxX = x;
+        var maxY = y;
+        var sumX = 0;
+        var sumY = 0;
+
+        while (queue.isNotEmpty) {
+          final point = queue.removeFirst();
+          points.add(point);
+          sumX += point.x;
+          sumY += point.y;
+          if (point.x < minX) minX = point.x;
+          if (point.y < minY) minY = point.y;
+          if (point.x > maxX) maxX = point.x;
+          if (point.y > maxY) maxY = point.y;
+
+          for (final next in [
+            (x: point.x + 1, y: point.y),
+            (x: point.x - 1, y: point.y),
+            (x: point.x, y: point.y + 1),
+            (x: point.x, y: point.y - 1),
+          ]) {
+            if (next.x < 0 ||
+                next.y < 0 ||
+                next.x >= width ||
+                next.y >= height ||
+                !mask[next.y][next.x] ||
+                seen[next.y][next.x]) {
+              continue;
+            }
+            seen[next.y][next.x] = true;
+            queue.add(next);
+          }
+        }
+
+        comps.add(
+          _MaskComponent(
+            points: points,
+            area: points.length,
+            minX: minX,
+            minY: minY,
+            maxX: maxX,
+            maxY: maxY,
+            centroidX: sumX / points.length,
+            centroidY: sumY / points.length,
+          ),
+        );
+      }
+    }
+
+    comps.sort((a, b) => b.area.compareTo(a.area));
+    return comps;
+  }
+
+  static Set<({int x, int y})> _dilatePoints(
+    Set<({int x, int y})> points,
+    int width,
+    int height, {
+    int radius = 4,
+  }) {
+    final out = <({int x, int y})>{};
+    for (final point in points) {
+      for (int y = point.y - radius; y <= point.y + radius; y++) {
+        if (y < 0 || y >= height) continue;
+        for (int x = point.x - radius; x <= point.x + radius; x++) {
+          if (x < 0 || x >= width) continue;
+          out.add((x: x, y: y));
+        }
+      }
+    }
+    return out;
+  }
+
+  static int _closestKeyIndex(int rgb, List<int> keys) {
+    var bestIndex = 0;
+    var bestScore = 1 << 62;
+    for (int i = 0; i < keys.length; i++) {
+      final score = _rgbDistanceSq(rgb, keys[i] & 0xFFFFFF);
+      if (score < bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+    return bestIndex;
+  }
+
+  static int _closestKeyDistanceSq(int rgb, List<int> keys) {
+    var bestScore = 1 << 62;
+    for (final key in keys) {
+      final score = _rgbDistanceSq(rgb, key & 0xFFFFFF);
+      if (score < bestScore) {
+        bestScore = score;
+      }
+    }
+    return bestScore;
+  }
+
+  static int _rgbDistanceSq(int a, int b) {
+    final ar = (a >> 16) & 0xFF;
+    final ag = (a >> 8) & 0xFF;
+    final ab = a & 0xFF;
+    final br = (b >> 16) & 0xFF;
+    final bg = (b >> 8) & 0xFF;
+    final bb = b & 0xFF;
+    final dr = ar - br;
+    final dg = ag - bg;
+    final db = ab - bb;
+    return (dr * dr) + (dg * dg) + (db * db);
   }
 
   Future<ui.Image> _imageFromRgba(Uint8List rgba, int width, int height) async {
@@ -258,9 +592,73 @@ class PlayerImageService {
     final bi = (b * 255).round().clamp(0, 255);
     return (ri << 16) | (gi << 8) | bi;
   }
+
+  static _HSV _rgbToHsv(int rgb) {
+    final r = ((rgb >> 16) & 0xFF) / 255.0;
+    final g = ((rgb >> 8) & 0xFF) / 255.0;
+    final b = (rgb & 0xFF) / 255.0;
+    final max = [r, g, b].reduce((a, c) => a > c ? a : c);
+    final min = [r, g, b].reduce((a, c) => a < c ? a : c);
+    final delta = max - min;
+    var h = 0.0;
+    final s = max == 0 ? 0.0 : delta / max;
+    final v = max;
+    if (delta != 0) {
+      if (max == r) {
+        h = ((g - b) / delta) % 6;
+      } else if (max == g) {
+        h = ((b - r) / delta) + 2;
+      } else {
+        h = ((r - g) / delta) + 4;
+      }
+      h /= 6.0;
+      if (h < 0) h += 1.0;
+    }
+    return _HSV(h, s, v);
+  }
 }
 
 class _HSL {
   final double h, s, l;
   _HSL(this.h, this.s, this.l);
+}
+
+class _HSV {
+  final double h;
+  final double s;
+  final double v;
+  _HSV(this.h, this.s, this.v);
+}
+
+class _ModifierMask {
+  final int width;
+  final int height;
+  final Uint8List zones;
+  _ModifierMask({
+    required this.width,
+    required this.height,
+    required this.zones,
+  });
+}
+
+class _MaskComponent {
+  final List<({int x, int y})> points;
+  final int area;
+  final int minX;
+  final int minY;
+  final int maxX;
+  final int maxY;
+  final double centroidX;
+  final double centroidY;
+
+  _MaskComponent({
+    required this.points,
+    required this.area,
+    required this.minX,
+    required this.minY,
+    required this.maxX,
+    required this.maxY,
+    required this.centroidX,
+    required this.centroidY,
+  });
 }

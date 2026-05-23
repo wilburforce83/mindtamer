@@ -13,6 +13,7 @@ import '../../../data/models/settings.dart';
 import '../../../seed/lexicon_loader.dart';
 import '../../../seed/seed_generator.dart';
 import '../../../game/services/seed_pipeline.dart';
+import '../../../services/achievement_service.dart';
 
 class JournalEditorScreen extends StatelessWidget {
   final JournalEntry? existing;
@@ -36,6 +37,19 @@ class JournalEditorScreen extends StatelessWidget {
                 final saved = await c.save();
                 // Generate seed result for new entries
                 if (existing == null) {
+                  final wordCount = c.body
+                      .trim()
+                      .split(RegExp(r'\s+'))
+                      .where((w) => w.isNotEmpty)
+                      .length;
+                  try {
+                    await AchievementService().recordJournalSaved(
+                      tags: c.tags,
+                      hasBody: c.body.trim().isNotEmpty,
+                      wordCount: wordCount,
+                      sentiment: c.sentiment.name,
+                    );
+                  } catch (_) {}
                   // Capture pre-drop count to detect new sprite creation
                   int preCount = 0;
                   try { preCount = summonsInventoryBox().length; } catch (_) {}

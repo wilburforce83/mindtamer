@@ -22,6 +22,12 @@ class PixelAssets {
   static const ringEmpty32 = 'assets/images/ui/slots/ring_empty_32.png';
   static const handEmpty32 = 'assets/images/ui/slots/hand_empty_32.png';
   static const chestEmpty32 = 'assets/images/ui/slots/chest_empty_32.png';
+  static const headEmpty32 = 'assets/images/ui/slots/head_empty_32.png';
+  static const neckEmpty32 = 'assets/images/ui/slots/neck_empty_32.png';
+  static const legsEmpty32 = 'assets/images/ui/slots/legs_empty_32.png';
+  static const feetEmpty32 = 'assets/images/ui/slots/feet_empty_32.png';
+  static const spriteEmpty32 = 'assets/images/ui/slots/sprite_empty_32.png';
+  static const weaponEmpty32 = 'assets/images/ui/slots/weapon_empty_32.png';
 
   static Future<void> init() async {
     if (_assets != null) return;
@@ -47,8 +53,21 @@ class PixelAssets {
         return ringEmpty32;
       case 'hands':
         return handEmpty32;
+      case 'head':
+        return headEmpty32;
+      case 'neck':
+        return neckEmpty32;
       case 'chest':
         return chestEmpty32;
+      case 'legs':
+        return legsEmpty32;
+      case 'feet':
+        return feetEmpty32;
+      case 'sprite1':
+      case 'sprite2':
+        return spriteEmpty32;
+      case 'weapon':
+        return weaponEmpty32;
     }
     return null;
   }
