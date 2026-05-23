@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/colors.dart';
 
 class AchievementBadgeIcon extends StatelessWidget {
   final Map<String, dynamic> definition;
@@ -16,8 +17,7 @@ class AchievementBadgeIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final category = definition['category']?.toString() ?? '';
     final family = definition['icon_family']?.toString() ?? category;
-    final points =
-        int.tryParse((definition['points'] ?? '0').toString()) ?? 0;
+    final points = int.tryParse((definition['points'] ?? '0').toString()) ?? 0;
     final milestone = definition['milestone'];
     final accent = _accentFor(category);
     final bg = earned
@@ -29,7 +29,7 @@ class AchievementBadgeIcon extends StatelessWidget {
     final border = earned
         ? accent
         : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5);
-    final iconColor = earned ? accent : Colors.white70;
+    final iconColor = earned ? accent : AppColors.mutedAlt;
 
     return Container(
       width: size,
@@ -80,7 +80,9 @@ class AchievementBadgeIcon extends StatelessWidget {
                   height: 4,
                   margin: EdgeInsets.only(left: index == 0 ? 0 : 2),
                   decoration: BoxDecoration(
-                    color: earned ? accent : Colors.white24,
+                    color: earned
+                        ? accent
+                        : AppColors.outlineSoft.withValues(alpha: 0.55),
                     shape: BoxShape.circle,
                   ),
                 );
@@ -95,11 +97,11 @@ class AchievementBadgeIcon extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.72),
+                  color: AppColors.panel.withValues(alpha: 0.9),
                   border: Border.all(
                     color: earned
                         ? accent.withValues(alpha: 0.8)
-                        : Colors.white24,
+                        : AppColors.outlineSoft.withValues(alpha: 0.7),
                     width: 0.8,
                   ),
                 ),
@@ -111,7 +113,7 @@ class AchievementBadgeIcon extends StatelessWidget {
                   style: TextStyle(
                     fontSize: size * 0.14,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppColors.ivory,
                     height: 1,
                   ),
                 ),
@@ -137,30 +139,7 @@ class AchievementBadgeIcon extends StatelessWidget {
   }
 
   Color _accentFor(String category) {
-    switch (category.toLowerCase()) {
-      case 'journal':
-        return const Color(0xFFF0B95B);
-      case 'mood':
-        return const Color(0xFF57D6E9);
-      case 'medication':
-        return const Color(0xFF69D48A);
-      case 'combat':
-        return const Color(0xFFFF7C7C);
-      case 'crafting':
-        return const Color(0xFFFFB347);
-      case 'items':
-        return const Color(0xFF43D9C1);
-      case 'echoes':
-        return const Color(0xFFD27CFF);
-      case 'sprites':
-        return const Color(0xFF9FA8FF);
-      case 'equipment':
-        return const Color(0xFF8FC6FF);
-      case 'progress':
-        return const Color(0xFFFFD96A);
-      default:
-        return const Color(0xFFE8E2D0);
-    }
+    return AppColors.achievementCategoryColor(category);
   }
 
   IconData _iconFor(String family) {

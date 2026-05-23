@@ -68,7 +68,7 @@ ThemeData mindTamerTheme() {
     dividerColor: AppColors.outlineSoft.withValues(alpha: 0.8),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: AppColors.accentWarm,
-      selectionColor: Color(0x44F7C93E),
+      selectionColor: Color(0x44D7B26B),
       selectionHandleColor: AppColors.accentWarm,
     ),
     snackBarTheme: const SnackBarThemeData(
@@ -99,6 +99,18 @@ ThemeData mindTamerTheme() {
       foregroundColor: AppColors.onBackground,
       elevation: 0,
       centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontFamily: 'PressStart2P',
+        fontSize: 16,
+        color: AppColors.onBackground,
+        height: 1.1,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.accentWarm,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      ),
     ),
     buttonTheme: const ButtonThemeData(
       buttonColor: AppColors.primary,
@@ -136,13 +148,23 @@ ThemeData mindTamerTheme() {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ),
     dialogTheme: const DialogThemeData(
+      backgroundColor: AppColors.panelSoft,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.panel,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ),
     popupMenuTheme: const PopupMenuThemeData(
+      color: AppColors.panelSoft,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    tooltipTheme: TooltipThemeData(
+      decoration: BoxDecoration(
+        color: AppColors.panelSoft,
+        border: Border.all(color: AppColors.outlineSoft),
+      ),
+      textStyle: const TextStyle(color: AppColors.ivory),
     ),
     navigationBarTheme: const NavigationBarThemeData(
       indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -164,10 +186,14 @@ ThemeData mindTamerTheme() {
       thickness: const WidgetStatePropertyAll(8),
       radius: const Radius.circular(0),
       thumbColor:
-          WidgetStatePropertyAll(AppColors.secondary.withValues(alpha: 0.8)),
+          WidgetStatePropertyAll(AppColors.primary.withValues(alpha: 0.72)),
       trackColor: const WidgetStatePropertyAll(AppColors.panelSoft),
       crossAxisMargin: 2,
       mainAxisMargin: 2,
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColors.primary,
+      linearTrackColor: AppColors.surfaceVariant,
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.nav,

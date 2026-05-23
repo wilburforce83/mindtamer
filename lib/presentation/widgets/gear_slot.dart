@@ -18,16 +18,10 @@ class GearSlot extends StatelessWidget {
       this.size = 64});
 
   Color _rarityColor(BuildContext context, String? rarity) {
-    switch (rarity) {
-      case 'uncommon':
-        return const Color(0xFF58A0FF);
-      case 'rare':
-        return const Color(0xFFB16BFF);
-      case 'epic':
-        return AppColors.ember;
-      default:
-        return AppColors.outlineBright.withValues(alpha: 0.58);
+    if (rarity == null || rarity.isEmpty || rarity == 'common') {
+      return AppColors.outlineBright.withValues(alpha: 0.58);
     }
+    return AppColors.rarityColorByName(rarity);
   }
 
   @override
@@ -77,9 +71,7 @@ class GearSlot extends StatelessWidget {
       );
     }
     // Fallback minimal mark if we don't know the crafted item
-    return Icon(Icons.check,
-        size: size * 0.5,
-        color: Theme.of(context).colorScheme.onSurfaceVariant);
+    return Icon(Icons.check, size: size * 0.5, color: AppColors.mutedAlt);
   }
 
   Widget _emptyVisual(String slotId, double size, BuildContext context) {

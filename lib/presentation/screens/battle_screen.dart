@@ -13,6 +13,7 @@ import '../widgets/game_scaffold.dart';
 import '../widgets/pixel_button.dart';
 import '../../core/pixel_assets.dart';
 import '../../services/item_catalog.dart';
+import '../../theme/colors.dart';
 
 class BattleScreen extends ConsumerStatefulWidget {
   final String? battleId;
@@ -33,7 +34,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
   int _lastLogLen = 0;
   String? _floatText;
   Alignment _floatAlign = Alignment.center;
-  Color _floatColor = Colors.white;
+  Color _floatColor = AppColors.ivory;
   DateTime _floatUntil = DateTime.fromMillisecondsSinceEpoch(0);
   double _floatDrift = 0.0;
   Timer? _floatTimer;
@@ -256,16 +257,16 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     if (state.log.length > _lastLogLen && state.lastAction != null) {
       final last = state.log.isNotEmpty ? state.log.last : '';
       String? text;
-      Color color = Colors.white;
+      Color color = AppColors.ivory;
       final dmg = RegExp(r'for\s+(\d+)\s+damage').firstMatch(last);
       if (dmg != null) {
         text = '-${dmg.group(1)}';
-        color = Colors.redAccent;
+        color = AppColors.error;
       }
       final heal = RegExp(r'\+(\d+)HP').firstMatch(last);
       if (heal != null) {
         text = '+${heal.group(1)}';
-        color = Colors.greenAccent;
+        color = AppColors.success;
       }
       if (text != null) {
         _floatText = text;
@@ -378,13 +379,13 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
             label: 'HP',
             current: state.playerHp,
             max: state.playerMaxHp,
-            color: Colors.redAccent),
+            color: AppColors.error),
         const SizedBox(height: 6),
         _StatBar(
             label: state.enemyName ?? 'Enemy',
             current: state.enemyHp,
             max: state.enemyMaxHp,
-            color: Colors.teal),
+            color: AppColors.tertiary),
       ],
     );
 
@@ -484,24 +485,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     );
 
     Color colorForElement(String? e) {
-      switch ((e ?? '').toLowerCase()) {
-        case 'fire':
-          return Colors.deepOrange;
-        case 'water':
-          return Colors.blueAccent;
-        case 'air':
-          return Colors.lightBlueAccent;
-        case 'light':
-          return Colors.amber;
-        case 'shadow':
-          return Colors.purple;
-        case 'nature':
-          return Colors.green;
-        case 'metal':
-          return Colors.grey;
-        default:
-          return Theme.of(context).colorScheme.surface; // neutral
+      final color = AppColors.elementColorByName(e);
+      if ((e ?? '').isEmpty) {
+        return Theme.of(context).colorScheme.surface;
       }
+      return color;
     }
 
     final skillsWrap = Wrap(
@@ -532,7 +520,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
                 ? state.spriteElements[i]
                 : null;
             final bg = colorForElement(elem).withValues(alpha: 0.85);
-            const fg = Colors.white;
+            const fg = AppColors.ivory;
             final label = state.spriteCooldowns.elementAt(i) > 0
                 ? '${state.sprites[i]} (${state.spriteCooldowns[i]})'
                 : state.sprites[i];
@@ -603,7 +591,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
         builder: (ctx, child) {
           final t = _pulseCtrl.value; // 0..1
           final w = 1.5 + 1.5 * (0.5 + 0.5 * math.sin(t * 2 * math.pi));
-          final c = Colors.redAccent.withValues(alpha: 0.7);
+          final c = AppColors.error.withValues(alpha: 0.7);
           return Container(
             decoration: BoxDecoration(border: Border.all(color: c, width: w)),
             child: child,
@@ -743,17 +731,17 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final map = <String, Color>{
-      'atk+': Colors.orange,
-      'def+': Colors.blueGrey,
-      'def-': Colors.redAccent,
-      'regen': Colors.green,
-      'guard': Colors.blue,
-      'focus': Colors.purple,
-      'spirit+': Colors.amber,
-      'atk-': Colors.red,
-      'poison': Colors.greenAccent,
+      'atk+': AppColors.battleEffectColor('atk+'),
+      'def+': AppColors.battleEffectColor('def+'),
+      'def-': AppColors.battleEffectColor('def-'),
+      'regen': AppColors.battleEffectColor('regen'),
+      'guard': AppColors.battleEffectColor('guard'),
+      'focus': AppColors.battleEffectColor('focus'),
+      'spirit+': AppColors.battleEffectColor('spirit+'),
+      'atk-': AppColors.battleEffectColor('atk-'),
+      'poison': AppColors.battleEffectColor('poison'),
     };
-    final color = map[keyName] ?? Colors.white;
+    final color = map[keyName] ?? AppColors.mutedAlt;
     final label = '$keyName${turns > 0 ? '($turns)' : ''}';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),

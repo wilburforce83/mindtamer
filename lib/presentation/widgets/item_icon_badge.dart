@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../crafting/models.dart';
+import '../../theme/colors.dart';
 
 class ItemIconBadge extends StatelessWidget {
   final String iconPath;
@@ -26,10 +27,15 @@ class ItemIconBadge extends StatelessWidget {
     final elem = _elementColor(element);
     String fallbackAsset(String path) {
       final p = path.toLowerCase();
-      if (p.contains('ring')) return 'assets/images/ui/slots/ring_empty_32.png';
-      if (p.contains('hand') || p.contains('hands')) return 'assets/images/ui/slots/hand_empty_32.png';
+      if (p.contains('ring')) {
+        return 'assets/images/ui/slots/ring_empty_32.png';
+      }
+      if (p.contains('hand') || p.contains('hands')) {
+        return 'assets/images/ui/slots/hand_empty_32.png';
+      }
       return 'assets/images/ui/slots/chest_empty_32.png';
     }
+
     return SizedBox(
       width: size,
       height: size,
@@ -60,7 +66,8 @@ class ItemIconBadge extends StatelessWidget {
             errorBuilder: (_, __, ___) {
               // ignore: avoid_print
               print('[ItemIconBadge] Missing asset: $iconPath — falling back');
-              return Image.asset(fallbackAsset(iconPath), filterQuality: FilterQuality.none, fit: BoxFit.contain);
+              return Image.asset(fallbackAsset(iconPath),
+                  filterQuality: FilterQuality.none, fit: BoxFit.contain);
             },
           ),
         ),
@@ -84,14 +91,14 @@ class ItemIconBadge extends StatelessWidget {
                 vertical: (size * 0.02).clamp(1, 2),
               ),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.45),
-                border: Border.all(color: Colors.white, width: 0.75),
+                color: AppColors.panel.withValues(alpha: 0.74),
+                border: Border.all(color: AppColors.outlineBright, width: 0.75),
               ),
               child: Text(
                 'T$tier',
                 style: TextStyle(
                   fontSize: (size * 0.18).clamp(5, 8).toDouble(),
-                  color: Colors.white,
+                  color: AppColors.ivory,
                   height: 1,
                 ),
               ),
@@ -102,24 +109,10 @@ class ItemIconBadge extends StatelessWidget {
   }
 
   Color _rarityColor(Rarity r) {
-    switch (r) {
-      case Rarity.uncommon: return Colors.blueAccent;
-      case Rarity.rare: return Colors.purpleAccent;
-      case Rarity.epic: return Colors.orangeAccent;
-      case Rarity.legendary: return Colors.cyanAccent;
-      case Rarity.common: return Colors.grey;
-    }
+    return AppColors.rarityColorByName(r.name);
   }
 
   Color _elementColor(ElementType e) {
-    switch (e) {
-      case ElementType.fire: return Colors.deepOrange;
-      case ElementType.water: return Colors.lightBlueAccent;
-      case ElementType.air: return Colors.cyanAccent;
-      case ElementType.nature: return Colors.greenAccent;
-      case ElementType.metal: return Colors.grey;
-      case ElementType.light: return Colors.amberAccent;
-      case ElementType.shadow: return Colors.purpleAccent;
-    }
+    return AppColors.elementColorByName(e.name);
   }
 }

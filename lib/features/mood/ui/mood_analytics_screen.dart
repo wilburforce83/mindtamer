@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 import '../../mood/data/mood_repository.dart';
+import '../../../theme/colors.dart';
 
 class MoodAnalyticsScreen extends StatefulWidget {
   const MoodAnalyticsScreen({super.key});
@@ -34,11 +35,12 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
       sums[slot] += v;
       counts[slot]++;
     }
-    return List<double>.generate(3, (i) => counts[i] == 0 ? 0 : sums[i] / counts[i]);
+    return List<double>.generate(
+        3, (i) => counts[i] == 0 ? 0 : sums[i] / counts[i]);
   }
 
   Widget _mdnChart(BuildContext context, List<double> avgs, {String? heading}) {
-    final color = Theme.of(context).colorScheme.primary;
+    const color = AppColors.primary;
     final bars = <BarChartGroupData>[];
     for (int i = 0; i < 3; i++) {
       bars.add(BarChartGroupData(
@@ -65,37 +67,64 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
         child: Text(txt, style: style, maxLines: 1, softWrap: false),
       );
     }
+
     Widget leftTitle(double value, TitleMeta meta) {
       final v = value.toInt();
       if (v == 0 || v == 50 || v == 100) {
-        final style = (Theme.of(context).textTheme.bodySmall ?? const TextStyle())
-            .copyWith(fontSize: 7);
+        final style =
+            (Theme.of(context).textTheme.bodySmall ?? const TextStyle())
+                .copyWith(fontSize: 7);
         return SideTitleWidget(
           axisSide: meta.axisSide,
           space: 2,
-          child: Text(v == 100 ? '99' : '$v', style: style, maxLines: 1, softWrap: false),
+          child: Text(v == 100 ? '99' : '$v',
+              style: style, maxLines: 1, softWrap: false),
         );
       }
       return const SizedBox.shrink();
     }
+
     final chart = SizedBox(
       height: 140,
       child: BarChart(BarChartData(
         minY: 0,
         maxY: 100,
         barGroups: bars,
-        gridData: const FlGridData(show: false),
-        borderData: FlBorderData(show: true),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 50,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppColors.outlineSoft.withValues(alpha: 0.45),
+            strokeWidth: 1,
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(
+            color: AppColors.outlineSoft.withValues(alpha: 0.8),
+          ),
+        ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: bottomTitle)),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, interval: 50, getTitlesWidget: leftTitle)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+              sideTitles:
+                  SideTitles(showTitles: true, getTitlesWidget: bottomTitle)),
+          leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 22,
+                  interval: 50,
+                  getTitlesWidget: leftTitle)),
         ),
       )),
     );
     if (heading == null) return chart;
-    final small = (Theme.of(context).textTheme.bodySmall ?? const TextStyle()).copyWith(fontSize: 11);
+    final small = (Theme.of(context).textTheme.bodySmall ?? const TextStyle())
+        .copyWith(fontSize: 11);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [Text(heading, style: small), const SizedBox(height: 6), chart],
@@ -104,19 +133,26 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
 
   List<FlSpot> _dailyAvgSeries(String metric, {int days = 30}) {
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
+    final start = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: days - 1));
     final spots = <FlSpot>[];
     for (int i = 0; i < days; i++) {
       final day = start.add(Duration(days: i));
       final from = DateTime(day.year, day.month, day.day);
-      final to = from.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
+      final to = from
+          .add(const Duration(days: 1))
+          .subtract(const Duration(microseconds: 1));
       final entries = MoodRepository.inRange(from, to);
       if (entries.isEmpty) {
         spots.add(FlSpot(i.toDouble(), double.nan));
         continue;
       }
-      var sum = 0; var count = 0;
-      for (final e in entries) { sum += (e.values[metric] ?? 0); count++; }
+      var sum = 0;
+      var count = 0;
+      for (final e in entries) {
+        sum += (e.values[metric] ?? 0);
+        count++;
+      }
       final avg = count == 0 ? double.nan : sum / count;
       spots.add(FlSpot(i.toDouble(), avg));
     }
@@ -172,7 +208,8 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
             DropdownButton<String>(
               value: metric,
               items: labels.entries
-                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: small)))
+                  .map((e) => DropdownMenuItem(
+                      value: e.key, child: Text(e.value, style: small)))
                   .toList(),
               onChanged: (v) => setState(() => metric = v!),
             ),
@@ -190,16 +227,30 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
             SizedBox(
               height: 140,
               child: LineChart(LineChartData(
-                minY: 0, maxY: 100,
-                gridData: const FlGridData(show: false),
+                minY: 0,
+                maxY: 100,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 25,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: AppColors.outlineSoft.withValues(alpha: 0.35),
+                    strokeWidth: 1,
+                  ),
+                ),
                 titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: true),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(
+                    color: AppColors.outlineSoft.withValues(alpha: 0.8),
+                  ),
+                ),
                 lineBarsData: [
                   LineChartBarData(
                     spots: daily30.where((s) => !s.y.isNaN).toList(),
                     isCurved: true,
                     dotData: const FlDotData(show: false),
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.primary,
                     barWidth: 2,
                   ),
                   LineChartBarData(
@@ -208,7 +259,7 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
                         .toList(),
                     isCurved: true,
                     dotData: const FlDotData(show: false),
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                    color: AppColors.accentWarm.withValues(alpha: 0.72),
                     barWidth: 2,
                   ),
                 ],

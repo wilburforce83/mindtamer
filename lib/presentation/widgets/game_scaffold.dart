@@ -158,7 +158,7 @@ class _BottomDock extends StatelessWidget {
           ),
           boxShadow: const [
             BoxShadow(
-              color: Color(0xB3000000),
+              color: AppColors.overlayShadow,
               offset: Offset(0, -2),
               blurRadius: 0,
             ),
@@ -240,7 +240,7 @@ class _DockTabButton extends StatelessWidget {
               boxShadow: active
                   ? [
                       BoxShadow(
-                        color: AppColors.secondary.withValues(alpha: 0.22),
+                        color: AppColors.accentWarm.withValues(alpha: 0.16),
                         blurRadius: 0,
                         spreadRadius: 1,
                         offset: const Offset(0, 1),

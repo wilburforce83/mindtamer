@@ -1,5 +1,6 @@
 // FILE: lib/features/journal/ui/widgets/pixel_icons.dart
 import 'package:flutter/material.dart';
+import '../../../../theme/colors.dart';
 
 abstract class _PixelIconBase extends StatelessWidget {
   final double? size;
@@ -12,7 +13,7 @@ abstract class _PixelIconBase extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconTheme = IconTheme.of(context);
     final s = size ?? iconTheme.size ?? 24;
-    final c = color ?? iconTheme.color ?? Colors.white;
+    final c = color ?? iconTheme.color ?? AppColors.ivory;
     return SizedBox(
       width: s,
       height: s,

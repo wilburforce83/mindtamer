@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../crafting/models.dart';
+import '../../theme/colors.dart';
 
 /// Displays item stats as inline labels, coloring non-DEF mods
 /// (e.g., HP +1) by the item's element color.
@@ -7,16 +8,21 @@ class ItemStatsLine extends StatelessWidget {
   final Map<String, num> stats;
   final ElementType element;
   final TextStyle? style;
-  const ItemStatsLine({super.key, required this.stats, required this.element, this.style});
+  const ItemStatsLine(
+      {super.key, required this.stats, required this.element, this.style});
 
   @override
   Widget build(BuildContext context) {
-    final base = style ?? (Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 11));
+    final base = style ??
+        (Theme.of(context).textTheme.labelSmall ??
+            const TextStyle(fontSize: 11));
     final elColor = _elementColor(element);
     final chips = <InlineSpan>[];
 
     void addSpan(String text, {Color? color}) {
-      chips.add(TextSpan(text: text, style: color == null ? base : base.copyWith(color: color)));
+      chips.add(TextSpan(
+          text: text,
+          style: color == null ? base : base.copyWith(color: color)));
     }
 
     final baseKeys = ['def', 'atk', 'hp', 'spd', 'spirit'];
@@ -50,15 +56,6 @@ class ItemStatsLine extends StatelessWidget {
   }
 
   Color _elementColor(ElementType e) {
-    switch (e) {
-      case ElementType.fire: return Colors.deepOrange;
-      case ElementType.water: return Colors.lightBlueAccent;
-      case ElementType.air: return Colors.cyanAccent;
-      case ElementType.nature: return Colors.greenAccent;
-      case ElementType.metal: return Colors.grey;
-      case ElementType.light: return Colors.amberAccent;
-      case ElementType.shadow: return Colors.purpleAccent;
-    }
+    return AppColors.elementColorByName(e.name);
   }
 }
-

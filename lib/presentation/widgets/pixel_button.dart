@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/pixel_assets.dart';
+import '../../theme/colors.dart';
 
 class PixelButton extends StatelessWidget {
   final String label;
@@ -38,7 +39,11 @@ class PixelButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (has)
-            Image.asset(leadingAsset!, width: leadingSize, height: leadingSize, filterQuality: FilterQuality.none, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            Image.asset(leadingAsset!,
+                width: leadingSize,
+                height: leadingSize,
+                filterQuality: FilterQuality.none,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
           const SizedBox(width: 6),
           Flexible(child: labelWidget),
         ],
@@ -51,7 +56,8 @@ class PixelButton extends StatelessWidget {
       return InkWell(
         onTap: onPressed,
         child: Container(
-          padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: const BoxDecoration(
             image: DecorationImage(
               image: AssetImage(PixelAssets.btnPrimary9Slice),
@@ -68,23 +74,31 @@ class PixelButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        customBorder: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        overlayColor: WidgetStateProperty.resolveWith((states){
+        customBorder:
+            const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
-            return Colors.white.withValues(alpha: 0.16);
+            return AppColors.parchment.withValues(alpha: 0.12);
           }
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-            return Colors.white.withValues(alpha: 0.08);
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return AppColors.ivory.withValues(alpha: 0.05);
           }
           return Colors.transparent;
         }),
         onTap: onPressed,
         child: Container(
-          padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: enabled ? bg : bg.withValues(alpha: 0.5),
             border: Border.all(
-              color: Color.lerp(enabled ? bg : bg.withValues(alpha: 0.5), Colors.white, 0.35)!,
+              color: Color.lerp(
+                    enabled ? bg : bg.withValues(alpha: 0.5),
+                    AppColors.outlineBright,
+                    0.35,
+                  ) ??
+                  AppColors.outlineBright,
               width: 1,
             ),
           ),

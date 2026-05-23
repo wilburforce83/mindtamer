@@ -7,7 +7,11 @@ class PixelSlider extends StatelessWidget {
   final ValueChanged<int> onChanged;
   // When false, hides the numeric readout below the slider (useful in tight rows).
   final bool showValue;
-  const PixelSlider({super.key, required this.value, required this.onChanged, this.showValue = true});
+  const PixelSlider(
+      {super.key,
+      required this.value,
+      required this.onChanged,
+      this.showValue = true});
 
   @override
   Widget build(BuildContext context) {
@@ -17,11 +21,11 @@ class PixelSlider extends StatelessWidget {
         overlayShape: SliderComponentShape.noOverlay,
         thumbShape: const _PixelThumbShape(size: 16),
         trackShape: const _PixelTrackShape(),
-        activeTrackColor: AppColors.accentWarm,
+        activeTrackColor: AppColors.primary,
         inactiveTrackColor: AppColors.surfaceVariant,
         disabledActiveTrackColor: AppColors.surfaceVariant,
         disabledInactiveTrackColor: AppColors.surfaceVariant,
-        thumbColor: AppColors.ivory,
+        thumbColor: AppColors.accentWarm,
         disabledThumbColor: AppColors.muted,
       ),
       child: Slider(
@@ -56,7 +60,16 @@ class PixelSlider extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [core, Text('$value')],
+      children: [
+        core,
+        Text(
+          '$value',
+          style: Theme.of(context)
+              .textTheme
+              .labelSmall
+              ?.copyWith(color: AppColors.mutedAlt),
+        )
+      ],
     );
   }
 }
@@ -72,21 +85,22 @@ class _PixelThumbShape extends SliderComponentShape {
   void paint(
     PaintingContext context,
     Offset center, {
-      required Animation<double> activationAnimation,
-      required Animation<double> enableAnimation,
-      required bool isDiscrete,
-      required TextPainter labelPainter,
-      required RenderBox parentBox,
-      required SliderThemeData sliderTheme,
-      required TextDirection textDirection,
-      required double value,
-      required double textScaleFactor,
-      required Size sizeWithOverflow,
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
   }) {
     final canvas = context.canvas;
     final rect = Rect.fromCenter(center: center, width: size, height: size);
     final r = RRect.fromRectAndRadius(rect, const Radius.circular(0));
-    final fill = Paint()..color = sliderTheme.thumbColor ?? AppColors.ivory;
+    final fill = Paint()
+      ..color = sliderTheme.thumbColor ?? AppColors.accentWarm;
     final border = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
@@ -111,35 +125,41 @@ class _PixelTrackShape extends SliderTrackShape {
     final trackLeft = offset.dx + 8;
     final trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
     final trackRight = trackLeft + parentBox.size.width - 16;
-    return Rect.fromLTRB(trackLeft, trackTop, trackRight, trackTop + trackHeight);
+    return Rect.fromLTRB(
+        trackLeft, trackTop, trackRight, trackTop + trackHeight);
   }
 
   @override
   void paint(
     PaintingContext context,
     Offset offset, {
-      required RenderBox parentBox,
-      Offset? secondaryOffset,
-      required SliderThemeData sliderTheme,
-      required Animation<double> enableAnimation,
-      required Offset thumbCenter,
-      bool isDiscrete = false,
-      bool isEnabled = false,
-      required TextDirection textDirection,
+    required RenderBox parentBox,
+    Offset? secondaryOffset,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required Offset thumbCenter,
+    bool isDiscrete = false,
+    bool isEnabled = false,
+    required TextDirection textDirection,
   }) {
     final canvas = context.canvas;
-    final rect = getPreferredRect(parentBox: parentBox, offset: offset, sliderTheme: sliderTheme);
+    final rect = getPreferredRect(
+        parentBox: parentBox, offset: offset, sliderTheme: sliderTheme);
 
-    final inactivePaint = Paint()..color = sliderTheme.inactiveTrackColor ?? AppColors.surfaceVariant;
-    final activePaint = Paint()..color = sliderTheme.activeTrackColor ?? AppColors.accentWarm;
+    final inactivePaint = Paint()
+      ..color = sliderTheme.inactiveTrackColor ?? AppColors.surfaceVariant;
+    final activePaint = Paint()
+      ..color = sliderTheme.activeTrackColor ?? AppColors.accentWarm;
     final border = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
       ..color = AppColors.outline;
 
     // Left (active) and right (inactive) segments
-    final activeRect = Rect.fromLTRB(rect.left, rect.top, thumbCenter.dx, rect.bottom);
-    final inactiveRect = Rect.fromLTRB(thumbCenter.dx, rect.top, rect.right, rect.bottom);
+    final activeRect =
+        Rect.fromLTRB(rect.left, rect.top, thumbCenter.dx, rect.bottom);
+    final inactiveRect =
+        Rect.fromLTRB(thumbCenter.dx, rect.top, rect.right, rect.bottom);
     canvas.drawRect(inactiveRect, inactivePaint);
     canvas.drawRect(activeRect, activePaint);
     canvas.drawRect(rect, border);

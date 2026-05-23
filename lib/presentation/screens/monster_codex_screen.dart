@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/hive/boxes.dart';
 import '../../game/services/monster_image_service.dart';
+import '../../theme/colors.dart';
 
 class _MonsterUi {
   final String speciesId;
@@ -44,7 +45,10 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
   Future<void> _load() async {
     final codex = monsterCodexBox().values.toList();
     if (codex.isEmpty) {
-      setState(() { _items = []; _selected = -1; });
+      setState(() {
+        _items = [];
+        _selected = -1;
+      });
       return;
     }
     final sBox = seedSpeciesBox();
@@ -53,12 +57,15 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
 
     int levelFromStats(Map<String, dynamic>? stats) {
       if (stats == null) return 10;
-      int v(String k) => (stats[k] is int) ? stats[k] as int : int.tryParse('${stats[k]}') ?? 0;
+      int v(String k) => (stats[k] is int)
+          ? stats[k] as int
+          : int.tryParse('${stats[k]}') ?? 0;
       final sum = v('hp') + v('atk') + v('spd') + v('spirit');
       return (sum / 10).round().clamp(1, 99);
     }
 
-    String rarityFor(String speciesId) => sBox.get(speciesId)?.rarity ?? 'common';
+    String rarityFor(String speciesId) =>
+        sBox.get(speciesId)?.rarity ?? 'common';
 
     final items = <_MonsterUi>[];
     for (final c in codex) {
@@ -68,7 +75,9 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
       final rarity = rarityFor(c.speciesId);
 
       // Find earliest win battle for this species to extract source + stats
-      final wins = bBox.values.where((b) => b.speciesId == c.speciesId && b.result == 'win').toList()
+      final wins = bBox.values
+          .where((b) => b.speciesId == c.speciesId && b.result == 'win')
+          .toList()
         ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
       String? title;
       DateTime? date;
@@ -77,17 +86,25 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
         final t = tBox.get(wins.first.ticketId);
         if (t != null) {
           final m = Map<String, dynamic>.from(t.seedSnapshot);
-          stats = (m['stats'] is Map) ? Map<String, dynamic>.from(m['stats']) : null;
+          stats = (m['stats'] is Map)
+              ? Map<String, dynamic>.from(m['stats'])
+              : null;
           title = (m['sourceTitle'] ?? '').toString();
           final raw = (m['sourceDate'] ?? '').toString();
-          try { date = DateTime.parse(raw).toLocal(); } catch (_) { date = t.createdAt.toLocal(); }
+          try {
+            date = DateTime.parse(raw).toLocal();
+          } catch (_) {
+            date = t.createdAt.toLocal();
+          }
         }
       }
 
       final level = levelFromStats(stats);
       items.add(_MonsterUi(
         speciesId: c.speciesId,
-        displayName: (c.displayName != null && c.displayName!.isNotEmpty) ? c.displayName! : c.speciesId,
+        displayName: (c.displayName != null && c.displayName!.isNotEmpty)
+            ? c.displayName!
+            : c.speciesId,
         element: element,
         type: type,
         rarity: rarity,
@@ -96,17 +113,14 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
         sourceDate: date,
       ));
     }
-    setState(() { _items = items; _selected = items.isNotEmpty ? 0 : -1; });
+    setState(() {
+      _items = items;
+      _selected = items.isNotEmpty ? 0 : -1;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final rarityColors = <String, Color>{
-      'common': const Color(0xFF9E9E9E),
-      'uncommon': const Color(0xFF42A5F5),
-      'rare': const Color(0xFFAB47BC),
-      'epic': const Color(0xFFFFB300),
-    };
     return Scaffold(
       appBar: AppBar(title: const Text('Monster Codex')),
       body: _items.isEmpty
@@ -118,7 +132,8 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
                     builder: (context, cts) {
                       final cross = (cts.maxWidth ~/ 72).clamp(2, 6);
                       return GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: cross),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cross),
                         itemCount: _items.length,
                         itemBuilder: (_, i) => Padding(
                           padding: const EdgeInsets.all(6),
@@ -135,12 +150,17 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
                                 onTap: () async {
                                   setState(() => _selected = i);
                                   if (path != null) {
-                                    await _showMonsterModal(context, path, _items[i].displayName);
+                                    await _showMonsterModal(
+                                        context, path, _items[i].displayName);
                                   }
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: rarityColors[_items[i].rarity] ?? Colors.grey, width: 2),
+                                    border: Border.all(
+                                      color: AppColors.rarityColorByName(
+                                          _items[i].rarity),
+                                      width: 2,
+                                    ),
                                   ),
                                   clipBehavior: Clip.hardEdge,
                                   child: path == null
@@ -161,13 +181,15 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
                     },
                   ),
                 ),
-                _MonsterDetailsPanel(item: _selected >= 0 ? _items[_selected] : null),
+                _MonsterDetailsPanel(
+                    item: _selected >= 0 ? _items[_selected] : null),
               ],
             ),
     );
   }
 
-  Future<void> _showMonsterModal(BuildContext context, String path, String title) async {
+  Future<void> _showMonsterModal(
+      BuildContext context, String path, String title) async {
     await showDialog(
       context: context,
       barrierDismissible: true,
@@ -182,8 +204,12 @@ class _MonsterCodexScreenState extends State<MonsterCodexScreen> {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
-                  border: Border.all(color: Theme.of(context).colorScheme.outline, width: 2),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surface
+                      .withValues(alpha: 0.9),
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outline, width: 2),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -217,22 +243,25 @@ class _MonsterDetailsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item == null) {
-      return Container(height: 160, alignment: Alignment.center, child: const Text('Tap a monster to see details'));
+      return Container(
+          height: 160,
+          alignment: Alignment.center,
+          child: const Text('Tap a monster to see details'));
     }
     final m = item!;
     final rarityText = m.rarity[0].toUpperCase() + m.rarity.substring(1);
-    final dateStr = m.sourceDate != null ? DateFormat('d/M/yyyy').format(m.sourceDate!) : '—';
+    final dateStr = m.sourceDate != null
+        ? DateFormat('d/M/yyyy').format(m.sourceDate!)
+        : '—';
     final extra = MediaQuery.of(context).size.height * 0.05;
-    final rarityColors = <String, Color>{
-      'common': const Color(0xFF9E9E9E),
-      'uncommon': const Color(0xFF42A5F5),
-      'rare': const Color(0xFFAB47BC),
-      'epic': const Color(0xFFFFB300),
-    };
+    final rarityColor = AppColors.rarityColorByName(m.rarity);
     return Container(
       height: 180 + extra,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1))),
+      decoration: BoxDecoration(
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outline, width: 1))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -241,15 +270,18 @@ class _MonsterDetailsPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: (rarityColors[m.rarity] ?? Colors.grey).withValues(alpha: 0.15),
-              border: Border.all(color: rarityColors[m.rarity] ?? Colors.grey),
+              color: rarityColor.withValues(alpha: 0.15),
+              border: Border.all(color: rarityColor),
             ),
-            child: Text('Rarity: $rarityText • Level: ${m.level}', style: Theme.of(context).textTheme.bodySmall),
+            child: Text('Rarity: $rarityText • Level: ${m.level}',
+                style: Theme.of(context).textTheme.bodySmall),
           ),
           const SizedBox(height: 8),
-          Text('Type: ${_titleCase(m.type)} • Element: ${m.element}', style: Theme.of(context).textTheme.bodySmall),
+          Text('Type: ${_titleCase(m.type)} • Element: ${m.element}',
+              style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 8),
-          Text('Source: ${m.sourceTitle ?? 'Unknown'} ($dateStr)', style: Theme.of(context).textTheme.bodySmall),
+          Text('Source: ${m.sourceTitle ?? 'Unknown'} ($dateStr)',
+              style: Theme.of(context).textTheme.bodySmall),
           const Spacer(),
         ],
       ),
@@ -257,4 +289,5 @@ class _MonsterDetailsPanel extends StatelessWidget {
   }
 }
 
-String _titleCase(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+String _titleCase(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

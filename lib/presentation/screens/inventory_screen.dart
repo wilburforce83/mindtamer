@@ -6,6 +6,7 @@ import '../widgets/item_icon_badge.dart';
 import '../../services/achievement_service.dart';
 import '../widgets/item_stats_line.dart';
 import '../widgets/item_provenance_block.dart';
+import '../../theme/colors.dart';
 
 class InventoryScreen extends StatefulWidget {
   final String? filter; // slot name or 'weapon'
@@ -144,18 +145,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Color _rarityColor(Rarity r) {
-    switch (r) {
-      case Rarity.uncommon:
-        return Colors.blueAccent;
-      case Rarity.rare:
-        return Colors.purpleAccent;
-      case Rarity.epic:
-        return Colors.orangeAccent;
-      case Rarity.legendary:
-        return Colors.cyanAccent;
-      case Rarity.common:
-        return Colors.grey;
-    }
+    return AppColors.rarityColorByName(r.name);
   }
 }
 

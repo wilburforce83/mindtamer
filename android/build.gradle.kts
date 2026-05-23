@@ -9,7 +9,7 @@ subprojects {
     plugins.withId("com.android.library") {
         // Try using typed extension first (AGP 8+)
         extensions.findByType(LibraryExtension::class.java)?.apply {
-            compileSdk = 34
+            compileSdk = 36
             defaultConfig { minSdk = 21 }
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_11
@@ -26,7 +26,7 @@ subprojects {
                 if (androidExt != null) {
                     try {
                         val m = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.java)
-                        m.invoke(androidExt, 34)
+                        m.invoke(androidExt, 36)
                     } catch (_: Throwable) {}
                     try {
                         val dc = androidExt.javaClass.getMethod("getDefaultConfig").invoke(androidExt)

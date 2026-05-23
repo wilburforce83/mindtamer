@@ -188,6 +188,13 @@ String _displayMedTime(BuildContext context, String hhmm) {
   );
 }
 
+Color _medActionForeground(BuildContext context, Color background) {
+  final surface = Theme.of(context).colorScheme.surface;
+  return background.toARGB32() == surface.toARGB32()
+      ? AppColors.ivory
+      : AppColors.midnight;
+}
+
 Future<TimeOfDay?> _pickMedTime(
   BuildContext context, {
   TimeOfDay? initialTime,
@@ -737,17 +744,17 @@ class _MedRow extends ConsumerWidget {
     } else {
       if (lastMissed != null) {
         // There is a missed earlier dose; highlight red to resolve
-        bg = Colors.red.shade700;
+        bg = AppColors.error;
         label = 'Take';
         enabled = true;
       } else if (nextUpcoming != null) {
         final abs = minutesFromSched.abs();
         if (abs <= 45) {
-          bg = Colors.green;
+          bg = AppColors.success;
           label = 'Take';
           enabled = true;
         } else if (abs <= 90) {
-          bg = Colors.yellow.shade700;
+          bg = AppColors.warning;
           label = 'Take';
           enabled = true;
         } else {
@@ -802,7 +809,7 @@ class _MedRow extends ConsumerWidget {
           child: PixelButton(
             label: label,
             bgColor: bg,
-            fgColor: Colors.black,
+            fgColor: _medActionForeground(context, bg),
             onPressed: !enabled
                 ? null
                 : () async {
@@ -980,19 +987,19 @@ class _SlotButton extends ConsumerWidget {
     } else if (sched.isBefore(now)) {
       final diff = now.difference(sched).inMinutes;
       if (diff > 90) {
-        bg = Colors.red.shade700;
+        bg = AppColors.error;
       } else {
-        bg = Colors.yellow.shade700;
+        bg = AppColors.warning;
       }
       enabled = true;
       label = time;
     } else {
       final diff = sched.difference(now).inMinutes;
       if (diff <= 45) {
-        bg = Colors.green;
+        bg = AppColors.success;
         enabled = true;
       } else if (diff <= 90) {
-        bg = Colors.yellow.shade700;
+        bg = AppColors.warning;
         enabled = true;
       } else {
         bg = Theme.of(context).colorScheme.surface;
@@ -1003,7 +1010,7 @@ class _SlotButton extends ConsumerWidget {
     return PixelButton(
       label: label,
       bgColor: bg,
-      fgColor: Colors.black,
+      fgColor: _medActionForeground(context, bg),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       onPressed: !enabled
           ? null

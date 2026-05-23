@@ -14,6 +14,7 @@ import '../widgets/item_icon_badge.dart';
 import '../widgets/pixel_button.dart';
 import '../widgets/item_stats_line.dart';
 import '../widgets/item_provenance_block.dart';
+import '../../theme/colors.dart';
 
 class CraftingScreen extends StatefulWidget {
   const CraftingScreen({super.key});
@@ -45,37 +46,11 @@ class _CraftingScreenState extends State<CraftingScreen> {
   }
 
   Color _echoColor(Echo e) {
-    switch (e.element) {
-      case ElementType.fire:
-        return Colors.deepOrange;
-      case ElementType.water:
-        return Colors.lightBlueAccent;
-      case ElementType.air:
-        return Colors.cyanAccent;
-      case ElementType.nature:
-        return Colors.greenAccent;
-      case ElementType.metal:
-        return Colors.grey;
-      case ElementType.light:
-        return Colors.amberAccent;
-      case ElementType.shadow:
-        return Colors.purpleAccent;
-    }
+    return AppColors.elementColorByName(e.element.name);
   }
 
   Color _rarityColor(Rarity r) {
-    switch (r) {
-      case Rarity.uncommon:
-        return Colors.blueAccent;
-      case Rarity.rare:
-        return Colors.purpleAccent;
-      case Rarity.epic:
-        return Colors.orangeAccent;
-      case Rarity.legendary:
-        return Colors.cyanAccent;
-      case Rarity.common:
-        return Colors.grey;
-    }
+    return AppColors.rarityColorByName(r.name);
   }
 
   List<Echo> _loadEchoes() {
@@ -523,7 +498,7 @@ class _CraftingScreenState extends State<CraftingScreen> {
                     .surfaceContainerHighest
                     .withValues(alpha: 0.16),
                 border: Border.all(
-                  color: Colors.tealAccent.withValues(alpha: 0.28),
+                  color: AppColors.glowTeal.withValues(alpha: 0.32),
                 ),
               ),
               child: Row(
@@ -531,7 +506,7 @@ class _CraftingScreenState extends State<CraftingScreen> {
                 children: [
                   Icon(Icons.tips_and_updates_outlined,
                       size: 14,
-                      color: Colors.tealAccent.withValues(alpha: 0.9)),
+                      color: AppColors.glowTeal.withValues(alpha: 0.9)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -599,8 +574,8 @@ class _CraftingScreenState extends State<CraftingScreen> {
                                       .withValues(alpha: 0.2),
                                   border: Border.all(
                                       color: selected
-                                          ? Colors.tealAccent
-                                          : Colors.tealAccent
+                                          ? AppColors.glowTeal
+                                          : AppColors.glowTeal
                                               .withValues(alpha: 0.6),
                                       width: selected ? 1.5 : 1),
                                 ),
@@ -677,7 +652,9 @@ class _CraftingScreenState extends State<CraftingScreen> {
                                       .surfaceContainerHighest
                                       .withValues(alpha: 0.15),
                                   border: Border.all(
-                                      color: selected ? Colors.white : border,
+                                      color: selected
+                                          ? AppColors.outlineBright
+                                          : border,
                                       width: selected ? 1.5 : 1.2),
                                 ),
                                 alignment: Alignment.center,
@@ -794,7 +771,7 @@ class _ReturningListPanel extends StatelessWidget {
           duration: const Duration(milliseconds: 120),
           decoration: BoxDecoration(
             border: Border.all(
-              color: active ? Colors.tealAccent : Colors.transparent,
+              color: active ? AppColors.glowTeal : Colors.transparent,
               width: 1.2,
             ),
           ),
@@ -936,10 +913,10 @@ class _ForgeDragTarget extends StatelessWidget {
         final active = candidateData.isNotEmpty &&
             candidateData.any((data) => data != null && canAccept(data));
         final borderColor = active
-            ? Colors.tealAccent
+            ? AppColors.glowTeal
             : Theme.of(context).colorScheme.outlineVariant;
         final fillColor = active
-            ? Colors.tealAccent.withValues(alpha: 0.12)
+            ? AppColors.glowTeal.withValues(alpha: 0.12)
             : Theme.of(context)
                 .colorScheme
                 .surfaceContainerHighest
@@ -1031,7 +1008,7 @@ class _ForgeFeedback extends StatelessWidget {
               .colorScheme
               .surfaceContainerHighest
               .withValues(alpha: 0.9),
-          border: Border.all(color: Colors.tealAccent, width: 1.2),
+          border: Border.all(color: AppColors.glowTeal, width: 1.2),
         ),
         child: child,
       ),
@@ -1143,22 +1120,7 @@ class _CraftDetailsPanel extends StatelessWidget {
   }
 
   Color _colorForEcho(Echo e) {
-    switch (e.element) {
-      case ElementType.fire:
-        return Colors.deepOrange;
-      case ElementType.water:
-        return Colors.lightBlueAccent;
-      case ElementType.air:
-        return Colors.cyanAccent;
-      case ElementType.nature:
-        return Colors.greenAccent;
-      case ElementType.metal:
-        return Colors.grey;
-      case ElementType.light:
-        return Colors.amberAccent;
-      case ElementType.shadow:
-        return Colors.purpleAccent;
-    }
+    return AppColors.elementColorByName(e.element.name);
   }
 
   // UI helpers
@@ -1172,18 +1134,7 @@ class _CraftDetailsPanel extends StatelessWidget {
       );
 
   Color _rarityColor(Rarity r) {
-    switch (r) {
-      case Rarity.uncommon:
-        return Colors.blueAccent;
-      case Rarity.rare:
-        return Colors.purpleAccent;
-      case Rarity.epic:
-        return Colors.orangeAccent;
-      case Rarity.legendary:
-        return Colors.cyanAccent;
-      case Rarity.common:
-        return Colors.grey;
-    }
+    return AppColors.rarityColorByName(r.name);
   }
 
   Color _elementColor(ElementType e) => _colorForEcho(Echo(
@@ -1251,7 +1202,7 @@ class _CraftingTutorialDialogState extends State<_CraftingTutorialDialog> {
       icon: Icons.merge_type,
       title: 'Items Can Fuse Too',
       body:
-          'Drop one item into each slot to combine them. If you change your mind, use Clear under a slot and try a different recipe.'
+          'Drop one item into each slot to combine them. If you change your mind, drag a slotted ingredient back into its list and try a different recipe.'
     ),
   ];
 
@@ -1296,7 +1247,10 @@ class _CraftingTutorialDialogState extends State<_CraftingTutorialDialog> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(step.icon,
-                                size: 34, color: Colors.tealAccent.shade400),
+                                size: 34,
+                                color: AppColors.glowTeal.withValues(
+                                  alpha: 0.95,
+                                )),
                             const SizedBox(height: 12),
                             Text(
                               step.title,
@@ -1328,8 +1282,8 @@ class _CraftingTutorialDialogState extends State<_CraftingTutorialDialog> {
                     height: 8,
                     decoration: BoxDecoration(
                       color: active
-                          ? Colors.tealAccent
-                          : Colors.tealAccent.withValues(alpha: 0.35),
+                          ? AppColors.glowTeal
+                          : AppColors.glowTeal.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(99),
                     ),
                   );

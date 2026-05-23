@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../theme/colors.dart';
 import '../data/journal_repository.dart';
 import '../data/journal_tag_rules.dart';
 import '../model/journal_entry.dart';
@@ -181,7 +182,12 @@ class _InsightsState extends State<_Insights> {
     int x = 0;
     for (final e in entries) {
       barGroups.add(BarChartGroupData(x: x++, barRods: [
-        BarChartRodData(toY: e.value.toDouble(), color: Colors.teal, width: 6)
+        BarChartRodData(
+          toY: e.value.toDouble(),
+          color: AppColors.primary,
+          width: 6,
+          borderRadius: BorderRadius.zero,
+        )
       ]));
     }
     return SizedBox(

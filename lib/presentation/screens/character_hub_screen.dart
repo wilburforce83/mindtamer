@@ -476,7 +476,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<CharacterHubVM>().state;
 
-    // Title uses player name, centered
+    // Title uses player name and follows the shared left-aligned app chrome.
     String titleName = 'Adventurer';
     try {
       final n = playerMetaBox().get('name');
@@ -485,7 +485,6 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
 
     return GameScaffold(
       title: titleName,
-      centerTitle: true,
       body: Stack(children: [
         // Background image with dark overlay
         Positioned.fill(
@@ -588,7 +587,7 @@ class _CharacterHubScreenState extends State<CharacterHubScreen> {
                                 ),
                                 boxShadow: const [
                                   BoxShadow(
-                                    color: Color(0x66000000),
+                                    color: AppColors.overlayShadow,
                                     offset: Offset(0, 3),
                                     blurRadius: 0,
                                   ),
@@ -1295,7 +1294,7 @@ class _StatsAndAttacks extends StatelessWidget {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x66000000),
+            color: AppColors.overlayShadow,
             blurRadius: 0,
             offset: Offset(0, 2),
           ),
@@ -1327,12 +1326,12 @@ class _StatsAndAttacks extends StatelessWidget {
                         return Text('$v', style: style);
                       }),
                       Text('+${spriteAll[k] ?? 0}',
-                          style: small.copyWith(color: Colors.green[700])),
+                          style: small.copyWith(color: AppColors.success)),
                       Text('+${gearBase[k] ?? 0}',
-                          style: small.copyWith(color: Colors.blue[700])),
+                          style: small.copyWith(color: AppColors.tertiary)),
                       Text('+${gearMods[k] ?? 0}',
-                          style: small.copyWith(color: Colors.purple[700])),
-                      Text('-0', style: small.copyWith(color: Colors.red[700])),
+                          style: small.copyWith(color: AppColors.secondary)),
+                      Text('-0', style: small.copyWith(color: AppColors.error)),
                     ],
                   ),
                 ),
@@ -1388,7 +1387,7 @@ class _CraftingCoachCard extends StatelessWidget {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x66000000),
+            color: AppColors.overlayShadow,
             blurRadius: 0,
             offset: Offset(0, 2),
           ),
